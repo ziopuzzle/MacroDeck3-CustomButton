@@ -1,0 +1,257 @@
+Channel	Channel
+ChannelHelp	Use the same channel as the update action. Buttons on the same channel share data.
+DataHint	Use matching data names in your update actions and display layout.
+Actions	Actions
+Drawing	Drawing
+FlowHelp	Configure actions for each event and save before testing. Check event targets after duplicating a button.
+AddTick	＋ Add display update (1 second)
+InitialJson	Initial data JSON (before receiving data)
+DrawingXml	Drawing XML
+OpenEditor	Open editor
+Templates	Templates
+EditorHelp	Build the layout in a separate editor window. The preview remains on this screen.
+HistoryHelp	While displayed, the current value is sampled every second. To fetch new variable values, add a data update action to the display update event under Actions.
+WidgetDescription	A button rendered from templates and variable data
+SetValue	Set display value
+SetValueHelp	Update one value on a channel. The value can be bound to a Macro Deck variable.
+DataName	Data name
+BindableValue	Value (supports variable bindings)
+SetJson	Set display data from JSON
+SetJsonHelp	Replace all data on a channel with a JSON object.
+DataJson	Data JSON
+ShortPress	Short press
+LongPress	Long press
+TouchStart	Touch start
+TouchEnd	Touch end
+DisplayTick	Display update (1 second)
+EventHelp	Runs while the target button is displayed or interacted with. Check the target after duplicating a button.
+TargetWidget	Target widget
+TargetWidgetId	Target widget ID
+EditorLanguage	External editor language
+EditorLanguageHelp	The host does not expose its language to the external editor. Automatic uses the OS language. Reopen the editor after changing this setting.
+Automatic	Automatic (OS language)
+Stack	▤ Stack
+Layer	▧ Layer
+Text	T Text
+Bar	━ Bar
+Chart	⌁ History graph
+Clock	◷ Clock
+Progress	▷ Playback progress
+Slider	● Slider
+Rect	▰ Rectangle
+Line	╱ Line (horizontal / vertical)
+Polygon	△ Polygon
+Sector	◔ Sector
+EditorTitle	Custom Button — Layout editor
+Layout	Layout
+Undo	↶ Undo
+Redo	↷ Redo
+ApplyXml	Apply XML
+Format	Format
+Copy	Copy
+EditorInstructions	Add with ＋ and drag ⠿ to move. Preview and save in Macro Deck.
+AddComponent	＋ Add component
+PendingTitle	Unapplied input
+PendingQuestion	There is unapplied input. Apply it before closing?
+Apply	Apply
+Discard	Discard
+Cancel	Cancel
+Conflict	Conflicting changes detected. Copy the XML, then close and reopen the editor.
+Published	Changes sent to the draft. Save in Macro Deck to finish.
+HostConflict	The layout was changed in Macro Deck. Copy the XML, then close and reopen the editor.
+CheckInput	Check input
+ResetInput	Reset input
+AutoApply	Valid settings are applied automatically.
+DisplayText	Display text
+SizeVisibility	Size and visibility
+ConditionExpression	Condition expression
+DeleteCondition	Delete this condition
+Condition	Condition
+ConditionPrefix	Condition: 
+FixInput	Please correct the input.
+AddStyle	＋ Conditional style
+FieldHelp	Leave blank for the default. Insert {{dataName}} or calculate with {{= used / total * 100}}%.
+PickColour	Click to choose a colour
+Suggestions	Suggested values
+ResetDefault	Use default
+InsertData	Insert display data
+CenterX	Center X
+CenterY	Center Y
+Radius	Radius
+StartAngle	Start angle (degrees)
+SweepAngle	Sweep angle (degrees)
+Points	Point count / polygon coordinates (x,y; x,y; …)
+PositionX	Position from left
+PositionY	Position from top
+Width	Width
+Height	Height
+Length	Line length
+Corner	Corners (square / rounded)
+Direction	Direction
+Colour	Colour
+Background	Background colour
+TextSize	Text size (e.g. 18%)
+MainSize	Main-axis size
+Fill	Fill remaining space
+Visible	Visible
+VisibleWhen	Visibility condition
+Padding	Padding
+Gap	Gap between components
+Align	Cross-axis alignment
+Justify	Main-axis alignment
+BorderStyle	Border style
+BorderColour	Border colour
+Value	Display value
+Minimum	Minimum
+Maximum	Maximum
+HistoryKey	History data name
+Thickness	Thickness
+EndColour	End colour
+Duplicate	Duplicate
+WrapStack	Wrap in stack
+Delete	Delete
+ApplyBeforeMove	Correct or reset the pending input before moving.
+Inside	: place inside
+Before	: place before
+After	: place after
+BasicTemplate	Heading, value and bar
+ConditionalTemplate	Horizontal layout and conditional warning
+BorderTemplate	Border and conditional warning
+ClockTemplate	Analog clock
+ProgressTemplate	Playback progress bar
+SliderTemplate	Slider meter (display only)
+ShapesTemplate	Shapes, positioning and conditional colour
+SectorTemplate	Sector with calculated angle
+PolygonTemplate	Polygon with custom vertices
+EditorAlreadyOpen	The editor window is already open.
+EditorMissing	Editor executable not found. Reinstall a package that includes the native editor.
+EditorStartFailed	Could not start the editor.
+EditorOpened	Editor opened. Changes are applied to this draft. Save in Macro Deck to finish.
+EditorResponseTooLarge	The editor response is too large.
+EditorConflict	The XML was changed elsewhere, so editor updates were stopped. Copy your work before reopening the editor.
+EditorApplied	Editor changes applied to the draft. Save in Macro Deck to finish.
+AlreadyOpen	The editor is already open. Switch to it from your taskbar.
+SaveBeforeTick	Save the button before adding a display update event.
+FlowLimit	You can add up to 64 event flows.
+FlowFormat	Actions must be an array with up to 64 flows and 200000 characters.
+InvalidFlow	Invalid action flow format.
+SaveBeforeActions	Save the button before configuring actions.
+SupportedEvents	This button supports short press, long press, touch start/end and Events triggers.
+MissingComponent	The selected component was not found.
+WrapRoot	The root is a leaf component. Use Wrap in stack first.
+DuplicateRoot	The root cannot be duplicated. Wrap it in a stack first.
+DeleteRoot	The root cannot be deleted.
+InvalidNesting	Cannot move into itself, its descendants or a leaf component.
+InvalidPlacement	Invalid drop position.
+OutsideRoot	Cannot move outside the root or into a descendant.
+TextOnly	Only text components can contain text.
+ChannelLimit	The maximum of 256 channels has been reached.
+NameFormat	Names must contain 1–64 letters, digits, underscores, dots or hyphens.
+DataLength	Data must not exceed 16000 characters.
+DataObject	Data must be a JSON object.
+DataPrimitive	Values must be strings, numbers, booleans or null.
+DuplicateKey	The data contains duplicate keys.
+DataCount	Data must contain at most 64 entries.
+HistoryCount	History length must be between 2 and 120.
+CoordinateFormat	Specify coordinates as 0.2 or 20%.
+CoordinateRange	Coordinates must be between 0 and 100%.
+PointFormat	Specify each point as x,y.
+SectorBounds	Choose a center and radius that keep the sector's full circle within 0–100%.
+ConditionLength	Conditions must not exceed 1024 characters.
+ConditionComplexity	The condition is too complex.
+ConditionDepth	Conditions must not exceed 16 nesting levels.
+ConditionParentheses	The condition has an unclosed parenthesis.
+ConditionMissingValue	The condition is missing a value.
+ConditionNumber	A number in the condition is out of range.
+ConditionValue	Invalid condition value.
+ConditionOperator	The condition contains an unsupported operator.
+MathLength	Expressions must not exceed 256 characters.
+MathSymbol	The expression contains an unsupported symbol.
+MathFinite	The result is not finite. Check for division by zero.
+MathDepth	The expression is nested too deeply.
+MathNumber	Invalid number in the expression.
+MathValue	The expression needs a number or data name.
+MathClamp	The clamp minimum exceeds its maximum.
+MathFunctions	Supported functions are min, max and clamp.
+LayoutLength	Layouts must not exceed 16000 characters.
+LayoutLimit	Layouts must not exceed 64 components or 8 nesting levels.
+XmlNamespace	XML namespaces are not supported.
+StyleShape	Place style directly inside a component and leave it empty.
+StyleWhen	A style needs a when condition.
+MissingId	Each component needs an id.
+InvalidId	IDs must begin with a letter, contain at most 32 characters and be unique.
+TextElement	Place text inside a text component.
+NumberFormat	Use numeric formats such as 0, 0.00, F2, N1 or P0 (at most 6 decimal places).
+AnchorFormat	anchor must be an ISO timestamp with a time zone, e.g. 2026-09-13T12:00:00+09:00.
+AnchorRequired	When rate is nonzero, set anchor to the time positionMs was measured.
+SliderRange	For slider, max must be greater than min.
+ChartRange	For chart, max must be greater than min.
+ChartPoints	For chart, points must be an integer.
+BarRange	For bar, max must be greater than min.
+UnknownComponent	Unsupported component.
+RenderSize	The rendered output is too large. Reduce text or the number of components.
+MessageOpenError	Cannot open the editor: {detail}
+MessageCommunication	Editor communication failed: {detail}
+MessageExit	The editor exited (code {code}). Check the OS dependencies and package compatibility.
+MessagePending	Input incomplete: {detail} The last valid display is kept.
+MessageFix	Correct the input or use Reset input: {detail}
+MessageUnsupported	Unsupported component: {name}
+MessageAttribute	Unsupported attribute on {node}: {name}
+MessageChildren	Cannot place components inside {node}.
+MessageNumber	{id}: {name} must be a number between {min} and {max}.
+MessageBoolean	{name} must be true or false.
+MessageLength	Specify {name} as 0.2 or 20%.
+MessageRange	{name} must be between 0 and {max}.
+MessageInteger	{name} must be an integer.
+MessageMilliseconds	{name} must be an integer number of milliseconds.
+MessageColour	{name} must use #rrggbb format.
+MessageMathData	{name} is not a valid number for calculation.
+MessageMathRequired	The expression requires {symbol}.
+MessageConditionParse	Cannot parse the condition: {detail}
+MessageChoice	{name} must be one of: {choices}.
+ShapeCircle	○ Circle
+ShapeCapsule	▰ Capsule
+ShapePath	◇ Path
+Opacity	Opacity (0–1)
+StrokeColor	Stroke color
+StrokeWidth	Stroke width
+CornerRadius	Corner radius
+PathData	Path (absolute coordinates)
+AlphaShapes	Circle, capsule, path and alpha
+ColorFormat	Use #RGB, #RGBA, #RRGGBB or #RRGGBBAA colors.
+BarAlpha	Use the same alpha for both ends of a bar.
+BorderAlpha	Animated border colors must be opaque. Use opacity to fade the whole component.
+PolygonVertices	Separate 3–64 polygon points with semicolons.
+PathLimit	Paths must not exceed 4096 characters.
+PathSyntax	Start paths with M. Use absolute M L H V C Q A Z commands with the correct number of arguments.
+ElementPress	Element press
+ElementLongPress	Element long press
+ElementTouchStart	Element touch start
+ElementTouchEnd	Element touch end
+ElementAdjust	Element value adjusting
+ElementChange	Element value changed
+ElementEventDescription	Select an interactive component by its XML id. Slider value is scaled to min–max.
+ElementId	Element ID (XML id)
+InputValue	Input value
+InputLevel	Level (0–1)
+DataKeyLabel	Display data key
+Interactive	Enable interaction
+Step	Value step
+ChartSliderKey	Data key (chart / slider)
+SliderKeyRequired	An interactive slider needs a key to store its value.
+SliderBindingConflict	Use either key or value on a slider, not both.
+MediaControls	Multiple buttons and interactive slider
+ControlHelp	Select a target, then choose + Add event. Display update and Variable changed are under Other (updates and variables). Select the watched variable after adding Variable changed.
+InputTargetLabel	Input target
+WholeWidgetTarget	Whole button
+AddInputEventLabel	Add event
+AddInputEventPrompt	+ Add event
+AddVariableChanged	+ Variable changed
+EventAlreadyExists	An event with these conditions already exists.
+EventAdded	Event added. Configure its actions and save.
+InvalidInputEvent	Invalid event type.
+ChooseInputTarget	Select an input component supported by this event.
+WholeWidgetEventOnly	This event targets the whole button.
+OtherEventCategory	Other (updates and variables)
+VariableChangedMenu	Variable changed
+DrawingMenu	Drawing menu

@@ -1,0 +1,14 @@
+<stack id="container" direction="vertical">
+  <layer id="canvas">
+    <polygon id="arrow" points="10%,35%;55%,35%;55%,10%;90%,50%;55%,90%;55%,65%;10%,65%" color="#a04080" />
+    <circle id="circle" x="5%" y="5%" width="50%" height="50%" color="#2196f3b0" strokeColor="#ffffff80" strokeWidth="2%" />
+    <capsule id="pill" x="25%" y="12.5%" width="65%" height="25%" color="#ff9500b0" />
+    <sector id="sector" radius="40%" startAngle="-90" sweepAngle="45" color="#ffff00a0" />
+    <rect id="panel" width="30%" height="30%" color="#408000" x="50%" y="50%" />
+    <path id="curve" x="12%" y="60%" width="76%" height="25%" data="M0 1 C0.2 0 0.8 0 1 1" color="transparent" strokeColor="#54dfcc" strokeWidth="5%" />
+    <line id="line" x1="5%" y1="50%" x2="50%" y2="95%" thickness="2%" color="#ff0000" />
+    <stack id="stack_desc" direction="vertical" justify="center" align="center">
+      <text id="description" size="18%" align="center">SHAPE</text>
+    </stack>
+  </layer>
+</stack>

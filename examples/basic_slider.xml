@@ -1,0 +1,4 @@
+<stack id="content" padding="8%" gap="4%">
+  <slider id="meter" value="{{value}}" min="0" max="100" direction="horizontal" thickness="4%" color="#54dfcc" />
+  <text id="reading" size="17%" align="center">{{value:0}}%</text>
+</stack>

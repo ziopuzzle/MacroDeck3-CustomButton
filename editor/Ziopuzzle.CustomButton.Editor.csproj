@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifiers>win-x64;osx-arm64;osx-x64;linux-x64;linux-arm64</RuntimeIdentifiers>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Ziopuzzle.CustomButton</RootNamespace>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../src/ControlInput.cs" Link="Shared/ControlInput.cs" />
+    <Compile Include="../src/DisplayFormat.cs" Link="Shared/DisplayFormat.cs" />
+    <Compile Include="../src/DisplayAnimation.cs" Link="Shared/DisplayAnimation.cs" />
+    <Compile Include="../src/ColorInterpolation.cs" Link="Shared/ColorInterpolation.cs" />
+    <Compile Include="../src/TextCatalog.cs" Link="Shared/TextCatalog.cs" />
+    <EmbeddedResource Include="../src/Localization/Strings*.resx" Link="Localization/%(Filename)%(Extension)" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.21" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.21" />
+    <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.3.21" />
+    <PackageReference Include="MacroDeck.Ui" Version="3.0.0-beta.14" />
+    <Compile Include="../src/ShapePaths.cs;../src/DisplayColor.cs;../src/AlphaPaint.cs;../src/DisplayMath.cs;../src/LayoutDropPlacement.cs;../src/LayoutOptions.cs;../src/LayoutDocument.cs;../src/LayoutEditHistory.cs;../src/LayoutRenderer.cs;../src/DataHub.cs;../src/DisplayCondition.cs;../src/PreviewSelection.cs" Link="Shared/%(Filename)%(Extension)" />
+    <Compile Include="../src/LocalShapePath.cs" Link="Shared/LocalShapePath.cs" />
+  </ItemGroup>
+</Project>
+
+

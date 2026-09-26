@@ -1,0 +1,4 @@
+<stack id="content" background="{{color}}" transitionMs="1000" transitionProperties="background" easing="linear" justify="center" align="center">
+  <text id="text1" size="18%" align="center">Animation</text>
+  <text id="text2" size="18%" align="center" color="{{color}}">{{color}}</text>
+</stack>

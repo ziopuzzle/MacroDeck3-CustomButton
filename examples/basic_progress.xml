@@ -1,0 +1,6 @@
+<stack id="content" padding="8%" gap="6%" justify="center">
+  <text id="title" size="12%" align="center" wrap="true" maxLines="2">{{title}}</text>
+  <progress-bar id="progress" positionMs="{{position}}" durationMs="{{duration}}" rate="0" thickness="6%" />
+  <text id="time" size="12%" align="center">{{= floor(position / 1000):duration}} / {{= floor(duration / 1000):duration}}</text>
+  <text id="remaining" size="9%" align="center" color="#aabbcc">Remaining {{= floor(max(duration - position, 0) / 1000):duration}}</text>
+</stack>

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="src/Ziopuzzle.CustomButton.csproj" />
+  <Project Path="tests/Ziopuzzle.CustomButton.Tests.csproj" />
+  <Project Path="editor/Ziopuzzle.CustomButton.Editor.csproj" />
+  <Project Path="editor.tests/Ziopuzzle.CustomButton.Editor.Tests.csproj" />
+</Solution>

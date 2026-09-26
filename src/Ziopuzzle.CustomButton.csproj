@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifiers>win-x64;osx-arm64;osx-x64;linux-x64;linux-arm64</RuntimeIdentifiers>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <UserSecretsId>Ziopuzzle.CustomButton.Development</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="MacroDeck.Plugin.Hosting" Version="3.0.0-beta.14" />
+    <PackageReference Include="MacroDeck.Plugin.Serilog" Version="3.0.0-beta.14" />
+    <PackageReference Include="MacroDeck.Ui" Version="3.0.0-beta.14" />
+    <PackageReference Include="MacroDeck.Plugin.Analyzers" Version="3.0.0-beta.14" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../examples/*.xml;../examples/*.json" LogicalName="Templates.%(Filename)%(Extension)" />
+    <Content Include="manifest.json;macrodeck-build.json;Assets/icon.svg" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
+
+

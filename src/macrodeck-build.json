@@ -1,0 +1,60 @@
+{
+  "targets": {
+    "win-x64": {
+      "arguments": [
+        "-NoProfile",
+        "-File",
+        "../scripts/Publish-Target.ps1",
+        "-Runtime",
+        "win-x64"
+      ],
+      "output": "bin/publish/store-win-x64",
+      "executable": "pwsh"
+    },
+    "osx-arm64": {
+      "arguments": [
+        "-NoProfile",
+        "-File",
+        "../scripts/Publish-Target.ps1",
+        "-Runtime",
+        "osx-arm64"
+      ],
+      "output": "bin/publish/store-osx-arm64",
+      "executable": "pwsh"
+    },
+    "osx-x64": {
+      "arguments": [
+        "-NoProfile",
+        "-File",
+        "../scripts/Publish-Target.ps1",
+        "-Runtime",
+        "osx-x64"
+      ],
+      "output": "bin/publish/store-osx-x64",
+      "executable": "pwsh"
+    },
+    "linux-x64": {
+      "arguments": [
+        "-NoProfile",
+        "-File",
+        "../scripts/Publish-Target.ps1",
+        "-Runtime",
+        "linux-x64"
+      ],
+      "output": "bin/publish/store-linux-x64",
+      "executable": "pwsh"
+    },
+    "linux-arm64": {
+      "arguments": [
+        "-NoProfile",
+        "-File",
+        "../scripts/Publish-Target.ps1",
+        "-Runtime",
+        "linux-arm64"
+      ],
+      "output": "bin/publish/store-linux-arm64",
+      "executable": "pwsh"
+    }
+  },
+  "version": 1
+}

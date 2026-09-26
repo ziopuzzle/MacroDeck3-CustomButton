@@ -1,0 +1,17 @@
+<stack id="background" padding="0.0" gap="0">
+  <layer id="history" fill="true">
+    <chart id="plot" key="chart_value" min="0" max="100" points="40" color="#2196f3" plotTop="0.66" />
+    <stack id="history_text" direction="vertical" padding="0.09" gap="0.03">
+      <stack id="labels" direction="vertical" justify="start" align="start" padding="0" gap="0">
+        <text id="title" size="0.11" sizeCap="13" weight="semibold" color="#ffffff">{{chart_title}}</text>
+        <text id="subtitle" size="0.08" sizeCap="11" color="#666666">{{chart_desc}}</text>
+      </stack>
+    </stack>
+    <stack id="reading" direction="vertical" justify="center" align="center">
+      <stack id="valueRow" direction="horizontal" justify="center" align="baseline" gap="0.05">
+        <text id="value" fill="false" size="0.26" sizeCap="34" weight="bold" color="#ffffff">{{chart_value:0}}</text>
+        <text id="unit" fill="false" size="0.12" sizeCap="14.5" weight="semibold" color="#a0a0a0">%</text>
+      </stack>
+    </stack>
+  </layer>
+</stack>

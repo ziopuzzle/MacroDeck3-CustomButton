@@ -1,0 +1,773 @@
+<root>
+  <data name="Channel" xml:space="preserve">
+    <value>Channel</value>
+  </data>
+  <data name="ChannelHelp" xml:space="preserve">
+    <value>Use the same channel as the update action. Buttons on the same channel share data.</value>
+  </data>
+  <data name="DataHint" xml:space="preserve">
+    <value>Use matching data names in your update actions and display layout.</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="Drawing" xml:space="preserve">
+    <value>Drawing</value>
+  </data>
+  <data name="FlowHelp" xml:space="preserve">
+    <value>Configure actions for each event and save before testing. Check event targets after duplicating a button.</value>
+  </data>
+  <data name="AddTick" xml:space="preserve">
+    <value>＋ Add display update (1 second)</value>
+  </data>
+  <data name="InitialJson" xml:space="preserve">
+    <value>Initial data JSON (before receiving data)</value>
+  </data>
+  <data name="DrawingXml" xml:space="preserve">
+    <value>Drawing XML</value>
+  </data>
+  <data name="OpenEditor" xml:space="preserve">
+    <value>Open editor</value>
+  </data>
+  <data name="Templates" xml:space="preserve">
+    <value>Templates</value>
+  </data>
+  <data name="EditorHelp" xml:space="preserve">
+    <value>Build the layout in a separate editor window. The preview remains on this screen.</value>
+  </data>
+  <data name="HistoryHelp" xml:space="preserve">
+    <value>While displayed, the current value is sampled every second. To fetch new variable values, add a data update action to the display update event under Actions.</value>
+  </data>
+  <data name="WidgetDescription" xml:space="preserve">
+    <value>A button rendered from templates and variable data</value>
+  </data>
+  <data name="SetValue" xml:space="preserve">
+    <value>Set display value</value>
+  </data>
+  <data name="SetValueHelp" xml:space="preserve">
+    <value>Update one value on a channel. The value can be bound to a Macro Deck variable.</value>
+  </data>
+  <data name="DataName" xml:space="preserve">
+    <value>Data name</value>
+  </data>
+  <data name="BindableValue" xml:space="preserve">
+    <value>Value (supports variable bindings)</value>
+  </data>
+  <data name="SetJson" xml:space="preserve">
+    <value>Set display data from JSON</value>
+  </data>
+  <data name="SetJsonHelp" xml:space="preserve">
+    <value>Replace all data on a channel with a JSON object.</value>
+  </data>
+  <data name="DataJson" xml:space="preserve">
+    <value>Data JSON</value>
+  </data>
+  <data name="ShortPress" xml:space="preserve">
+    <value>Short press</value>
+  </data>
+  <data name="LongPress" xml:space="preserve">
+    <value>Long press</value>
+  </data>
+  <data name="TouchStart" xml:space="preserve">
+    <value>Touch start</value>
+  </data>
+  <data name="TouchEnd" xml:space="preserve">
+    <value>Touch end</value>
+  </data>
+  <data name="DisplayTick" xml:space="preserve">
+    <value>Display update (1 second)</value>
+  </data>
+  <data name="EventHelp" xml:space="preserve">
+    <value>Runs while the target button is displayed or interacted with. Check the target after duplicating a button.</value>
+  </data>
+  <data name="TargetWidget" xml:space="preserve">
+    <value>Target widget</value>
+  </data>
+  <data name="TargetWidgetId" xml:space="preserve">
+    <value>Target widget ID</value>
+  </data>
+  <data name="EditorLanguage" xml:space="preserve">
+    <value>External editor language</value>
+  </data>
+  <data name="EditorLanguageHelp" xml:space="preserve">
+    <value>The host does not expose its language to the external editor. Automatic uses the OS language. Reopen the editor after changing this setting.</value>
+  </data>
+  <data name="Automatic" xml:space="preserve">
+    <value>Automatic (OS language)</value>
+  </data>
+  <data name="Stack" xml:space="preserve">
+    <value>▤ Stack</value>
+  </data>
+  <data name="Layer" xml:space="preserve">
+    <value>▧ Layer</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>T Text</value>
+  </data>
+  <data name="Bar" xml:space="preserve">
+    <value>━ Bar</value>
+  </data>
+  <data name="Chart" xml:space="preserve">
+    <value>⌁ History graph</value>
+  </data>
+  <data name="Clock" xml:space="preserve">
+    <value>◷ Clock</value>
+  </data>
+  <data name="Progress" xml:space="preserve">
+    <value>▷ Playback progress</value>
+  </data>
+  <data name="Slider" xml:space="preserve">
+    <value>● Slider</value>
+  </data>
+  <data name="Rect" xml:space="preserve">
+    <value>▰ Rectangle</value>
+  </data>
+  <data name="Line" xml:space="preserve">
+    <value>╱ Line (horizontal / vertical)</value>
+  </data>
+  <data name="Polygon" xml:space="preserve">
+    <value>△ Polygon</value>
+  </data>
+  <data name="Sector" xml:space="preserve">
+    <value>◔ Sector</value>
+  </data>
+  <data name="EditorTitle" xml:space="preserve">
+    <value>Custom Button — Layout editor</value>
+  </data>
+  <data name="Layout" xml:space="preserve">
+    <value>Layout</value>
+  </data>
+  <data name="Undo" xml:space="preserve">
+    <value>↶ Undo</value>
+  </data>
+  <data name="Redo" xml:space="preserve">
+    <value>↷ Redo</value>
+  </data>
+  <data name="ApplyXml" xml:space="preserve">
+    <value>Apply XML</value>
+  </data>
+  <data name="Format" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="EditorInstructions" xml:space="preserve">
+    <value>Add with ＋ and drag ⠿ to move. Preview and save in Macro Deck.</value>
+  </data>
+  <data name="AddComponent" xml:space="preserve">
+    <value>＋ Add component</value>
+  </data>
+  <data name="PendingTitle" xml:space="preserve">
+    <value>Unapplied input</value>
+  </data>
+  <data name="PendingQuestion" xml:space="preserve">
+    <value>There is unapplied input. Apply it before closing?</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Discard" xml:space="preserve">
+    <value>Discard</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Conflict" xml:space="preserve">
+    <value>Conflicting changes detected. Copy the XML, then close and reopen the editor.</value>
+  </data>
+  <data name="Published" xml:space="preserve">
+    <value>Changes sent to the draft. Save in Macro Deck to finish.</value>
+  </data>
+  <data name="HostConflict" xml:space="preserve">
+    <value>The layout was changed in Macro Deck. Copy the XML, then close and reopen the editor.</value>
+  </data>
+  <data name="CheckInput" xml:space="preserve">
+    <value>Check input</value>
+  </data>
+  <data name="ResetInput" xml:space="preserve">
+    <value>Reset input</value>
+  </data>
+  <data name="AutoApply" xml:space="preserve">
+    <value>Valid settings are applied automatically.</value>
+  </data>
+  <data name="DisplayText" xml:space="preserve">
+    <value>Display text</value>
+  </data>
+  <data name="SizeVisibility" xml:space="preserve">
+    <value>Size and visibility</value>
+  </data>
+  <data name="ConditionExpression" xml:space="preserve">
+    <value>Condition expression</value>
+  </data>
+  <data name="DeleteCondition" xml:space="preserve">
+    <value>Delete this condition</value>
+  </data>
+  <data name="Condition" xml:space="preserve">
+    <value>Condition</value>
+  </data>
+  <data name="ConditionPrefix" xml:space="preserve">
+    <value>Condition: </value>
+  </data>
+  <data name="FixInput" xml:space="preserve">
+    <value>Please correct the input.</value>
+  </data>
+  <data name="AddStyle" xml:space="preserve">
+    <value>＋ Conditional style</value>
+  </data>
+  <data name="FieldHelp" xml:space="preserve">
+    <value>Leave blank for the default. Insert {{{{dataName}}}} or calculate with {{{{= used / total * 100}}}}%.</value>
+  </data>
+  <data name="PickColour" xml:space="preserve">
+    <value>Click to choose a colour</value>
+  </data>
+  <data name="Suggestions" xml:space="preserve">
+    <value>Suggested values</value>
+  </data>
+  <data name="ResetDefault" xml:space="preserve">
+    <value>Use default</value>
+  </data>
+  <data name="InsertData" xml:space="preserve">
+    <value>Insert display data</value>
+  </data>
+  <data name="CenterX" xml:space="preserve">
+    <value>Center X</value>
+  </data>
+  <data name="CenterY" xml:space="preserve">
+    <value>Center Y</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>Radius</value>
+  </data>
+  <data name="StartAngle" xml:space="preserve">
+    <value>Start angle (degrees)</value>
+  </data>
+  <data name="SweepAngle" xml:space="preserve">
+    <value>Sweep angle (degrees)</value>
+  </data>
+  <data name="Points" xml:space="preserve">
+    <value>Point count / polygon coordinates (x,y; x,y; …)</value>
+  </data>
+  <data name="PositionX" xml:space="preserve">
+    <value>Position from left</value>
+  </data>
+  <data name="PositionY" xml:space="preserve">
+    <value>Position from top</value>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>Width</value>
+  </data>
+  <data name="Height" xml:space="preserve">
+    <value>Height</value>
+  </data>
+  <data name="Length" xml:space="preserve">
+    <value>Line length</value>
+  </data>
+  <data name="Corner" xml:space="preserve">
+    <value>Corners (square / rounded)</value>
+  </data>
+  <data name="Direction" xml:space="preserve">
+    <value>Direction</value>
+  </data>
+  <data name="Colour" xml:space="preserve">
+    <value>Colour</value>
+  </data>
+  <data name="Background" xml:space="preserve">
+    <value>Background colour</value>
+  </data>
+  <data name="TextSize" xml:space="preserve">
+    <value>Text size (e.g. 18%)</value>
+  </data>
+  <data name="MainSize" xml:space="preserve">
+    <value>Main-axis size</value>
+  </data>
+  <data name="Fill" xml:space="preserve">
+    <value>Fill remaining space</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>Visible</value>
+  </data>
+  <data name="VisibleWhen" xml:space="preserve">
+    <value>Visibility condition</value>
+  </data>
+  <data name="Padding" xml:space="preserve">
+    <value>Padding</value>
+  </data>
+  <data name="Gap" xml:space="preserve">
+    <value>Gap between components</value>
+  </data>
+  <data name="Align" xml:space="preserve">
+    <value>Cross-axis alignment</value>
+  </data>
+  <data name="Justify" xml:space="preserve">
+    <value>Main-axis alignment</value>
+  </data>
+  <data name="BorderStyle" xml:space="preserve">
+    <value>Border style</value>
+  </data>
+  <data name="BorderColour" xml:space="preserve">
+    <value>Border colour</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Display value</value>
+  </data>
+  <data name="Minimum" xml:space="preserve">
+    <value>Minimum</value>
+  </data>
+  <data name="Maximum" xml:space="preserve">
+    <value>Maximum</value>
+  </data>
+  <data name="HistoryKey" xml:space="preserve">
+    <value>History data name</value>
+  </data>
+  <data name="Thickness" xml:space="preserve">
+    <value>Thickness</value>
+  </data>
+  <data name="EndColour" xml:space="preserve">
+    <value>End colour</value>
+  </data>
+  <data name="Duplicate" xml:space="preserve">
+    <value>Duplicate</value>
+  </data>
+  <data name="WrapStack" xml:space="preserve">
+    <value>Wrap in stack</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="ApplyBeforeMove" xml:space="preserve">
+    <value>Correct or reset the pending input before moving.</value>
+  </data>
+  <data name="Inside" xml:space="preserve">
+    <value>: place inside</value>
+  </data>
+  <data name="Before" xml:space="preserve">
+    <value>: place before</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>: place after</value>
+  </data>
+  <data name="BasicTemplate" xml:space="preserve">
+    <value>Heading, value and bar</value>
+  </data>
+  <data name="ConditionalTemplate" xml:space="preserve">
+    <value>Horizontal layout and conditional warning</value>
+  </data>
+  <data name="BorderTemplate" xml:space="preserve">
+    <value>Border and conditional warning</value>
+  </data>
+  <data name="ClockTemplate" xml:space="preserve">
+    <value>Analog clock</value>
+  </data>
+  <data name="ProgressTemplate" xml:space="preserve">
+    <value>Playback progress bar</value>
+  </data>
+  <data name="SliderTemplate" xml:space="preserve">
+    <value>Slider meter (display only)</value>
+  </data>
+  <data name="ShapesTemplate" xml:space="preserve">
+    <value>Shapes, positioning and conditional colour</value>
+  </data>
+  <data name="SectorTemplate" xml:space="preserve">
+    <value>Sector with calculated angle</value>
+  </data>
+  <data name="PolygonTemplate" xml:space="preserve">
+    <value>Polygon with custom vertices</value>
+  </data>
+  <data name="EditorAlreadyOpen" xml:space="preserve">
+    <value>The editor window is already open.</value>
+  </data>
+  <data name="EditorMissing" xml:space="preserve">
+    <value>Editor executable not found. Reinstall a package that includes the native editor.</value>
+  </data>
+  <data name="EditorStartFailed" xml:space="preserve">
+    <value>Could not start the editor.</value>
+  </data>
+  <data name="EditorOpened" xml:space="preserve">
+    <value>Editor opened. Changes are applied to this draft. Save in Macro Deck to finish.</value>
+  </data>
+  <data name="EditorResponseTooLarge" xml:space="preserve">
+    <value>The editor response is too large.</value>
+  </data>
+  <data name="EditorConflict" xml:space="preserve">
+    <value>The XML was changed elsewhere, so editor updates were stopped. Copy your work before reopening the editor.</value>
+  </data>
+  <data name="EditorApplied" xml:space="preserve">
+    <value>Editor changes applied to the draft. Save in Macro Deck to finish.</value>
+  </data>
+  <data name="AlreadyOpen" xml:space="preserve">
+    <value>The editor is already open. Switch to it from your taskbar.</value>
+  </data>
+  <data name="SaveBeforeTick" xml:space="preserve">
+    <value>Save the button before adding a display update event.</value>
+  </data>
+  <data name="FlowLimit" xml:space="preserve">
+    <value>You can add up to 64 event flows.</value>
+  </data>
+  <data name="FlowFormat" xml:space="preserve">
+    <value>Actions must be an array with up to 64 flows and 200000 characters.</value>
+  </data>
+  <data name="InvalidFlow" xml:space="preserve">
+    <value>Invalid action flow format.</value>
+  </data>
+  <data name="SaveBeforeActions" xml:space="preserve">
+    <value>Save the button before configuring actions.</value>
+  </data>
+  <data name="SupportedEvents" xml:space="preserve">
+    <value>This button supports short press, long press, touch start/end and Events triggers.</value>
+  </data>
+  <data name="MissingComponent" xml:space="preserve">
+    <value>The selected component was not found.</value>
+  </data>
+  <data name="WrapRoot" xml:space="preserve">
+    <value>The root is a leaf component. Use Wrap in stack first.</value>
+  </data>
+  <data name="DuplicateRoot" xml:space="preserve">
+    <value>The root cannot be duplicated. Wrap it in a stack first.</value>
+  </data>
+  <data name="DeleteRoot" xml:space="preserve">
+    <value>The root cannot be deleted.</value>
+  </data>
+  <data name="InvalidNesting" xml:space="preserve">
+    <value>Cannot move into itself, its descendants or a leaf component.</value>
+  </data>
+  <data name="InvalidPlacement" xml:space="preserve">
+    <value>Invalid drop position.</value>
+  </data>
+  <data name="OutsideRoot" xml:space="preserve">
+    <value>Cannot move outside the root or into a descendant.</value>
+  </data>
+  <data name="TextOnly" xml:space="preserve">
+    <value>Only text components can contain text.</value>
+  </data>
+  <data name="ChannelLimit" xml:space="preserve">
+    <value>The maximum of 256 channels has been reached.</value>
+  </data>
+  <data name="NameFormat" xml:space="preserve">
+    <value>Names must contain 1–64 letters, digits, underscores, dots or hyphens.</value>
+  </data>
+  <data name="DataLength" xml:space="preserve">
+    <value>Data must not exceed 16000 characters.</value>
+  </data>
+  <data name="DataObject" xml:space="preserve">
+    <value>Data must be a JSON object.</value>
+  </data>
+  <data name="DataPrimitive" xml:space="preserve">
+    <value>Values must be strings, numbers, booleans or null.</value>
+  </data>
+  <data name="DuplicateKey" xml:space="preserve">
+    <value>The data contains duplicate keys.</value>
+  </data>
+  <data name="DataCount" xml:space="preserve">
+    <value>Data must contain at most 64 entries.</value>
+  </data>
+  <data name="HistoryCount" xml:space="preserve">
+    <value>History length must be between 2 and 120.</value>
+  </data>
+  <data name="CoordinateFormat" xml:space="preserve">
+    <value>Specify coordinates as 0.2 or 20%.</value>
+  </data>
+  <data name="CoordinateRange" xml:space="preserve">
+    <value>Coordinates must be between 0 and 100%.</value>
+  </data>
+  <data name="PointFormat" xml:space="preserve">
+    <value>Specify each point as x,y.</value>
+  </data>
+  <data name="SectorBounds" xml:space="preserve">
+    <value>Choose a center and radius that keep the sector's full circle within 0–100%.</value>
+  </data>
+  <data name="ConditionLength" xml:space="preserve">
+    <value>Conditions must not exceed 1024 characters.</value>
+  </data>
+  <data name="ConditionComplexity" xml:space="preserve">
+    <value>The condition is too complex.</value>
+  </data>
+  <data name="ConditionDepth" xml:space="preserve">
+    <value>Conditions must not exceed 16 nesting levels.</value>
+  </data>
+  <data name="ConditionParentheses" xml:space="preserve">
+    <value>The condition has an unclosed parenthesis.</value>
+  </data>
+  <data name="ConditionMissingValue" xml:space="preserve">
+    <value>The condition is missing a value.</value>
+  </data>
+  <data name="ConditionNumber" xml:space="preserve">
+    <value>A number in the condition is out of range.</value>
+  </data>
+  <data name="ConditionValue" xml:space="preserve">
+    <value>Invalid condition value.</value>
+  </data>
+  <data name="ConditionOperator" xml:space="preserve">
+    <value>The condition contains an unsupported operator.</value>
+  </data>
+  <data name="MathLength" xml:space="preserve">
+    <value>Expressions must not exceed 256 characters.</value>
+  </data>
+  <data name="MathSymbol" xml:space="preserve">
+    <value>The expression contains an unsupported symbol.</value>
+  </data>
+  <data name="MathFinite" xml:space="preserve">
+    <value>The result is not finite. Check for division by zero.</value>
+  </data>
+  <data name="MathDepth" xml:space="preserve">
+    <value>The expression is nested too deeply.</value>
+  </data>
+  <data name="MathNumber" xml:space="preserve">
+    <value>Invalid number in the expression.</value>
+  </data>
+  <data name="MathValue" xml:space="preserve">
+    <value>The expression needs a number or data name.</value>
+  </data>
+  <data name="MathClamp" xml:space="preserve">
+    <value>The clamp minimum exceeds its maximum.</value>
+  </data>
+  <data name="MathFunctions" xml:space="preserve">
+    <value>Supported functions are min, max and clamp.</value>
+  </data>
+  <data name="LayoutLength" xml:space="preserve">
+    <value>Layouts must not exceed 16000 characters.</value>
+  </data>
+  <data name="LayoutLimit" xml:space="preserve">
+    <value>Layouts must not exceed 64 components or 8 nesting levels.</value>
+  </data>
+  <data name="XmlNamespace" xml:space="preserve">
+    <value>XML namespaces are not supported.</value>
+  </data>
+  <data name="StyleShape" xml:space="preserve">
+    <value>Place style directly inside a component and leave it empty.</value>
+  </data>
+  <data name="StyleWhen" xml:space="preserve">
+    <value>A style needs a when condition.</value>
+  </data>
+  <data name="MissingId" xml:space="preserve">
+    <value>Each component needs an id.</value>
+  </data>
+  <data name="InvalidId" xml:space="preserve">
+    <value>IDs must begin with a letter, contain at most 32 characters and be unique.</value>
+  </data>
+  <data name="TextElement" xml:space="preserve">
+    <value>Place text inside a text component.</value>
+  </data>
+  <data name="NumberFormat" xml:space="preserve">
+    <value>Use numeric formats such as 0, 0.00, F2, N1 or P0 (at most 6 decimal places).</value>
+  </data>
+  <data name="AnchorFormat" xml:space="preserve">
+    <value>anchor must be an ISO timestamp with a time zone, e.g. 2026-09-13T12:00:00+09:00.</value>
+  </data>
+  <data name="AnchorRequired" xml:space="preserve">
+    <value>When rate is nonzero, set anchor to the time positionMs was measured.</value>
+  </data>
+  <data name="SliderRange" xml:space="preserve">
+    <value>For slider, max must be greater than min.</value>
+  </data>
+  <data name="ChartRange" xml:space="preserve">
+    <value>For chart, max must be greater than min.</value>
+  </data>
+  <data name="ChartPoints" xml:space="preserve">
+    <value>For chart, points must be an integer.</value>
+  </data>
+  <data name="BarRange" xml:space="preserve">
+    <value>For bar, max must be greater than min.</value>
+  </data>
+  <data name="UnknownComponent" xml:space="preserve">
+    <value>Unsupported component.</value>
+  </data>
+  <data name="RenderSize" xml:space="preserve">
+    <value>The rendered output is too large. Reduce text or the number of components.</value>
+  </data>
+  <data name="MessageOpenError" xml:space="preserve">
+    <value>Cannot open the editor: {detail}</value>
+  </data>
+  <data name="MessageCommunication" xml:space="preserve">
+    <value>Editor communication failed: {detail}</value>
+  </data>
+  <data name="MessageExit" xml:space="preserve">
+    <value>The editor exited (code {code}). Check the OS dependencies and package compatibility.</value>
+  </data>
+  <data name="MessagePending" xml:space="preserve">
+    <value>Input incomplete: {detail} The last valid display is kept.</value>
+  </data>
+  <data name="MessageFix" xml:space="preserve">
+    <value>Correct the input or use Reset input: {detail}</value>
+  </data>
+  <data name="MessageUnsupported" xml:space="preserve">
+    <value>Unsupported component: {name}</value>
+  </data>
+  <data name="MessageAttribute" xml:space="preserve">
+    <value>Unsupported attribute on {node}: {name}</value>
+  </data>
+  <data name="MessageChildren" xml:space="preserve">
+    <value>Cannot place components inside {node}.</value>
+  </data>
+  <data name="MessageNumber" xml:space="preserve">
+    <value>{id}: {name} must be a number between {min} and {max}.</value>
+  </data>
+  <data name="MessageBoolean" xml:space="preserve">
+    <value>{name} must be true or false.</value>
+  </data>
+  <data name="MessageLength" xml:space="preserve">
+    <value>Specify {name} as 0.2 or 20%.</value>
+  </data>
+  <data name="MessageRange" xml:space="preserve">
+    <value>{name} must be between 0 and {max}.</value>
+  </data>
+  <data name="MessageInteger" xml:space="preserve">
+    <value>{name} must be an integer.</value>
+  </data>
+  <data name="MessageMilliseconds" xml:space="preserve">
+    <value>{name} must be an integer number of milliseconds.</value>
+  </data>
+  <data name="MessageColour" xml:space="preserve">
+    <value>{name} must use #rrggbb format.</value>
+  </data>
+  <data name="MessageMathData" xml:space="preserve">
+    <value>{name} is not a valid number for calculation.</value>
+  </data>
+  <data name="MessageMathRequired" xml:space="preserve">
+    <value>The expression requires {symbol}.</value>
+  </data>
+  <data name="MessageConditionParse" xml:space="preserve">
+    <value>Cannot parse the condition: {detail}</value>
+  </data>
+  <data name="MessageChoice" xml:space="preserve">
+    <value>{name} must be one of: {choices}.</value>
+  </data>
+  <data name="ShapeCircle" xml:space="preserve">
+    <value>○ Circle</value>
+  </data>
+  <data name="ShapeCapsule" xml:space="preserve">
+    <value>▰ Capsule</value>
+  </data>
+  <data name="ShapePath" xml:space="preserve">
+    <value>◇ Path</value>
+  </data>
+  <data name="Opacity" xml:space="preserve">
+    <value>Opacity (0–1)</value>
+  </data>
+  <data name="StrokeColor" xml:space="preserve">
+    <value>Stroke color</value>
+  </data>
+  <data name="StrokeWidth" xml:space="preserve">
+    <value>Stroke width</value>
+  </data>
+  <data name="CornerRadius" xml:space="preserve">
+    <value>Corner radius</value>
+  </data>
+  <data name="PathData" xml:space="preserve">
+    <value>Path (absolute coordinates)</value>
+  </data>
+  <data name="AlphaShapes" xml:space="preserve">
+    <value>Circle, capsule, path and alpha</value>
+  </data>
+  <data name="ColorFormat" xml:space="preserve">
+    <value>Use #RGB, #RGBA, #RRGGBB or #RRGGBBAA colors.</value>
+  </data>
+  <data name="BarAlpha" xml:space="preserve">
+    <value>Use the same alpha for both ends of a bar.</value>
+  </data>
+  <data name="BorderAlpha" xml:space="preserve">
+    <value>Animated border colors must be opaque. Use opacity to fade the whole component.</value>
+  </data>
+  <data name="PolygonVertices" xml:space="preserve">
+    <value>Separate 3–64 polygon points with semicolons.</value>
+  </data>
+  <data name="PathLimit" xml:space="preserve">
+    <value>Paths must not exceed 4096 characters.</value>
+  </data>
+  <data name="PathSyntax" xml:space="preserve">
+    <value>Start paths with M. Use absolute M L H V C Q A Z commands with the correct number of arguments.</value>
+  </data>
+  <data name="ElementPress" xml:space="preserve">
+    <value>Element press</value>
+  </data>
+  <data name="ElementLongPress" xml:space="preserve">
+    <value>Element long press</value>
+  </data>
+  <data name="ElementTouchStart" xml:space="preserve">
+    <value>Element touch start</value>
+  </data>
+  <data name="ElementTouchEnd" xml:space="preserve">
+    <value>Element touch end</value>
+  </data>
+  <data name="ElementAdjust" xml:space="preserve">
+    <value>Element value adjusting</value>
+  </data>
+  <data name="ElementChange" xml:space="preserve">
+    <value>Element value changed</value>
+  </data>
+  <data name="ElementEventDescription" xml:space="preserve">
+    <value>Select an interactive component by its XML id. Slider value is scaled to min–max.</value>
+  </data>
+  <data name="ElementId" xml:space="preserve">
+    <value>Element ID (XML id)</value>
+  </data>
+  <data name="InputValue" xml:space="preserve">
+    <value>Input value</value>
+  </data>
+  <data name="InputLevel" xml:space="preserve">
+    <value>Level (0–1)</value>
+  </data>
+  <data name="DataKeyLabel" xml:space="preserve">
+    <value>Display data key</value>
+  </data>
+  <data name="Interactive" xml:space="preserve">
+    <value>Enable interaction</value>
+  </data>
+  <data name="Step" xml:space="preserve">
+    <value>Value step</value>
+  </data>
+  <data name="ChartSliderKey" xml:space="preserve">
+    <value>Data key (chart / slider)</value>
+  </data>
+  <data name="SliderKeyRequired" xml:space="preserve">
+    <value>An interactive slider needs a key to store its value.</value>
+  </data>
+  <data name="SliderBindingConflict" xml:space="preserve">
+    <value>Use either key or value on a slider, not both.</value>
+  </data>
+  <data name="MediaControls" xml:space="preserve">
+    <value>Multiple buttons and interactive slider</value>
+  </data>
+  <data name="ControlHelp" xml:space="preserve">
+    <value>Select a target, then choose + Add event. Display update and Variable changed are under Other (updates and variables). Select the watched variable after adding Variable changed.</value>
+  </data>
+  <data name="InputTargetLabel" xml:space="preserve">
+    <value>Input target</value>
+  </data>
+  <data name="WholeWidgetTarget" xml:space="preserve">
+    <value>Whole button</value>
+  </data>
+  <data name="AddInputEventLabel" xml:space="preserve">
+    <value>Add event</value>
+  </data>
+  <data name="AddInputEventPrompt" xml:space="preserve">
+    <value>+ Add event</value>
+  </data>
+  <data name="AddVariableChanged" xml:space="preserve">
+    <value>+ Variable changed</value>
+  </data>
+  <data name="EventAlreadyExists" xml:space="preserve">
+    <value>An event with these conditions already exists.</value>
+  </data>
+  <data name="EventAdded" xml:space="preserve">
+    <value>Event added. Configure its actions and save.</value>
+  </data>
+  <data name="InvalidInputEvent" xml:space="preserve">
+    <value>Invalid event type.</value>
+  </data>
+  <data name="ChooseInputTarget" xml:space="preserve">
+    <value>Select an input component supported by this event.</value>
+  </data>
+  <data name="WholeWidgetEventOnly" xml:space="preserve">
+    <value>This event targets the whole button.</value>
+  </data>
+  <data name="OtherEventCategory" xml:space="preserve">
+    <value>Other (updates and variables)</value>
+  </data>
+  <data name="VariableChangedMenu" xml:space="preserve">
+    <value>Variable changed</value>
+  </data>
+  <data name="DrawingMenu" xml:space="preserve">
+    <value>Drawing menu</value>
+  </data>
+</root>

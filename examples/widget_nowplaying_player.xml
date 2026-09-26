@@ -1,0 +1,37 @@
+<stack id="container" direction="vertical" background="#1a1a1a">
+  <layer id="playerContainer">
+    <layer id="player" visible="true" visibleWhen="connected == true">
+      <image id="artwork" source="{{artwork}}" size="100%" brightness="0.5" saturation="1" transition="crossfade" fit="contain" />
+      <stack id="content" padding="8%" gap="0%" justify="end">
+        <stack id="titleLabel" direction="vertical" padding="2%" gap="1%" background="#00000080">
+          <text id="title" size="10%" align="center" maxLines="2">{{title}}</text>
+          <text id="artist" size="6%" align="center" maxLines="2" color="#999999">{{artist}}</text>
+        </stack>
+        <stack id="controls" direction="horizontal" mainSize="auto" gap="3%">
+          <stack id="previous" interactive="true" fill="true" padding="5%" justify="center" align="center">
+            <text id="previousLabel" size="12%" align="center">＜</text>
+          </stack>
+          <stack id="playPause" interactive="true" justify="center" align="center" fill="true" padding="5%">
+            <text id="playLabel" size="12%" align="center" visible="true" visibleWhen="playing == false">▶</text>
+            <text id="pauseLabel" size="12%" align="center" visible="true" visibleWhen="playing == true">ll</text>
+          </stack>
+          <stack id="next" interactive="true" justify="center" align="center" fill="true" padding="5%">
+            <text id="nextLabel" size="12%" align="center">＞</text>
+          </stack>
+        </stack>
+        <stack id="spacer1" direction="vertical" padding="3%" />
+        <stack id="progress_container" direction="vertical" gap="5%">
+          <slider id="progress" key="position" min="0" max="{{= max(1,duration)}}" step="1" color="#8c8c92" interactive="true" thickness="5%" />
+          <stack id="duration_wrapper" direction="vertical" justify="end" align="end">
+            <text id="duration_mmss" size="10%" align="end" visible="true" visibleWhen="duration &lt; 3600">{{position:duration:mm:ss}} / {{duration:duration:mm:ss}}</text>
+            <text id="duration_hhmmss" size="10%" align="end" visible="true" visibleWhen="duration &gt;= 3600">{{position:duration:hh:mm:ss}} / {{duration:duration:hh:mm:ss}}</text>
+          </stack>
+        </stack>
+      </stack>
+    </layer>
+    <stack id="notConnected" direction="vertical" justify="center" align="center" visible="true" visibleWhen="connected == false">
+      <text id="notConnected_text1" size="12%" align="center">Not connected to</text>
+      <text id="notConnected_text2" size="12%" align="center">WebNowPlaying</text>
+    </stack>
+  </layer>
+</stack>

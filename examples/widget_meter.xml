@@ -1,0 +1,17 @@
+<stack id="content" direction="vertical" padding="0" gap="0.05" justify="center" align="stretch">
+  <layer id="meter">
+    <sector id="back" radius="48%" startAngle="-225" sweepAngle="270" coordinates="local" color="#ffffff" cx="50%" cy="50%" />
+    <layer id="guide">
+      <line id="guide1" thickness="2%" color="#000000" coordinates="local" length="0.08" angle="{{=-225+27*1}}" cx="{{= 0.5+0.4*cos(6.28*(135+27*1)/360)}}" cy="{{= 0.5+0.4*sin(6.28*(135+27*1)/360)}}" />
+      <line id="guide2" thickness="2%" color="#000000" coordinates="local" length="0.08" angle="{{=-225+27*2}}" cx="{{= 0.5+0.4*cos(6.28*(135+27*2)/360)}}" cy="{{= 0.5+0.4*sin(6.28*(135+27*2)/360)}}" />
+      <line id="guide3" thickness="2%" color="#000000" coordinates="local" length="0.08" angle="{{=-225+27*3}}" cx="{{= 0.5+0.4*cos(6.28*(135+27*3)/360)}}" cy="{{= 0.5+0.4*sin(6.28*(135+27*3)/360)}}" />
+      <line id="guide4" thickness="2%" color="#000000" coordinates="local" length="0.08" angle="{{=-225+27*4}}" cx="{{= 0.5+0.4*cos(6.28*(135+27*4)/360)}}" cy="{{= 0.5+0.4*sin(6.28*(135+27*4)/360)}}" />
+      <line id="guide5" thickness="2%" color="#000000" coordinates="local" length="0.08" angle="{{=-225+27*5}}" cx="{{= 0.5+0.4*cos(6.28*(135+27*5)/360)}}" cy="{{= 0.5+0.4*sin(6.28*(135+27*5)/360)}}" />
+      <line id="guide6" thickness="2%" color="#000000" coordinates="local" length="0.08" angle="{{=-225+27*6}}" cx="{{= 0.5+0.4*cos(6.28*(135+27*6)/360)}}" cy="{{= 0.5+0.4*sin(6.28*(135+27*6)/360)}}" />
+      <line id="guide7" thickness="2%" color="#000000" coordinates="local" length="0.08" angle="{{=-225+27*7}}" cx="{{= 0.5+0.4*cos(6.28*(135+27*7)/360)}}" cy="{{= 0.5+0.4*sin(6.28*(135+27*7)/360)}}" />
+      <line id="guide8" thickness="2%" color="#000000" coordinates="local" length="0.08" angle="{{=-225+27*8}}" cx="{{= 0.5+0.4*cos(6.28*(135+27*8)/360)}}" cy="{{= 0.5+0.4*sin(6.28*(135+27*8)/360)}}" />
+      <line id="guide9" thickness="2%" color="#000000" coordinates="local" length="0.08" angle="{{=-225+27*9}}" cx="{{= 0.5+0.4*cos(6.28*(135+27*9)/360)}}" cy="{{= 0.5+0.4*sin(6.28*(135+27*9)/360)}}" />
+    </layer>
+    <line id="value" thickness="2%" color="#ff0000" coordinates="local" transitionMs="100" transitionProperties="angle" easing="ease-out" length="0.48" cx="50%" cy="50%" angle="{{= -225 + clamp(value, 0, 100) / 100 * 270}}" />
+  </layer>
+</stack>

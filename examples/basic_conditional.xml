@@ -1,0 +1,6 @@
+<stack id="content" justify="center" padding="6%" gap="4%">
+  <text id="description" size="18%">value &gt;= 80 to Red</text>
+  <bar id="bar" value="{{value}}" min="0" max="100" thickness="8%" color="#54dfcc">
+    <style when="value &gt;= 80" color="#f66" />
+  </bar>
+</stack>

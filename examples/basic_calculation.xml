@@ -1,0 +1,12 @@
+<layer id="canvas">
+  <stack id="stackSector">
+    <layer id="layerSector">
+      <sector id="back" cx="50%" cy="50%" radius="42%" startAngle="0" sweepAngle="360" color="#246058" />
+      <sector id="front" cx="50%" cy="50%" radius="42%" startAngle="-90" sweepAngle="{{= clamp(value / 100, 0, 1) * 360}}" color="#54dfcc" transitionMs="300" transitionProperties="sweepAngle" easing="ease-out" />
+    </layer>
+  </stack>
+  <stack id="label" justify="center" align="stretch">
+    <text id="description" size="16%" color="#ffffff" align="center">Calculation</text>
+    <text id="value" size="22%" color="#ffffff" align="center">{{value}}%</text>
+  </stack>
+</layer>

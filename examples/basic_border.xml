@@ -1,0 +1,3 @@
+<stack id="container" justify="center" padding="8%" gap="4%" borderStyle="static" borderColor="#ff6666">
+  <text id="description" size="12%" align="center">Border</text>
+</stack>

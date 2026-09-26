@@ -1,0 +1,9 @@
+<stack id="content" justify="center" padding="6%" gap="6%">
+  <stack id="row" direction="horizontal" gap="4%" align="center">
+    <text id="title" mainSize="35%" size="12%" color="#abc">{{title}}</text>
+    <text id="value" size="20%" weight="bold" align="right">{{ value:0 }}%<style when="value &gt;= 80" color="#f66" /></text>
+  </stack>
+  <bar id="level" value="{{value}}" min="0" max="100" thickness="8%" color="#54dfcc" transitionMs="300" transitionProperties="value" easing="ease-out">
+    <style when="value &gt;= 80" color="#f66" />
+  </bar>
+</stack>
