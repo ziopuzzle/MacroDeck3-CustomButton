@@ -12,9 +12,10 @@ public class ProtocolTests
 {
     [Test] public async Task RealProcessRegistersWidgetAndSerializesUpdatedSnapshot()
     {
-        var executable = Path.Combine(AppContext.BaseDirectory, "Ziopuzzle.CustomButton.exe");
+        // Launch the managed assembly on every OS; the apphost name differs on Windows/Unix.
+        var assembly = Path.Combine(AppContext.BaseDirectory, "Ziopuzzle.CustomButton.dll");
         await using var host = await MacroDeckTestHost.StartAsync();
-        await using var plugin = await host.LaunchAsync(PluginLaunchSpec.ForExecutable(executable));
+        await using var plugin = await host.LaunchAsync(PluginLaunchSpec.ForDotnet(assembly));
         var connection = await host.WaitForSessionAsync(TimeSpan.FromSeconds(30));
         Assert.That(connection.Declared.Select(c => c.Kind), Does.Contain("widget-type-provider"));
         Assert.That((await connection.WidgetTypeProvider.GetWidgetTypesAsync()).Succeeded, Is.True);
