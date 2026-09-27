@@ -2,25 +2,65 @@
   "manifestVersion": 1,
   "id": "net.ziopuzzle.custombutton",
   "name": "Custom Button",
-  "version": "0.31.3",
+  "version": "0.32.0",
   "description": "Declarative custom buttons with live data bindings.",
   "icon": "Assets/icon.svg",
-  "publisher": { "name": "ziopuzzle" },
+  "publisher": {
+    "name": "ziopuzzle"
+  },
   "repository": "https://github.com/ziopuzzle/MacroDeck3-CustomButton",
   "homepage": "https://github.com/ziopuzzle/MacroDeck3-CustomButton#readme",
   "license": "MIT",
-  "ai": { "interaction": false, "generatedContent": false, "generatedAssets": true, "services": [] },
-  "permissions": ["host:widget-types"],
-  "languages": ["en"],
-  "compatibility": { "macroDeck": ">=3.0.0-beta.14" },
+  "ai": {
+    "interaction": false,
+    "generatedContent": false,
+    "generatedAssets": true,
+    "services": []
+  },
+  "permissions": [
+    "host:widget-types"
+  ],
+  "languages": [
+    "en"
+  ],
+  "compatibility": {
+    "macroDeck": ">=3.0.0-beta.14"
+  },
   "entrypoints": {
-    "win-x64": { "executable": "runtimes/win-x64/Ziopuzzle.CustomButton.exe" },
-    "osx-arm64": { "executable": "runtimes/osx-arm64/Ziopuzzle.CustomButton" },
-    "osx-x64": { "executable": "runtimes/osx-x64/Ziopuzzle.CustomButton" },
-    "linux-x64": { "executable": "runtimes/linux-x64/Ziopuzzle.CustomButton" },
-    "linux-arm64": { "executable": "runtimes/linux-arm64/Ziopuzzle.CustomButton" }
+    "win-x64": {
+      "executable": "runtimes/win-x64/Ziopuzzle.CustomButton.dll",
+      "runtime": {
+        "kind": "FrameworkDependent",
+        "dotnetVersion": "10.0"
+      }
+    },
+    "osx-arm64": {
+      "executable": "runtimes/osx-arm64/Ziopuzzle.CustomButton.dll",
+      "runtime": {
+        "kind": "FrameworkDependent",
+        "dotnetVersion": "10.0"
+      }
+    },
+    "osx-x64": {
+      "executable": "runtimes/osx-x64/Ziopuzzle.CustomButton.dll",
+      "runtime": {
+        "kind": "FrameworkDependent",
+        "dotnetVersion": "10.0"
+      }
+    },
+    "linux-x64": {
+      "executable": "runtimes/linux-x64/Ziopuzzle.CustomButton.dll",
+      "runtime": {
+        "kind": "FrameworkDependent",
+        "dotnetVersion": "10.0"
+      }
+    },
+    "linux-arm64": {
+      "executable": "runtimes/linux-arm64/Ziopuzzle.CustomButton.dll",
+      "runtime": {
+        "kind": "FrameworkDependent",
+        "dotnetVersion": "10.0"
+      }
+    }
   }
 }
-
-
-

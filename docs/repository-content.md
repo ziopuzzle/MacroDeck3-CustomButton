@@ -15,7 +15,7 @@ add a new guide to that list when it is ready for publication.
 | `.config/dotnet-tools.json`, `NuGet.Config`, `Ziopuzzle.CustomButton.slnx` | Tool versions, package source and solution |
 | `.github/workflows/release.yml` | Release packaging workflow |
 | `licenses/`, `LICENSE` | Shared dependency license texts and the project's own license |
-| `README.md`, the explicitly allowed `docs/` guides | Installation, usage, limits, privacy and distribution disclosures |
+| `README.md`, `CHANGELOG.md`, the explicitly allowed `docs/` guides | Installation, release history, usage, limits, privacy and distribution disclosures |
 | `screenshot_buttons.png` | Public product screenshot; review its contents before publishing |
 
 Keep `work/`, `artifacts/`, `bin/`, `obj/`, logs, crash dumps, local credentials,

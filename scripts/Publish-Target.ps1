@@ -15,7 +15,7 @@ foreach ($project in @('src/Ziopuzzle.CustomButton.csproj','editor/Ziopuzzle.Cus
     dotnet restore (Join-Path $repo $project) @restoreArgs
     if ($LASTEXITCODE -ne 0) { throw 'Locked restore failed.' }
 }
-dotnet publish (Join-Path $repo 'src/Ziopuzzle.CustomButton.csproj') -c Release -r $Runtime --self-contained true --no-restore -o $output
+dotnet publish (Join-Path $repo 'src/Ziopuzzle.CustomButton.csproj') -c Release -r $Runtime --self-contained false -p:UseAppHost=false --no-restore -o $output
 if ($LASTEXITCODE -ne 0) { throw 'Host publish failed.' }
 & (Join-Path $PSScriptRoot 'Publish-Editor.ps1') -Runtime $Runtime -Destination $output
 & (Join-Path $PSScriptRoot 'Collect-Notices.ps1') -Stage $output -RuntimeRoot $output

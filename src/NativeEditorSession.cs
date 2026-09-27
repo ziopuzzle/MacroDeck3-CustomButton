@@ -17,16 +17,13 @@ public sealed class NativeEditorSession : IAsyncDisposable
         {
             if (disposed) return;
             if (process is { HasExited: false }) { status("The editor is already open. Switch to it from your taskbar."); return; }
-            var path = EditorExecutablePath(AppContext.BaseDirectory, OperatingSystem.IsWindows());
+            var path = EditorAssemblyPath(AppContext.BaseDirectory);
             if (!File.Exists(path)) { status("Editor executable not found. Reinstall a package that includes the native editor."); return; }
-            if (!OperatingSystem.IsWindows())
-                File.SetUnixFileMode(path, File.GetUnixFileMode(path) | UnixFileMode.UserExecute);
             process?.Dispose();
-            var child = Process.Start(new ProcessStartInfo(path)
-            {
-                UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true,
-                CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(path)!
-            }) ?? throw new InvalidOperationException("Could not start the editor.");
+            // In a framework-dependent package this is the exact muxer selected by Macro Deck.
+            var muxer = SelectDotnetHost(Environment.ProcessPath, Environment.GetEnvironmentVariable("DOTNET_HOST_PATH"));
+            var child = Process.Start(EditorStartInfo(AppContext.BaseDirectory, muxer))
+                ?? throw new InvalidOperationException("Could not start the editor.");
             process = child;
             child.StandardInput.WriteLine(JsonSerializer.Serialize(new { layout, initialValues = values }));
             child.StandardInput.Flush();
@@ -64,8 +61,21 @@ public sealed class NativeEditorSession : IAsyncDisposable
         catch (Exception e) when (e is IOException or InvalidOperationException or System.Xml.XmlException or FormatException or JsonException)
         { if (!disposed) status("Editor communication failed: " + e.Message); }
     }
-    public static string EditorExecutablePath(string baseDirectory, bool windows)
-        => Path.Combine(baseDirectory, "Ziopuzzle.CustomButton.Editor" + (windows ? ".exe" : ""));
+    public static string EditorAssemblyPath(string baseDirectory)
+        => Path.Combine(baseDirectory, "Ziopuzzle.CustomButton.Editor.dll");
+    public static string SelectDotnetHost(string? processPath, string? configuredHost)
+        => Path.GetFileName(processPath) is "dotnet" or "dotnet.exe" ? processPath!
+            : !string.IsNullOrWhiteSpace(configuredHost) ? configuredHost : "dotnet";
+    public static ProcessStartInfo EditorStartInfo(string baseDirectory, string dotnetHost)
+    {
+        var start = new ProcessStartInfo(dotnetHost)
+        {
+            UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true,
+            CreateNoWindow = true, WorkingDirectory = baseDirectory
+        };
+        start.ArgumentList.Add(EditorAssemblyPath(baseDirectory));
+        return start;
+    }
     public async ValueTask DisposeAsync()
     {
         Task pending;

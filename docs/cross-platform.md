@@ -1,6 +1,6 @@
 # Platform builds
 
-The plugin and Avalonia editor target Windows x64, macOS ARM64/x64 and Linux ARM64/x64. Each self-contained package includes its own runtime and editor executable. Use the package matching the OS and CPU.
+The plugin and Avalonia editor target Windows x64, macOS ARM64/x64 and Linux ARM64/x64. Packages contain framework-dependent plugin/editor assemblies and platform-specific native libraries. .NET 10 and ASP.NET Core 10 shared frameworks are required; see [runtime requirements](distribution.md). Use the package matching the OS and CPU.
 
 Windows is the current on-device verification environment. Cross-building does not establish that installation, clipboard, dialogs, fonts and input work on macOS/Linux; these remain release checks on those systems. Linux requires the native desktop libraries used by Avalonia. A graphical desktop session is required for the external editor.
 

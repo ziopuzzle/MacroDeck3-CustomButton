@@ -31,7 +31,7 @@ try {
     $stage = Join-Path $PSScriptRoot ('work/package-' + $rid + '-' + [Guid]::NewGuid().ToString('N'))
     $runtimeDirectory = Join-Path $stage ('runtimes/' + $rid)
     New-Item -ItemType Directory -Force $runtimeDirectory, (Join-Path $stage 'Assets'), 'artifacts' | Out-Null
-    dotnet publish src/Ziopuzzle.CustomButton.csproj -c Release -r $rid --self-contained true --no-restore -o $runtimeDirectory
+    dotnet publish src/Ziopuzzle.CustomButton.csproj -c Release -r $rid --self-contained false -p:UseAppHost=false --no-restore -o $runtimeDirectory
     if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
     & (Join-Path $PSScriptRoot 'scripts/Publish-Editor.ps1') -Runtime $rid -Destination $runtimeDirectory
     $metadata = Get-Content -LiteralPath 'src/manifest.json' -Raw | ConvertFrom-Json

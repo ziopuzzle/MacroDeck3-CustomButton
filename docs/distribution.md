@@ -1,19 +1,24 @@
-# Included runtimes and dependencies
+# Runtime requirements and included dependencies
 
-Custom Button is distributed as a self-contained application. Its package includes:
+Custom Button 0.32.0 uses framework-dependent deployment. The package does not include
+the Microsoft .NET or ASP.NET Core runtime. It requires an accessible .NET 10 runtime
+and ASP.NET Core 10 shared framework of the target architecture. Macro Deck selects a
+compatible dotnet host from the entrypoint runtime requirements and runtimeconfig.json;
+if no suitable runtime is available, it cannot start the plugin. Installing .NET 10 SDK
+also supplies these frameworks for development.
 
-- The Microsoft .NET runtime and ASP.NET Core runtime needed by the plugin.
-- The native block editor and its Avalonia, Skia and related platform dependencies.
-- The Macro Deck SDK, logging libraries and other dependencies restored from public NuGet packages.
+The native editor is also framework-dependent. It starts through the same dotnet
+executable as the running plugin, rather than requiring a separate executable on PATH.
+The editor needs the .NET shared framework plus its platform dependencies; see
+[cross-platform requirements](cross-platform.md). Macro Deck's own self-contained
+installation is not by itself evidence that an independently usable shared runtime exists.
 
-The plugin and editor executables share one directory per platform. Their individual
-dependency/runtime configuration files are retained, while byte-identical runtime and
-library files are included only once. Packaging rejects conflicting files rather than
-overwriting them. This avoids shipping two copies of the .NET runtime per platform
-and keeps the combined five-platform archive below the Store's expanded-size limit.
+Packages still include Custom Button's assemblies, the Avalonia editor, native Skia and
+other platform libraries, and dependencies restored from public NuGet. The plugin and
+editor share byte-identical dependencies in one directory per platform; mismatched
+files cause packaging to fail. Dependencies are pinned in the lock files. Their licenses
+and notices are included in each platform's ThirdParty directory, with the plugin LICENSE.
 
-Users do not need to install .NET separately to run the packaged plugin. Other platform requirements still apply; see the platform guide in the source repository. The included runtimes and third-party libraries are precompiled upstream distribution files copied by the build/publish process. The plugin build compiles Custom Button's own source; it does not rebuild .NET or all dependency libraries from source.
-
-Dependency versions are recorded in the committed lock files, and package notices are included under ThirdParty with the plugin's LICENSE. Runtime packs used in each artifact are also listed in ThirdParty/INDEX.md. The included .NET runtime does not automatically become the machine's newest installed runtime: runtime/security updates require a rebuilt plugin package. The publisher should review upstream security updates and rebuild affected releases.
-
-The publisher has chosen to submit this disclosed packaging for Store review. This statement does not claim prior Store approval. Packaging will be revised if review requires a different deployment approach.
+Third-party library binaries are upstream compiled distributions. This project builds
+Custom Button's code, not the source of every dependency. Runtime updates are managed
+through the installed shared runtime; bundled library updates require a new plugin build.
