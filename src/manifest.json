@@ -15,7 +15,7 @@
     "interaction": false,
     "generatedContent": false,
     "generatedAssets": true,
-    "services": []
+    "services": ["Codex"]
   },
   "permissions": [
     "host:widget-types"
