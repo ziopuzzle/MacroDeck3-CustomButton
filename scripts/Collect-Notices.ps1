@@ -1,7 +1,8 @@
-param([Parameter(Mandatory)][string]$Stage, [string]$RuntimeRoot)
+param([Parameter(Mandatory)][string]$Stage, [string]$RuntimeRoot, [string]$NoticesRoot)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
-$target = Join-Path $Stage 'ThirdParty'
+if (-not $NoticesRoot) { $NoticesRoot = $Stage }
+$target = Join-Path $NoticesRoot 'ThirdParty'
 New-Item -ItemType Directory -Force $target | Out-Null
 $packages = @{}
 $cache = $null

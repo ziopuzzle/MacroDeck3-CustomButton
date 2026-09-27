@@ -33,14 +33,13 @@ try {
     New-Item -ItemType Directory -Force $runtimeDirectory, (Join-Path $stage 'Assets'), 'artifacts' | Out-Null
     dotnet publish src/Ziopuzzle.CustomButton.csproj -c Release -r $rid --self-contained true --no-restore -o $runtimeDirectory
     if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
-    dotnet publish editor/Ziopuzzle.CustomButton.Editor.csproj -c Release -r $rid --self-contained true --no-restore -p:UsedAvaloniaProducts= -o (Join-Path $runtimeDirectory 'editor')
-    if ($LASTEXITCODE -ne 0) { throw 'Native editor publish failed.' }
+    & (Join-Path $PSScriptRoot 'scripts/Publish-Editor.ps1') -Runtime $rid -Destination $runtimeDirectory
     $metadata = Get-Content -LiteralPath 'src/manifest.json' -Raw | ConvertFrom-Json
     $targetEntry = $metadata.entrypoints.$rid
     $metadata.entrypoints = @{ $rid = $targetEntry }
     $metadata | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $stage 'manifest.json') -Encoding utf8
     Copy-Item -LiteralPath 'src/Assets/icon.svg' -Destination (Join-Path $stage 'Assets/icon.svg')
-    & (Join-Path $PSScriptRoot 'scripts/Collect-Notices.ps1') -Stage $stage
+    & (Join-Path $PSScriptRoot 'scripts/Collect-Notices.ps1') -Stage $stage -RuntimeRoot $runtimeDirectory -NoticesRoot $runtimeDirectory
     $artifact = Join-Path $PSScriptRoot ('artifacts/' + $metadata.id + '-' + $metadata.version + '-' + $rid + '.macroDeckPlugin')
     dotnet tool run macrodeck-plugin pack --source $stage --output $artifact --force
     if ($LASTEXITCODE -ne 0) { throw 'Pack failed.' }

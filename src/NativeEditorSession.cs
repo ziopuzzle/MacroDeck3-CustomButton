@@ -65,7 +65,7 @@ public sealed class NativeEditorSession : IAsyncDisposable
         { if (!disposed) status("Editor communication failed: " + e.Message); }
     }
     public static string EditorExecutablePath(string baseDirectory, bool windows)
-        => Path.Combine(baseDirectory, "editor", "Ziopuzzle.CustomButton.Editor" + (windows ? ".exe" : ""));
+        => Path.Combine(baseDirectory, "Ziopuzzle.CustomButton.Editor" + (windows ? ".exe" : ""));
     public async ValueTask DisposeAsync()
     {
         Task pending;

@@ -10,7 +10,7 @@ An independent plugin by ziopuzzle, not an official Macro Deck product. See [pri
 - Development requires **.NET 10 SDK** and **PowerShell 7**.
 - Packaged builds include the .NET and ASP.NET Core runtimes, the native editor, and dependencies restored from public NuGet packages. These are published binaries; users do not need a separate .NET installation. See [distribution details](docs/distribution.md).
 
-In Macro Deck, use **Integrations > Install from file** and select `artifacts/net.ziopuzzle.custombutton-0.31.2-win-x64.macroDeckPlugin`.
+In Macro Deck, use **Integrations > Install from file** and select `artifacts/net.ziopuzzle.custombutton-0.31.3-win-x64.macroDeckPlugin`.
 
 Plugin ID: `net.ziopuzzle.custombutton`. Widget type: `net.ziopuzzle.custombutton::custom-button`.
 
@@ -75,10 +75,15 @@ dotnet test editor.tests/Ziopuzzle.CustomButton.Editor.Tests.csproj -c Release
 
 Use the packaging script for distribution: publishing only `src/` does not include the editor. Artifacts are written to `artifacts/`. See [public repository contents](docs/repository-content.md) for source and documentation policy.
 
+## 0.31.3 — smaller multi-platform packages
+
+- Place the plugin and editor together so identical runtime and dependency files are packaged once per platform.
+- Reject mismatched shared files during packaging instead of overwriting them.
+- Keep self-contained deployment: a separate .NET installation is still unnecessary.
+
 ## 0.31.2 — image refresh and recovery
 
 - Recheck visible image sources every 30 seconds, including unchanged artwork URLs, Icon Pack references and local files. Upload only changed bytes.
 - Preserve the last available image during failures and retry with a 1–30 second backoff. Log the failing stage without exposing URLs.
 - Upgrade SDK, test helpers and CLI to beta.14; require Macro Deck beta.14 or later.
 - Artwork still uses the host HTTP endpoint. Cross-plugin access to an `IMusicPlayer` instance has not been established.
-

@@ -17,6 +17,5 @@ foreach ($project in @('src/Ziopuzzle.CustomButton.csproj','editor/Ziopuzzle.Cus
 }
 dotnet publish (Join-Path $repo 'src/Ziopuzzle.CustomButton.csproj') -c Release -r $Runtime --self-contained true --no-restore -o $output
 if ($LASTEXITCODE -ne 0) { throw 'Host publish failed.' }
-dotnet publish (Join-Path $repo 'editor/Ziopuzzle.CustomButton.Editor.csproj') -c Release -r $Runtime --self-contained true --no-restore -p:UsedAvaloniaProducts= -o (Join-Path $output 'editor')
-if ($LASTEXITCODE -ne 0) { throw 'Editor publish failed.' }
+& (Join-Path $PSScriptRoot 'Publish-Editor.ps1') -Runtime $Runtime -Destination $output
 & (Join-Path $PSScriptRoot 'Collect-Notices.ps1') -Stage $output -RuntimeRoot $output

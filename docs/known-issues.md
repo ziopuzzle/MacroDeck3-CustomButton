@@ -26,4 +26,14 @@ The earlier WebNowPlaying image-loading observation also recovered after restart
 Deck. It is not yet established that these observations share a cause.
 
 
-On beta.14 with 0.31.2, WebNowPlaying URL and Icon Pack images were reported as not loading. The cause remains unverified; automatic retries do not establish a fix. Investigation is deferred pending reproduction details.
+On beta.14 with 0.31.2, WebNowPlaying URL and Icon Pack images were reported as not loading.
+The supplied 2026-09-27 log shows repeated `Image download failed (HTTP Unauthorized)`
+responses, including after plugin initialization at 12:24:33. The affected requests are
+rejected with HTTP 401 before resource registration; retries cannot resolve missing
+authentication. Verified against the v3.0.0-beta.14 source: both endpoints require
+`ClientAccess` (admin or client scope), whereas plugin sessions carry plugin scope.
+The SDK's `GetPluginIconAsync` resolves only the calling plugin's bundled packs, not
+arbitrary installed icons. No supported cross-plugin artwork retrieval path was found.
+Do not rely on host artwork URLs or installed Icon Pack references for this release;
+use local image files or accessible HTTP/HTTPS image URLs instead. This finding does
+not establish the cause of every older image issue.

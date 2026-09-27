@@ -1,5 +1,12 @@
 # Images
 
+**beta.14 limitation:** Host `/api/music-player/artwork/...` and `/api/icons/...`
+requests can return HTTP 401. These endpoints require client/admin authentication,
+which the plugin session does not supply. Installed `icon-pack:UUID` references use
+the latter endpoint and have the same limitation. Earlier successful local tests do
+not establish supported access. Use local files or accessible HTTP/HTTPS image URLs
+until a supported host image-resolution API is available. See [known issues](known-issues.md).
+
 Version 0.23.0 uses the beta.13 SDK and requires Macro Deck 3.0.0-beta.13 or later.
 Add **Image** in the external editor, then enter **Image source (file / URL / Icon Pack)**.
 **Browse…** selects a local file. Paths refer to the computer running Macro Deck,
