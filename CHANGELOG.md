@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.33.0 — gauges, built-in icons and transforms
+
+- Add `gauge`, `icon` and `transform` XML components and native editor palette entries.
+- Bind gauge values, icon names and transformations to display data and conditional styles.
+- Animate gauge values and group rotation, scaling and translation; support alpha colors on gauges and icons.
+- Include BASIC examples for all three components. Requires the existing beta.14 SDK; no SDK upgrade.
+
 ## 0.32.0 — framework-dependent deployment
 
 - Declare framework-dependent DLL entrypoints for all five platforms.

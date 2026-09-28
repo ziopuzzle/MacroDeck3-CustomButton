@@ -2,6 +2,66 @@
 
 Every component requires a unique `id`. Common attributes include `fill`, `mainSize`, `visible`, `visibleWhen`, and conditional styles. `{{name}}` reads initial or received display data. Evaluate Macro Deck expressions such as `{{ vars.name }}` in an update action first.
 
+## Arc gauge
+
+```xml
+<gauge id="meter" value="{{value}}" min="0" max="100"
+       startAngle="-135" endAngle="135" thickness="6%" color="#54dfcc"
+       transitionMs="300" transitionProperties="value color" />
+```
+
+`gauge` uses the host's native arc renderer. Values are normalized to `min..max`
+and clamped; `max` must exceed `min`. It fills the available space by default.
+Angles are degrees: zero is up and positive is clockwise. The host limits the
+end-minus-start sweep to one turn. For a ring use `startAngle="0" endAngle="360"`.
+Defaults are 0..100, -135..135 degrees and 4% thickness. `color` supports alpha,
+which fades the entire gauge including its native background track. Track color
+is host-controlled. This is a display component, not an input control.
+
+## Built-in icon
+
+```xml
+<icon id="symbol" name="{{symbol}}" size="25%" color="#54dfcc80" />
+```
+
+`name` selects a glyph from the beta.14 SDK's built-in catalogue, such as `play`,
+`pause`, `music-note`, `arrow-up` or `star`. The editor lists the supported names.
+Omitting `name` uses `star`; an unknown name shows a validation error.
+Omitting `size` fits the glyph to the smaller side of its box. Omit `color` to
+use the host's `role` (`primary`, `secondary`, `muted`). Names, colors and sizes
+accept data bindings and conditional styles. These glyphs do not use Icon Packs
+or the protected host image API.
+
+## Transform a group
+
+```xml
+<transform id="group" rotation="{{angle}}" zoom="1" originX="0.5" originY="0.5"
+           offsetX="0" offsetY="0" transitionMs="500" transitionProperties="rotation">
+  <icon id="arrow" name="arrow-up" size="50%" />
+</transform>
+```
+
+Children overlap like a layer. The transform scales, rotates clockwise about the
+pivot, then translates them together. `originX/Y` and `offsetX/Y` are decimal
+fractions of the element's own dimensions, including negative values; they are
+not widget-basis lengths. Defaults are rotation 0, pivot 0.5/0.5, zoom 1 and no
+offset. Zoom must be positive (at least 0.001). Rotation, pivot, zoom and offsets
+can be animated through `transitionProperties`. Transform containers support
+the same editor insertion, nesting and drag operations as layers.
+
+Transforms do not reserve extra layout space for the rotated content. The host
+does not define slider pointer mapping under rotation; keep interactive sliders
+outside rotated groups.
+
+## Component coverage
+
+The XML supports stack/layer, text, images, built-in icons, shapes, range bars,
+charts, sliders, gauges, transforms, clocks and playback progress bars. Pressable
+stacks/layers provide button behavior. Grid, list, toggle, segmented, dial and
+text-field components, general-purpose modifiers and progress text are not yet
+exposed as XML components. Internal use of a host component does not imply XML
+or editor support for all of its properties.
+
 ## Clock
 
 ```xml

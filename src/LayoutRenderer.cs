@@ -17,6 +17,9 @@ public sealed class LayoutRenderer
     {
         "stack" => "direction justify align gap padding background borderStyle borderColor interactive",
         "layer" => "interactive background",
+        "transform" => "rotation originX originY zoom offsetX offsetY",
+        "icon" => "name size color role",
+        "gauge" => "value min max startAngle endAngle color thickness",
         "image" => "source size fit zoom offsetX offsetY transition brightness saturation",
         "text" => "size sizeCap minSize weight fontFace color role digits align wrap maxLines",
         "bar" => "value min max color endColor thickness",
@@ -62,7 +65,7 @@ public sealed class LayoutRenderer
             foreach (var attribute in node.Attributes())
                 if (!allowed.Split(' ').Contains(attribute.Name.ToString())) throw new FormatException($"Unsupported attribute on {node.Name}: {attribute.Name}");
             if (node.Attribute("visibleWhen") is { } conditionAttribute) DisplayCondition.Evaluate(conditionAttribute.Value, new Dictionary<string, JsonElement>());
-            if (node.Name.LocalName is not ("stack" or "layer") && node.Elements().Any(e => e.Name != "style")) throw new FormatException($"{node.Name} cannot contain child components.");
+            if (!LayoutDocument.IsContainer(node) && node.Elements().Any(e => e.Name != "style")) throw new FormatException($"{node.Name} cannot contain child components.");
             if (node.Name.LocalName != "text" && node.Nodes().OfType<XText>().Any(t => !string.IsNullOrWhiteSpace(t.Value))) throw new FormatException("Place text inside a text component.");
         }
     }
@@ -171,7 +174,7 @@ public sealed class LayoutRenderer
         }
         string EndColor() => Color("endColor", colors["color"].Hex);
         var key = (string)node.Attribute("id")!;
-        var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "layer" or "chart" or "clock" or "slider");
+        var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "layer" or "chart" or "clock" or "slider" or "gauge" or "transform");
         // Keep omitted sizes unset; a numeric ternary would turn default into an explicit zero.
         UiSize mainSize = default;
         if (attributes.ContainsKey("mainSize") && A("mainSize") != "auto") mainSize = Length("mainSize", 0);
@@ -204,6 +207,21 @@ public sealed class LayoutRenderer
         {
             switch (node.Name.LocalName)
             {
+                case "transform":
+                    return new UiTransform { Key = key, Fill = fill, MainSize = mainSize, Children = children,
+                        Rotation = N("rotation", 0, -1e12, 1e12), OriginX = N("originX", .5, -1e12, 1e12), OriginY = N("originY", .5, -1e12, 1e12),
+                        Zoom = N("zoom", 1, 0.001, 1e12), OffsetX = N("offsetX", 0, -1e12, 1e12), OffsetY = N("offsetY", 0, -1e12, 1e12) };
+                case "icon":
+                    return new UiIcon { Key = key, Fill = fill, MainSize = mainSize, Icon = Choice("name", "star"),
+                        Size = attributes.ContainsKey("size") ? (UiSize)Length("size", .2) : default,
+                        Role = Choice("role", "primary"), Color = attributes.ContainsKey("color") ? UiValue.Of(Color("color", "#ffffff")) : default };
+                case "gauge":
+                    var gaugeMin = N("min", 0, -1e12, 1e12); var gaugeMax = N("max", 100, -1e12, 1e12);
+                    if (gaugeMax <= gaugeMin) throw new FormatException("For gauge, max must be greater than min.");
+                    return new UiGauge { Key = key, Fill = fill, MainSize = mainSize,
+                        Level = Math.Clamp((N("value", gaugeMin, -1e12, 1e12) - gaugeMin) / (gaugeMax - gaugeMin), 0, 1),
+                        StartAngle = N("startAngle", -135, -3600, 3600), EndAngle = N("endAngle", 135, -3600, 3600),
+                        LevelColor = Color("color", "#54dfcc"), Thickness = Length("thickness", .04, 1) };
                 case "image":
                     var resource = images?.Invoke(key, A("source"));
                     var imageSize = Length("size", 1, 1);

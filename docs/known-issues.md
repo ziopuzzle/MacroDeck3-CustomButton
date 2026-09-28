@@ -37,3 +37,20 @@ arbitrary installed icons. No supported cross-plugin artwork retrieval path was 
 Do not rely on host artwork URLs or installed Icon Pack references for this release;
 use local image files or accessible HTTP/HTTPS image URLs instead. This finding does
 not establish the cause of every older image issue.
+
+Comparing the beta.13 and beta.14 tags identifies a change in loopback authentication:
+beta.13 trusted requests to the dedicated loopback listener without credentials,
+provided the remote address and Host were loopback and the request was not cross-origin.
+`LoopbackAuthenticationHandler` then supplied admin scope. In beta.14,
+`LoopbackConnection.IsTrusted` additionally requires a desktop secret header or session
+cookie. The plugin's plain HTTP requests supply neither. This explains why the earlier
+local retrieval path could succeed and now returns 401; it does not explain every
+intermittent beta.13 failure. The image endpoints already required `ClientAccess` in
+beta.13. Icon cache-header changes in beta.14 are separate from this authorization failure.
+
+The built-in music widget resolves players through the host's `IMusicPlayerRegistry`.
+`MusicPlayerArtworkService` calls the selected player's `GetArtworkAsync`, including
+WebNowPlaying's implementation. This is a host-side service, not a player lookup API
+exposed by the beta.14 plugin `IIntegrationContext`. Registering artwork bytes as a
+`UiResource` is supported once obtained; obtaining another provider's bytes remains
+the missing plugin API.

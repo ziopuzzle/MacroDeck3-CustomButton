@@ -198,9 +198,12 @@ public sealed partial class EditorWindow
     private static string Label(string attribute) => attribute switch
     {
         "id" => "Element ID",
+        "name" => "Built-in icon name", "rotation" => "Rotation (clockwise degrees)",
+        "originX" => "Pivot X (fraction of own width)", "originY" => "Pivot Y (fraction of own height)",
+        "endAngle" => "End angle (degrees)",
         "angle" => "Line angle (degrees)",
         "fit" => "Image fit (contain / cover)",
-        "zoom" => "Image zoom (0.1–4, 1 = normal)", "offsetX" => "Image horizontal offset (−1–1)", "offsetY" => "Image vertical offset (−1–1)",
+        "zoom" => "Zoom (1 = normal)", "offsetX" => "Horizontal offset (fraction of width)", "offsetY" => "Vertical offset (fraction of height)",
         "source" => "Image source (file / URL / Icon Pack)", "transition" => "Image change transition", "brightness" => "Brightness (0–2)", "saturation" => "Saturation (0–2)",
         "coordinates" => "Coordinates (widget basis / local box)",
         "fontFace" => "Font (Macro Deck catalogue ID)", "weight" => "Font weight (regular / medium / semibold / bold)",

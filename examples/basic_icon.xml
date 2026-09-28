@@ -1,0 +1,4 @@
+<stack id="container" direction="horizontal" align="center" justify="center" gap="5%">
+  <icon id="symbol" name="{{symbol}}" size="30%" color="#54dfcc" />
+  <text id="label" size="18%">{{title}}</text>
+</stack>

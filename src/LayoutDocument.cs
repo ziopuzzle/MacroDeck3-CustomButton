@@ -16,7 +16,7 @@ public sealed class LayoutDocument
     public IEnumerable<XElement> Components => Root.DescendantsAndSelf().Where(e => e.Name != "style");
     public XElement Find(string id) => Components.SingleOrDefault(e => (string?)e.Attribute("id") == id)
         ?? throw new FormatException("The selected component was not found.");
-    public static bool IsContainer(XElement element) => element.Name.LocalName is "stack" or "layer";
+    public static bool IsContainer(XElement element) => element.Name.LocalName is "stack" or "layer" or "transform";
     public string Serialize()
     {
         // Only layout containers have insignificant whitespace. Text nodes (including
@@ -49,6 +49,9 @@ public sealed class LayoutDocument
         var child = new XElement(type, new XAttribute("id", NewId(type)));
         switch (type)
         {
+            case "icon": child.SetAttributeValue("name", "star"); child.SetAttributeValue("size", "20%"); break;
+            case "gauge": child.SetAttributeValue("value", "{{value}}"); break;
+            case "transform": child.SetAttributeValue("rotation", "0"); break;
             case "circle": case "capsule": child.SetAttributeValue("width", "40%"); child.SetAttributeValue("height", type == "circle" ? "40%" : "20%"); child.SetAttributeValue("color", "#54dfcc"); break;
             case "path": child.SetAttributeValue("data", "M0 0 L1 0.5 L0 1 Z"); child.SetAttributeValue("width", "40%"); child.SetAttributeValue("height", "40%"); child.SetAttributeValue("color", "#54dfcc"); break;
             case "image": child.SetAttributeValue("source", "{{imageUrl}}"); child.SetAttributeValue("size", "100%"); break;

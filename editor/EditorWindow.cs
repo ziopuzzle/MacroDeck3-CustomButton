@@ -48,6 +48,7 @@ public sealed partial class EditorWindow : Window
     private static readonly Dictionary<string, string> Types = new()
     {
         ["stack"] = "▤ Stack", ["layer"] = "▧ Layer", ["text"] = "T Text", ["bar"] = "━ Bar",
+        ["transform"] = "↻ Transform", ["icon"] = "☆ Icon", ["gauge"] = "◴ Gauge",
         ["chart"] = "⌁ History graph", ["clock"] = "◷ Clock", ["progress-bar"] = "▷ Playback progress", ["slider"] = "● Slider",
         ["rect"] = "▰ Rectangle", ["line"] = "╱ Line", ["polygon"] = "△ Polygon", ["sector"] = "◔ Sector",
         ["image"] = "▧ Image", ["circle"] = "○ Circle", ["capsule"] = "▰ Capsule", ["path"] = "◇ Path"
@@ -134,9 +135,9 @@ public sealed partial class EditorWindow : Window
         {
             var menu = new ContextMenu();
             foreach (var (label, types) in new[] {
-                ("Layout", new[] { "stack", "layer" }),
-                ("Text and images", new[] { "text", "image" }),
-                ("Data and controls", new[] { "bar", "chart", "clock", "progress-bar", "slider" }),
+                ("Layout", new[] { "stack", "layer", "transform" }),
+                ("Text and images", new[] { "text", "image", "icon" }),
+                ("Data and controls", new[] { "bar", "chart", "clock", "progress-bar", "slider", "gauge" }),
                 ("Shapes", new[] { "rect", "circle", "capsule", "line", "polygon", "sector", "path" }) })
             {
                 var category = new MenuItem { Header = T(label) };

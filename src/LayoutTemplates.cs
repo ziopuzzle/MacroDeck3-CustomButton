@@ -17,6 +17,7 @@ public static class LayoutTemplates
         "basic_calculation" => "Calculated sector", "basic_conditional" => "Conditional styles",
         "basic_gradation" => "Gradients", "basic_progress" => "Playback progress", "basic_shape" => "Shapes",
         "basic_slider" => "Slider", "widget_clock" => "Clock", "widget_history-chart" => "History Graph",
+        "basic_gauge" => "Arc gauge", "basic_icon" => "Built-in icons", "basic_transform" => "Transform a group",
         "widget_meter" => "Meter", "widget_nowplaying_player" => "Now playing",
         _ => id[(id.IndexOf('_') + 1)..].Replace('_', ' ').Replace('-', ' ')
     };

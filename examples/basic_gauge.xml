@@ -1,0 +1,8 @@
+<layer id="container">
+  <gauge id="meter" value="{{value}}" min="0" max="100" startAngle="-135" endAngle="135" thickness="6%" color="#54dfcc" transitionMs="300" transitionProperties="value color">
+    <style when="value >= 80" color="#ff6655" />
+  </gauge>
+  <stack id="stack1" direction="vertical" justify="center">
+    <text id="label" size="22%" align="center">{{value:0}}%</text>
+  </stack>
+</layer>

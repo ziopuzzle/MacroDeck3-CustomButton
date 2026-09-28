@@ -73,9 +73,10 @@ Use the **icon's** UUID, not the pack's UUID or name. Copy `icon.reference` from
 button's saved JSON after choosing the icon there. `source="icon-pack:{{iconId}}"` also works.
 The image must be installed in the current Macro Deck instance. This shorthand resolves to
 `/api/icons/UUID/image` on the configured host and uses the same bounded resource registration
-as other image sources. The beta.13 endpoint has ClientAccess authorization; retrieval was
-confirmed on the user's local installation. It is not a guarantee of access to a different
-host's protected endpoints. No credentials are copied or added by the plugin.
+as other image sources. Beta.13 could authorize local requests through its credential-free
+loopback trust. Beta.14 additionally requires a desktop credential for that trust, so
+the same unauthenticated request no longer works. See [known issues](known-issues.md)
+for the verified version difference. No credentials are copied or added by the plugin.
 
 ## Cover (0.24.0)
 

@@ -1,0 +1,3 @@
+<transform id="container" rotation="{{angle}}" zoom="{{zoom}}" originX="0.5" originY="0.5" transitionMs="500" transitionProperties="rotation zoom">
+  <icon id="arrow" name="arrow-up" size="50%" color="#54dfcc" />
+</transform>
