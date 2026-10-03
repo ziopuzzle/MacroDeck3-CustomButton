@@ -26,13 +26,28 @@ public class TemplateOrganizationTests
             Assert.That(template.InitialValues, Is.EqualTo(dataReader?.ReadToEnd().Trim() ?? "{}"));
         }
     }
-    [TestCase(false)][TestCase(true)] public void PlayerTemplateRendersConnectedAndDisconnected(bool playing)
+    [TestCase(false)][TestCase(true)] public void PlayerTemplateRendersPlaybackStates(bool playing)
     {
         var template = LayoutTemplates.Get("widget_nowplaying_player");
         var data = JsonNode.Parse(template.InitialValues)!;
         data["connected"] = true; data["playing"] = playing; data["duration"] = 185; data["position"] = 62;
         var tree = new UiView(ButtonTests.Surface(), new LayoutRenderer(template.Xml).Render(DataHub.ParseValues(data.ToJsonString()))).Tree;
         Assert.That(ButtonTests.Text(tree, ".duration_mmss"), Is.EqualTo("1:02 / 3:05"));
+    }
+    [TestCase(false, false)][TestCase(true, false)][TestCase(true, true)]
+    public async Task PlayerTemplateSessionRendersConnectionStatesWithinTransportLimits(bool connected, bool showVolume)
+    {
+        var template = LayoutTemplates.Get("widget_nowplaying_player");
+        var data = JsonNode.Parse(template.InitialValues)!;
+        data["connected"] = connected; data["showVolume"] = showVolume;
+        data["duration"] = 185; data["position"] = 62;
+        await using var session = new ButtonSession(ButtonTests.Surface(), new("demo", template.Xml, data.ToJsonString()), null);
+        var tree = session.BuildTree();
+        var nodes = ButtonTests.Nodes(tree.Root).ToArray();
+        Assert.That(nodes.Any(n => n.Id.EndsWith(".message")), Is.False);
+        Assert.DoesNotThrow(() => MacroDeck.Ui.Model.Serialization.UiCanonicalJson.Serialize(tree));
+        Assert.That(nodes.Any(n => n.Id.EndsWith(".title")), Is.EqualTo(connected));
+        Assert.That(nodes.Any(n => n.Id.EndsWith(".notConnected_text1")), Is.EqualTo(!connected));
     }
     [Test] public async Task ReorderPreservesConditionsActionsAndDescriptiveEventNames()
     {

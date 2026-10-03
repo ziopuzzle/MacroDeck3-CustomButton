@@ -43,7 +43,7 @@ public class BlockEditorTests
     }
     [Test] public void FailedPropertyAndOversizedEditsLeaveXmlAndUndoIntact()
     {
-        var original = "<stack id='root'>" + string.Concat(Enumerable.Range(0, 63).Select(i => $"<text id='t{i}'>A</text>")) + "</stack>";
+        var original = "<stack id='root'>" + string.Concat(Enumerable.Range(0, LayoutLimits.XmlElements - 1).Select(i => $"<text id='t{i}'>A</text>")) + "</stack>";
         var history = new LayoutEditHistory(original);
         Assert.Throws<FormatException>(() => history.Edit(d => d.Add("root", "text")));
         Assert.Throws<FormatException>(() => history.Edit(d => { d.SetAttribute("t0", "visibleWhen", "value >="); return "t0"; }));

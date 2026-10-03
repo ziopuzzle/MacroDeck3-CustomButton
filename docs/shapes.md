@@ -62,7 +62,7 @@ Sector and polygon coordinates cover their own box (0–1 horizontally and verti
 </layer>
 ```
 
-`resolution` was removed. Delete that attribute from old XML if it was explicitly set. The two-shape limit and scan-band limits no longer apply; the usual 64 XML nodes, 8 levels, 16000 XML characters and 48000-byte rendered-root limits remain.
+`resolution` was removed. Delete that attribute from old XML if it was explicitly set. The two-shape limit and scan-band limits no longer apply; the current [layout limits](components.md#layout-limits) apply to the XML and generated drawing data.
 
 ## Path data
 

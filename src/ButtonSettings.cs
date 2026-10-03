@@ -19,6 +19,7 @@ public sealed record ButtonSettings(string Channel, string Layout, string Initia
         get
         {
             var schema = JsonNode.Parse(BaseSchema)!.AsObject();
+            schema["properties"]!["layout"]!["maxLength"] = LayoutLimits.XmlCharacters;
             DesignSettings.AddSchema(schema["properties"]!.AsObject());
             return schema.ToJsonString();
         }

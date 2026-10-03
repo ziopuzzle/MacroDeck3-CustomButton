@@ -35,13 +35,13 @@
               <text id="duration_hhmmss" size="10%" align="end" visible="true" visibleWhen="duration &gt;= 3600">{{position:duration:hh:mm:ss}} / {{duration:duration:hh:mm:ss}}</text>
             </stack>
           </stack>
-          <stack id="notConnected" direction="vertical" justify="center" align="center" visible="true" visibleWhen="connected == false" interactive="true">
-            <text id="notConnected_text1" size="12%" align="center">Not connected to</text>
-            <text id="notConnected_text2" size="12%" align="center">WebNowPlaying</text>
-            <text id="notConnected_text3" size="12%" align="center">(Touch to check data)</text>
-          </stack>
         </stack>
       </stack>
     </stack>
   </layer>
+  <stack id="notConnected" direction="vertical" justify="center" align="center" visible="true" visibleWhen="connected == false" interactive="true">
+    <text id="notConnected_text1" size="12%" align="center">Not connected to</text>
+    <text id="notConnected_text2" size="12%" align="center">WebNowPlaying</text>
+    <text id="notConnected_text3" size="12%" align="center">(Touch to check data)</text>
+  </stack>
 </stack>

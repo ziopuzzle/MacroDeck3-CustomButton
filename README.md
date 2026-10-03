@@ -48,7 +48,7 @@ Lengths are fractions of the widget sizing basis: `0.2` and `20%` are equivalent
 
 Numeric history is sampled approximately once per second while displayed, including repeated values. Display data is transient and shared by channel. Updating the source variable alone does not populate plugin data: connect a Set display value/JSON action. History holds up to 120 samples per key and is cleared when the plugin restarts.
 
-Limits include 16,000 XML characters, 64 elements (including styles), eight levels, 64 data keys per channel and 256 channels. Large rendered trees are rejected. HTML/CSS/JavaScript execution and arbitrary image uploads are not supported.
+XML accepts up to 65,536 characters, 512 elements (including styles), and 32 levels including the root. Generated output is checked separately: at most 2,000 nodes, 56 KiB of root JSON and JSON depth 26, reserving room for live-update envelopes. These are not interchangeable with XML depth. Data limits remain 64 keys per channel and 256 channels. HTML/CSS/JavaScript execution and arbitrary image uploads are not supported.
 
 ## Guides
 

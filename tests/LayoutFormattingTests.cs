@@ -45,7 +45,7 @@ public class LayoutFormattingTests
 
     [Test] public void FormattingThatExceedsSizeLimitLeavesTheDraftAndHistoryUntouched()
     {
-        var xml = "<stack id='root'><text id='t'>" + new string('a', 15940) + "</text></stack>";
+        var xml = "<stack id='root'><text id='t'>" + new string('a', LayoutLimits.XmlCharacters - 60) + "</text></stack>";
         var history = new LayoutEditHistory(xml);
         Assert.Throws<FormatException>(() => history.Edit(d => d.Add("root", "bar")));
         Assert.That(history.Xml, Is.EqualTo(xml)); Assert.That(history.CanUndo, Is.False);

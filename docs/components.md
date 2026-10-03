@@ -196,3 +196,19 @@ The value is normalized and clamped to min/max (defaults 0/100). Direction defau
 
 Dynamic/progress text can be composed with text and values. Text input, lists, toggles, dials, segmented controls and grids are not exposed in this XML schema. Images use registered host resources. See [shapes](shapes.md) and [images](images.md).
 
+## Layout limits
+
+XML input accepts 65,536 characters, 512 elements (including styles), and 32 levels
+including the root. These bounds protect parsing and editing; they do not guarantee
+that every combination can be sent to Macro Deck.
+
+The generated drawing is checked on each render: at most 2,000 nodes including
+fallbacks, 56 KiB of root JSON, and JSON depth 26. Effects, wrappers, arrays and
+properties contribute to the output independently of XML nesting. A limit failure
+shows a drawing error with the exceeded limit instead of sending an invalid tree.
+
+The beta.15 protocol permits a 192 KiB tree but only a 64 KiB update patch and JSON
+depth 32. The plugin deliberately reserves space for patch and session envelopes.
+If a property diff exceeds 60 KiB, a bounded root replacement is used instead; this
+can reset in-progress controls or animations for that unusually large update.
+Large rendered trees still cost more to draw, especially during animation.

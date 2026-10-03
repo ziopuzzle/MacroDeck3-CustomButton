@@ -136,7 +136,7 @@ public sealed class ButtonSession : IUiSession
                     ? new[] { UiComponentEvents.Press, UiComponentEvents.LongPress, UiComponentEvents.PressStart, UiComponentEvents.PressEnd }
                         .Select(name => UiEventHandler.On(name, () => { })).ToArray()
                     : press == null ? [] : [UiEventHandler.On(UiComponentEvents.Press, () => { })] });
-            return (currentView.Tree, JsonSerializer.Serialize(currentView.Tree.Root));
+            return (currentView.Tree, LayoutLimits.Validate(currentView.Tree.Root));
         }
         try
         {
@@ -156,12 +156,10 @@ public sealed class ButtonSession : IUiSession
             var content = renderer != null ? renderer.Render(values, snapshot.ReadHistory, selectedId, onControlInput != null ? HandleControlInput : null,
                 animation, images == null ? null : ResolveImage, id => imageRatios.GetValueOrDefault(id, 1)) : settings.Design!.Render(values);
             var result = Build(content, renderer?.HasRootBackground(values) ?? true);
-            if (Encoding.UTF8.GetByteCount(result.Json) > 48000)
-                throw new FormatException("The rendered output is too large. Reduce text or the number of components.");
             lastRenderFailure = null;
             return result;
         }
-        catch (Exception e) when (e is FormatException or ArgumentException or UiViewException)
+        catch (Exception e) when (e is FormatException or ArgumentException or UiViewException or JsonException)
         {
             if (lastRenderFailure != e.Message) Trace("render error; animation reset: " + e.Message);
             lastRenderFailure = e.Message;
@@ -255,6 +253,8 @@ public sealed class ButtonSession : IUiSession
             if (operations.Count == 0)
                 operations = [new() { Op = UiPatchOperations.SetProperties, NodeId = tree.Root.Id, Properties = tree.Root.Properties }];
             pending = new UiPatch { FromRevision = previous, ToRevision = tree.Revision, Operations = operations };
+            if (JsonSerializer.SerializeToUtf8Bytes(pending).Length > LayoutLimits.PatchBytes)
+                pending = pending with { Operations = [new() { Op = UiPatchOperations.ReplaceNode, NodeId = pendingRoot.Id, Node = tree.Root }] };
             lastRoot = serialized;
         }
         Changed?.Invoke(this, EventArgs.Empty);

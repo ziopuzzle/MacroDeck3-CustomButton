@@ -25,7 +25,7 @@ The XML tab supports validation and formatting. Container whitespace is normaliz
 
 Edits are sent to the host configuration draft. Save in Macro Deck to persist them. If the host XML changes while this editor is open, conflict detection stops overwriting it; copy any needed draft, close and reopen. Closing the host configuration closes its editor.
 
-Limits: 64 elements including styles, eight levels and 16,000 XML characters. Legacy saved forms still render, but editing XML or selecting a template switches to XML mode.
+Input limits: 512 elements including styles, 32 levels including the root, and 65,536 XML characters. Generated drawing data must also fit the output limits described in [Components](components.md#layout-limits). Legacy saved forms still render, but editing XML or selecting a template switches to XML mode.
 
 See [platform requirements](cross-platform.md) and [action configuration](actions.md).
 

@@ -45,11 +45,12 @@ public sealed class LayoutRenderer
             style.Attribute("background") != null && DisplayCondition.Evaluate((string)style.Attribute("when")!, values));
     public LayoutRenderer(string layout)
     {
-        if (layout.Length > 16000) throw new FormatException("Layouts must not exceed 16000 characters.");
-        using var reader = XmlReader.Create(new StringReader(layout), new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = 16000 });
+        if (layout.Length > LayoutLimits.XmlCharacters) throw new FormatException($"Layouts must not exceed {LayoutLimits.XmlCharacters} characters.");
+        using var reader = XmlReader.Create(new StringReader(layout), new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = LayoutLimits.XmlCharacters });
         root = XElement.Load(reader);
         var nodes = root.DescendantsAndSelf().ToArray();
-        if (nodes.Length > 64 || nodes.Any(e => e.Ancestors().Count() > 8)) throw new FormatException("Layouts must not exceed 64 components or 8 nesting levels.");
+        if (nodes.Length > LayoutLimits.XmlElements) throw new FormatException($"Layouts must not exceed {LayoutLimits.XmlElements} XML elements, including styles.");
+        if (nodes.Any(e => e.Ancestors().Count() >= LayoutLimits.XmlDepth)) throw new FormatException($"Layouts must not exceed {LayoutLimits.XmlDepth} XML levels, including the root.");
         var ids = new HashSet<string>(StringComparer.Ordinal);
         foreach (var node in nodes)
         {

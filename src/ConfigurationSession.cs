@@ -137,7 +137,7 @@ public sealed class ConfigurationSession : IUiSession
                                 .Concat(LayoutTemplates.All.Select(t => new UiOption { Value = t.Id, Label = TextCatalog.Reference(t.Name), Badge = t.Category })).ToArray()),
                             Binding = Bind.Custom(() => "", id => { if (LayoutTemplates.All.Any(t => t.Id == id)) { var selected = LayoutTemplates.Get(id); SetXml(selected.Xml); values.Value = selected.InitialValues; } }) }
                     ] },
-                    new UiCodeInput { Key = "layout", Label = TextCatalog.Reference("Drawing XML"), HideLabel = true, Language = "xml", LiteralOnly = true, MaxLength = 16000, Binding = Bind.Custom(() => layout.Value, SetXml) },
+                    new UiCodeInput { Key = "layout", Label = TextCatalog.Reference("Drawing XML"), HideLabel = true, Language = "xml", LiteralOnly = true, MaxLength = LayoutLimits.XmlCharacters, Binding = Bind.Custom(() => layout.Value, SetXml) },
                         new UiProse { Key = "nativeStatusText", Text = UiText.Optional(() => TextCatalog.Reference(editorStatus.Value)) },
                         new UiProse { Key = "historyHelp", Text = TextCatalog.Reference("While displayed, the current value is sampled every second. To fetch new variable values, add a data update action to the display update event under Actions.") }
                     ] }
