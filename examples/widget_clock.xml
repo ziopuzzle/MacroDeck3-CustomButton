@@ -1,9 +1,6 @@
-<stack id="content" padding="10%" gap="4%" direction="vertical" justify="center" align="center">
+<stack id="content" padding="10%" gap="0%" background="#1a1a1a" direction="vertical" justify="center" align="center">
   <text id="label" size="8%" align="center" role="secondary" visible="true" visibleWhen="label">{{label}}</text>
   <clock id="clock" zone="{{timezone}}" seconds="{{showSeconds}}" visible="true" visibleWhen="digital == false" />
-  <stack id="digital" direction="horizontal" justify="center" align="end" visible="true" visibleWhen="digital == true" gap="0%" padding="0%">
-    <text id="time" size="18%" weight="bold" fontFace="segoe-ui-300-5-upright" align="end" color="#ffffff" mainSize="50%">{{time}}</text>
-    <text id="second" size="12%" weight="bold" fontFace="segoe-ui-300-5-upright" align="start" color="#808080" mainSize="25%">:{{second}}</text>
-  </stack>
-  <text id="date" size="8%" weight="bold" align="center" visible="true" visibleWhen="showDate == true" color="#808080">{{date}}</text>
+  <dynamic-text id="time" format="{{timeFormat}}" seconds="true" size="20%" align="center" visible="true" visibleWhen="digital == true" />
+  <dynamic-text id="date" format="{{dateFormat}}" size="10%" align="center" role="muted" />
 </stack>

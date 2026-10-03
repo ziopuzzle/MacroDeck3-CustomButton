@@ -1,3 +1,5 @@
 <transform id="container" rotation="{{angle}}" zoom="{{zoom}}" originX="0.5" originY="0.5" transitionMs="500" transitionProperties="rotation zoom">
-  <icon id="arrow" name="arrow-up" size="50%" color="#54dfcc" />
+  <stack id="stack1" direction="vertical" justify="center">
+    <text id="text1" size="18%" align="center">Transform</text>
+  </stack>
 </transform>

@@ -18,11 +18,15 @@ public sealed class LayoutRenderer
         "stack" => "direction justify align gap padding background borderStyle borderColor interactive",
         "layer" => "interactive background",
         "transform" => "rotation originX originY zoom offsetX offsetY",
+        "modifier" => "padding clip radius width height minWidth maxWidth minHeight maxHeight disabled",
+        "responsive" => "",
+        "variant" => "minWidth maxWidth minHeight maxHeight minAspect maxAspect",
+        "dynamic-text" => "zone format seconds size sizeCap minSize weight color role align",
         "icon" => "name size color role",
         "gauge" => "value min max startAngle endAngle color thickness",
         "image" => "source size fit zoom offsetX offsetY transition brightness saturation",
         "text" => "size sizeCap minSize weight fontFace color role digits align wrap maxLines",
-        "bar" => "value min max color endColor thickness",
+        "bar" => "value start marker min max color endColor thickness",
         "chart" => "key min max points color plotTop thickness",
         "clock" => "zone seconds color",
         "progress-bar" => "positionMs durationMs anchor rate color endColor thickness",
@@ -66,6 +70,8 @@ public sealed class LayoutRenderer
                 if (!allowed.Split(' ').Contains(attribute.Name.ToString())) throw new FormatException($"Unsupported attribute on {node.Name}: {attribute.Name}");
             if (node.Attribute("visibleWhen") is { } conditionAttribute) DisplayCondition.Evaluate(conditionAttribute.Value, new Dictionary<string, JsonElement>());
             if (!LayoutDocument.IsContainer(node) && node.Elements().Any(e => e.Name != "style")) throw new FormatException($"{node.Name} cannot contain child components.");
+            if (node.Name == "responsive" && node.Elements().Any(e => e.Name != "variant" && e.Name != "style")) throw new FormatException("Responsive children must be variant components; the first is the default layout.");
+            if (node.Name == "variant" && node.Parent?.Name != "responsive") throw new FormatException("Place variant directly inside responsive.");
             if (node.Name.LocalName != "text" && node.Nodes().OfType<XText>().Any(t => !string.IsNullOrWhiteSpace(t.Value))) throw new FormatException("Place text inside a text component.");
         }
     }
@@ -174,12 +180,13 @@ public sealed class LayoutRenderer
         }
         string EndColor() => Color("endColor", colors["color"].Hex);
         var key = (string)node.Attribute("id")!;
-        var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "layer" or "chart" or "clock" or "slider" or "gauge" or "transform");
+        var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "layer" or "chart" or "clock" or "slider" or "gauge" or "transform" or "modifier" or "responsive");
         // Keep omitted sizes unset; a numeric ternary would turn default into an explicit zero.
         UiSize mainSize = default;
         if (attributes.ContainsKey("mainSize") && A("mainSize") != "auto") mainSize = Length("mainSize", 0);
         var horizontal = node.Name == "stack" && Choice("direction", "vertical") == "horizontal";
-        var children = node.Elements().Where(e => e.Name != "style").Select(n => Make(n, values, history, horizontal, selectedId, input, animation, images, imageAspectRatio)).OfType<UiElement>().ToArray();
+        var children = node.Elements().Where(e => e.Name != "style").Select(n => Make(n, values, history, horizontal, selectedId, input, animation, images, imageAspectRatio)
+            ?? (node.Name == "responsive" ? new UiLayer { Key = (string)n.Attribute("id")!, Children = [] } : null)).OfType<UiElement>().ToArray();
         var textSize = Length("size", .18, 1);
         var minTextSize = Math.Min(Length("minSize", Math.Min(.08, textSize), 1), textSize);
         UiSize TextLength(double size) => attributes.ContainsKey("sizeCap") ? UiSize.Capped(size, N("sizeCap", 32, 1, 256)) : (UiSize)size;
@@ -207,14 +214,66 @@ public sealed class LayoutRenderer
         {
             switch (node.Name.LocalName)
             {
+                case "responsive":
+                    var branches = node.Elements("variant").ToArray();
+                    var variants = new List<UiResponsiveVariant>();
+                    for (var i = 1; i < branches.Length; i++)
+                    {
+                        var branch = branches[i];
+                        var settings = branch.Attributes().ToDictionary(a => a.Name.LocalName, a => a.Value);
+                        foreach (var style in branch.Elements("style"))
+                            if (DisplayCondition.Evaluate((string)style.Attribute("when")!, values))
+                                foreach (var attribute in style.Attributes().Where(a => a.Name != "when")) settings[attribute.Name.LocalName] = attribute.Value;
+                        double? Bound(string name)
+                        {
+                            if (!settings.TryGetValue(name, out var raw)) return null;
+                            var text = Expand(raw, values).Trim();
+                            if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) || !double.IsFinite(value)
+                                || value < 0 || (name.EndsWith("Aspect") && value == 0)) throw new FormatException($"{name} needs a nonnegative cell count or positive aspect ratio.");
+                            return value;
+                        }
+                        var minW = Bound("minWidth"); var maxW = Bound("maxWidth"); var minH = Bound("minHeight"); var maxH = Bound("maxHeight");
+                        var minA = Bound("minAspect"); var maxA = Bound("maxAspect");
+                        if (minW >= maxW || minH >= maxH || minA >= maxA) throw new FormatException("Responsive maximum bounds must exceed minimum bounds.");
+                        variants.Add(new UiResponsiveVariant { Content = new UiLayer { Key = "branch" + i, Children = [children[i]] },
+                            MinWidth = minW, MaxWidth = maxW, MinHeight = minH, MaxHeight = maxH, MinAspect = minA, MaxAspect = maxA });
+                    }
+                    return new UiResponsive { Key = key, Fill = fill, MainSize = mainSize,
+                        Default = new UiLayer { Key = "default", Children = children.Take(1).ToArray() }, Variants = variants,
+                        Fallback = new UiTextRun { Key = "unsupported", Text = "Responsive layout requires a compatible client." } };
+                case "variant":
+                    return AlphaPaint.Layer(new UiLayer { Key = key, Fill = fill, MainSize = mainSize, Children = children });
+                case "modifier":
+                    UiLength? FrameLength(string name) => attributes.ContainsKey(name) ? UiLength.OfBasis(Length(name, 0)) : null;
+                    var frame = new UiFrame { Width = FrameLength("width"), Height = FrameLength("height"),
+                        MinWidth = FrameLength("minWidth"), MaxWidth = FrameLength("maxWidth"), MinHeight = FrameLength("minHeight"), MaxHeight = FrameLength("maxHeight") };
+                    if (attributes.ContainsKey("minWidth") && attributes.ContainsKey("maxWidth") && Length("minWidth", 0) > Length("maxWidth", 0)
+                        || attributes.ContainsKey("minHeight") && attributes.ContainsKey("maxHeight") && Length("minHeight", 0) > Length("maxHeight", 0))
+                        throw new FormatException("Modifier maximum sizes must not be smaller than minimum sizes.");
+                    return new UiModifier { Key = key, Fill = fill, MainSize = mainSize, Padding = Length("padding", 0),
+                        Opacity = N("opacity", 1), Radius = Length("radius", 0), Disabled = B("disabled", false),
+                        Clip = Choice("clip", "none") == "none" ? default : UiValue.Of(Choice("clip", "none")), Frame = frame,
+                        Child = AlphaPaint.Layer(new UiLayer { Key = "content", Children = children }) };
+                case "dynamic-text":
+                    return new UiDynamicText { Key = key, Fill = fill, MainSize = mainSize,
+                        Value = UiTimeReference.InZone(A("zone") is "—" ? null : A("zone")), Format = Choice("format", "time"), Seconds = B("seconds", false),
+                        Size = TextLength(textSize), MinSize = TextLength(minTextSize), Weight = Choice("weight", "regular"), Align = Choice("align", "start"),
+                        Role = Choice("role", "primary"), Color = attributes.ContainsKey("color") ? UiValue.Of(Color("color", "#ffffff")) : default };
                 case "transform":
                     return new UiTransform { Key = key, Fill = fill, MainSize = mainSize, Children = children,
                         Rotation = N("rotation", 0, -1e12, 1e12), OriginX = N("originX", .5, -1e12, 1e12), OriginY = N("originY", .5, -1e12, 1e12),
                         Zoom = N("zoom", 1, 0.001, 1e12), OffsetX = N("offsetX", 0, -1e12, 1e12), OffsetY = N("offsetY", 0, -1e12, 1e12) };
                 case "icon":
-                    return new UiIcon { Key = key, Fill = fill, MainSize = mainSize, Icon = Choice("name", "star"),
-                        Size = attributes.ContainsKey("size") ? (UiSize)Length("size", .2) : default,
+                    var iconSize = Length("size", .2);
+                    var icon = new UiIcon { Key = key, Fill = B("fill", false), MainSize = mainSize, Icon = Choice("name", "star"),
+                        Size = iconSize,
                         Role = Choice("role", "primary"), Color = attributes.ContainsKey("color") ? UiValue.Of(Color("color", "#ffffff")) : default };
+                    // The host centres glyphs in their allocated box. Give a natural-size icon a
+                    // square box so cross-axis stretching cannot introduce invisible vertical space.
+                    if (B("fill", false) || attributes.ContainsKey("mainSize") && A("mainSize") != "auto") return icon;
+                    return new UiModifier { Key = key, Fill = false,
+                        Frame = new UiFrame { Width = UiLength.OfBasis(iconSize), Height = UiLength.OfBasis(iconSize) },
+                        Child = icon with { Key = "glyph", Fill = default, MainSize = default } };
                 case "gauge":
                     var gaugeMin = N("min", 0, -1e12, 1e12); var gaugeMax = N("max", 100, -1e12, 1e12);
                     if (gaugeMax <= gaugeMin) throw new FormatException("For gauge, max must be greater than min.");
@@ -236,6 +295,13 @@ public sealed class LayoutRenderer
                     if (fit == "contain" && !attributes.ContainsKey("zoom") && !attributes.ContainsKey("offsetX") && !attributes.ContainsKey("offsetY")
                         && !(duration > 0 && animated.Overlaps(new[] { "zoom", "offsetX", "offsetY" }))) return image;
                     var aspect = imageAspectRatio?.Invoke(key) ?? 1;
+                    if (double.IsNaN(aspect))
+                        return new UiModifier { Key = key, Fill = fill, MainSize = mainSize, Clip = "bounds", Radius = 0,
+                            Frame = new UiFrame { Width = UiLength.OfBasis(imageSize), Height = UiLength.OfBasis(imageSize) },
+                            Child = new UiButton { Key = "art", Source = image.Source, Transition = image.Transition,
+                                Background = "#00000000", Fit = fit, Zoom = zoom, OffsetX = offsetX, OffsetY = offsetY,
+                                Opacity = image.Opacity, Brightness = image.Brightness, Saturation = image.Saturation,
+                                Children = [] } };
                     if (!double.IsFinite(aspect) || aspect <= 0) aspect = 1;
                     return new UiModifier { Key = key, Fill = fill, MainSize = mainSize, Clip = "bounds",
                         Frame = new UiFrame { Width = UiLength.OfBasis(imageSize), Height = UiLength.OfBasis(imageSize) },
@@ -409,7 +475,8 @@ public sealed class LayoutRenderer
                 case "bar":
                     var min = N("min", 0, -1e12, 1e12); var max = N("max", 100, -1e12, 1e12);
                     if (max <= min) throw new FormatException("For bar, max must be greater than min.");
-                    return new UiRangeBar { Key = key, Start = 0, End = Math.Clamp((N("value", min, -1e12, 1e12) - min) / (max - min), 0, 1),
+                    return new UiRangeBar { Key = key, Start = Math.Clamp((N("start", min, -1e12, 1e12) - min) / (max - min), 0, 1), End = Math.Clamp((N("value", min, -1e12, 1e12) - min) / (max - min), 0, 1),
+                        Marker = attributes.ContainsKey("marker") ? UiValue.Of(Math.Clamp((N("marker", min, -1e12, 1e12) - min) / (max - min), 0, 1)) : default,
                         StartColor = Color("color", "#54dfcc"), EndColor = EndColor(), Thickness = Length("thickness", .05, 1), Fill = fill, MainSize = mainSize };
                 default: throw new FormatException("Unsupported component.");
             }
@@ -425,7 +492,7 @@ public sealed class LayoutRenderer
             result = new UiModifier { Key = key, MainSize = mainSize, Fill = fill, Clip = "bounds",
                 Frame = new UiFrame { MaxHeight = maxHeight }, Child = textRun with { Key = "text", MainSize = default, Fill = default } };
         }
-        if (node.Name.LocalName != "image")
+        if (node.Name.LocalName is not ("image" or "modifier"))
             result = AlphaPaint.Fade(AlphaPaint.Apply(result, colors), N("opacity", 1), animated.Contains("opacity") && duration > 0);
         if (input != null && (node.Name.LocalName is "stack" or "layer") && B("interactive", false))
             result = result with { Events = new[] { UiComponentEvents.Press, UiComponentEvents.LongPress, UiComponentEvents.PressStart, UiComponentEvents.PressEnd }

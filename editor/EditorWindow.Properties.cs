@@ -141,7 +141,7 @@ public sealed partial class EditorWindow
         if (attribute == "fontFace") ToolTip.SetTip(box, "Macro Deck font catalogue ID, not a Windows font name or file path. Use {{fontId}} for display data. Leave blank for the default font; unavailable IDs fall back to the client's default. Copy the ID from a standard button's saved font settings.");
         if (attribute == "source")
         {
-            ToolTip.SetTip(box, "An absolute file path, HTTP/HTTPS URL, Macro Deck /api/... URL, or icon-pack:UUID. Copy the UUID from icon.reference in a standard button's saved JSON. Use {{imageUrl}} for changing artwork. PNG, JPEG, WebP and GIF, up to 2 MiB. Blank hides the image.");
+            ToolTip.SetTip(box, "An absolute file path, HTTP/HTTPS URL, Macro Deck /api/... URL, artwork:/api/music-player/artwork/..., or icon-pack:UUID. Copy the UUID from icon.reference in a standard button's saved JSON. Use {{imageUrl}} for changing artwork. PNG, JPEG, WebP and GIF, up to 2 MiB. Blank hides the image.");
             var browse = Button("Browse…", () => { });
             browse.Click += async (_, _) =>
             {
@@ -198,6 +198,11 @@ public sealed partial class EditorWindow
     private static string Label(string attribute) => attribute switch
     {
         "id" => "Element ID",
+        "start" => "Range start (same units as value)", "marker" => "Marker (same units as value)",
+        "format" => "Time / date format", "zone" => "Time zone (IANA name)", "clip" => "Clip shape", "disabled" => "Disable child interactions",
+        "minWidth" => "Minimum width (variant: cells; modifier: length)", "maxWidth" => "Maximum width (variant: cells; modifier: length)",
+        "minHeight" => "Minimum height (variant: cells; modifier: length)", "maxHeight" => "Maximum height (variant: cells; modifier: length)",
+        "minAspect" => "Minimum width / height ratio", "maxAspect" => "Maximum width / height ratio",
         "name" => "Built-in icon name", "rotation" => "Rotation (clockwise degrees)",
         "originX" => "Pivot X (fraction of own width)", "originY" => "Pivot Y (fraction of own height)",
         "endAngle" => "End angle (degrees)",

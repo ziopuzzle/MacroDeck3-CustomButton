@@ -32,7 +32,7 @@ public static class AlphaPaint
     };
     public static UiElement Apply(UiElement element, IReadOnlyDictionary<string, DisplayColor> colors)
     {
-        if (element is UiModifier { Child: UiTextRun } textFrame)
+        if (element is UiModifier { Child: UiTextRun or UiIcon } textFrame)
             return textFrame with { Child = Apply(textFrame.Child, colors) };
         double A(string name) => colors.TryGetValue(name, out var c) ? c.Opacity : 1;
         if (element is UiShape shape)
@@ -48,7 +48,7 @@ public static class AlphaPaint
             if (A("color") != A("endColor")) throw new FormatException("Use the same alpha for both ends of a bar.");
             return Fade(element, A("color"));
         }
-        if (element is UiTextRun or UiChart or UiClockDial or UiSlider or UiGauge or UiIcon) return Fade(element, A("color"));
+        if (element is UiTextRun or UiDynamicText or UiChart or UiClockDial or UiSlider or UiGauge or UiIcon) return Fade(element, A("color"));
         if (element is UiStack stack && A("background") != 1)
         {
             if (A("background") == 0) return stack with { Background = default };

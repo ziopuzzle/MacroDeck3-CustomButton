@@ -1,1 +1,1 @@
-{"digital":true,"label":"","time":"XX:XX","second":"XX","timezone":"Asia/Tokyo","leadingZero":true,"showSeconds":true,"showDate":true,"date":"XXXX-XX-XX"}
+{"digital":true,"label":"","timezone":"","leadingZero":true,"showSeconds":true,"timeFormat":"time-24h","showDate":true,"dateFormat":"date-iso"}

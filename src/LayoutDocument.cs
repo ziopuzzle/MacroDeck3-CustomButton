@@ -16,7 +16,7 @@ public sealed class LayoutDocument
     public IEnumerable<XElement> Components => Root.DescendantsAndSelf().Where(e => e.Name != "style");
     public XElement Find(string id) => Components.SingleOrDefault(e => (string?)e.Attribute("id") == id)
         ?? throw new FormatException("The selected component was not found.");
-    public static bool IsContainer(XElement element) => element.Name.LocalName is "stack" or "layer" or "transform";
+    public static bool IsContainer(XElement element) => element.Name.LocalName is "stack" or "layer" or "transform" or "modifier" or "responsive" or "variant";
     public string Serialize()
     {
         // Only layout containers have insignificant whitespace. Text nodes (including
@@ -49,6 +49,10 @@ public sealed class LayoutDocument
         var child = new XElement(type, new XAttribute("id", NewId(type)));
         switch (type)
         {
+            case "responsive": child.Add(new XElement("variant", new XAttribute("id", NewId("variant")))); break;
+            case "variant": child.SetAttributeValue("minAspect", "1.5"); break;
+            case "modifier": child.SetAttributeValue("clip", "bounds"); break;
+            case "dynamic-text": child.SetAttributeValue("format", "time"); child.SetAttributeValue("seconds", "true"); break;
             case "icon": child.SetAttributeValue("name", "star"); child.SetAttributeValue("size", "20%"); break;
             case "gauge": child.SetAttributeValue("value", "{{value}}"); break;
             case "transform": child.SetAttributeValue("rotation", "0"); break;

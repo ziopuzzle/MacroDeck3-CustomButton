@@ -1,0 +1,17 @@
+<stack id="container" direction="horizontal" justify="center" align="stretch" gap="3%" padding="4%">
+  <stack id="iconColumn" direction="vertical" justify="center" align="center" gap="5%" fill="true">
+    <text id="iconLabel" size="7%" align="center">Icon Pack</text>
+    <image id="iconImage" source="icon-pack:{{iconPackId}}" size="26%" fit="contain" visibleWhen="iconPackId" />
+    <text id="iconHint" size="6%" align="center" role="muted" visibleWhen="!iconPackId">Set iconPackId</text>
+  </stack>
+  <stack id="fileColumn" direction="vertical" justify="center" align="center" gap="5%" fill="true">
+    <text id="fileLabel" size="7%" align="center">Local file</text>
+    <image id="fileImage" source="{{localFilePath}}" size="26%" fit="contain" visibleWhen="localFilePath" />
+    <text id="fileHint" size="6%" align="center" role="muted" visibleWhen="!localFilePath">Set localFilePath</text>
+  </stack>
+  <stack id="artworkColumn" direction="vertical" justify="center" align="center" gap="5%" fill="true">
+    <text id="artworkLabel" size="7%" align="center">Artwork</text>
+    <image id="artworkImage" source="{{artworkUrl}}" size="26%" fit="cover" transition="crossfade" visibleWhen="artworkUrl" />
+    <text id="artworkHint" size="6%" align="center" role="muted" visibleWhen="!artworkUrl">Set artworkUrl</text>
+  </stack>
+</stack>

@@ -71,6 +71,21 @@ public sealed class SessionImages : IAsyncDisposable
             var aspectRatio = 1d;
             string? fingerprint = null;
             if (source is "" or "—") { stage = "remove"; await registry.RemoveAsync(slot.Name, timeout.Token); }
+            else if (HostImageSource.Parse(source) is { } hostImage)
+            {
+                stage = "host lookup";
+                if (hostImage.IconId is { } iconId)
+                {
+                    resource = await registry.GetIconAsync(iconId, timeout.Token);
+                    // Installed icons are host-owned handles, not our named resource slots.
+                    await registry.RemoveAsync(slot.Name, timeout.Token);
+                }
+                else
+                    resource = await registry.RegisterMusicPlayerArtworkAsync(slot.Name, hostImage.InstanceId!, hostImage.ArtworkId!, timeout.Token);
+                if (resource is null) throw new FormatException("The requested host image is unavailable.");
+                // The handle carries no dimensions. Let the client frame the decoded image.
+                aspectRatio = double.NaN;
+            }
             else
             {
                 // Conservative local cap. The host also enforces its negotiated resource quotas.

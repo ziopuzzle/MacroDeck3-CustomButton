@@ -10,10 +10,10 @@
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="MacroDeck.Plugin.Hosting" Version="3.0.0-beta.14" />
-    <PackageReference Include="MacroDeck.Plugin.Serilog" Version="3.0.0-beta.14" />
-    <PackageReference Include="MacroDeck.Ui" Version="3.0.0-beta.14" />
-    <PackageReference Include="MacroDeck.Plugin.Analyzers" Version="3.0.0-beta.14" PrivateAssets="all" />
+    <PackageReference Include="MacroDeck.Plugin.Hosting" Version="3.0.0-beta.15" />
+    <PackageReference Include="MacroDeck.Plugin.Serilog" Version="3.0.0-beta.15" />
+    <PackageReference Include="MacroDeck.Ui" Version="3.0.0-beta.15" />
+    <PackageReference Include="MacroDeck.Plugin.Analyzers" Version="3.0.0-beta.15" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="../examples/*.xml;../examples/*.json" LogicalName="Templates.%(Filename)%(Extension)" />

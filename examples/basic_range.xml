@@ -1,0 +1,4 @@
+<stack id="container" justify="center" gap="8%" padding="8%">
+  <text id="label" size="14%" align="center">{{start}} to {{end}} / {{marker}}</text>
+  <bar id="range" start="{{start}}" value="{{end}}" marker="{{marker}}" min="0" max="100" color="#54dfcc" endColor="#2196f3" thickness="8%" />
+</stack>

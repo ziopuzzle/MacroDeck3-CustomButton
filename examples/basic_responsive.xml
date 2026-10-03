@@ -1,0 +1,19 @@
+<stack id="stack1">
+  <responsive id="container">
+    <variant id="variant_compact">
+      <stack id="compactIconWrapper" direction="vertical" mainSize="1" justify="center" align="center">
+        <icon id="compactIcon" name="check" size="40%" />
+      </stack>
+    </variant>
+    <variant id="variant_wide" minAspect="1.5">
+      <stack id="wideContent" direction="horizontal" justify="center" align="center" gap="10%">
+        <stack id="wideIconWrapper" direction="vertical" mainSize="0.35" justify="center">
+          <icon id="wideIcon" name="check" size="40%" fill="false" />
+        </stack>
+        <stack id="wideLabelWrapper" direction="vertical" justify="center" mainSize="1">
+          <text id="wideLabel" size="18%" fill="false" align="center">Wide layout</text>
+        </stack>
+      </stack>
+    </variant>
+  </responsive>
+</stack>

@@ -7,6 +7,28 @@ public class DrawingComponentsTests
 {
     private static UiNode Find(ButtonSession session, string id) => ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Id.EndsWith("." + id));
 
+    [TestCase("horizontal")]
+    [TestCase("vertical")]
+    public async Task IconUsesGlyphSizedBoxInsteadOfStretching(string direction)
+    {
+        await using var session = new ButtonSession(ButtonTests.Surface(), TestLayouts.Sample with {
+            Layout = $"<stack id='s' direction='{direction}'><icon id='i' size='30%'/><text id='t'>Label</text></stack>" }, null);
+        var icon = Find(session, "i");
+        Assert.That(icon.Properties["fill"].GetBoolean(), Is.False);
+        Assert.That(icon.Properties["frame"].GetProperty("width").GetProperty("basis").GetDouble(), Is.EqualTo(.3));
+        Assert.That(icon.Properties["frame"].GetProperty("height").GetProperty("basis").GetDouble(), Is.EqualTo(.3));
+    }
+
+    [Test]
+    public async Task IconAllowsExplicitExpandedBox()
+    {
+        await using var session = new ButtonSession(ButtonTests.Surface(), TestLayouts.Sample with { Layout = "<icon id='i' fill='true'/>" }, null);
+        var icon = Find(session, "i");
+        Assert.That(icon.Type, Is.EqualTo("ui.icon"));
+        Assert.That(icon.Properties["fill"].GetBoolean(), Is.True);
+        Assert.That(icon.Properties["size"].GetProperty("basis").GetDouble(), Is.EqualTo(.2));
+    }
+
     [Test]
     public async Task GaugeNormalizesAndClampsLiveDataAndAppliesConditionalColor()
     {
@@ -29,7 +51,7 @@ public class DrawingComponentsTests
             InitialValues = "{\"value\":15}" }, hub);
         Assert.That(Find(session, "group").Properties["rotation"].GetDouble(), Is.EqualTo(30));
         Assert.That(Find(session, "group").Properties["originY"].GetDouble(), Is.EqualTo(1.2));
-        Assert.That(Find(session, "symbol").Properties["icon"].GetString(), Is.EqualTo("arrow-up"));
+        Assert.That(Find(session, "glyph").Properties["icon"].GetString(), Is.EqualTo("arrow-up"));
         hub.Update("demo", DataHub.ParseValues("{\"value\":45}")); session.Refresh();
         Assert.That(Find(session, "group").Properties["rotation"].GetDouble(), Is.EqualTo(90));
     }

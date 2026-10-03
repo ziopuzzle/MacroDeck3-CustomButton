@@ -5,11 +5,13 @@ public static class LayoutOptions
 {
     private static readonly string[] TransitionCandidates = "opacity color endColor background x y x1 y1 x2 y2 width height length thickness radius cx cy angle startAngle sweepAngle value zoom offsetX offsetY gradientAngle gradientX gradientY".Split(' ');
     public static string[] TransitionProperties(string component) => TransitionCandidates
-        .Concat(new[] { "rotation", "originX", "originY", "endAngle" })
+        .Concat(new[] { "rotation", "originX", "originY", "endAngle", "start", "marker" })
         .Where(p => LayoutRenderer.Allowed(component).Split(' ').Contains(p) && (p != "value" || component is "bar" or "gauge")).ToArray();
     public static string[] Choices(string component, string attribute) => attribute switch
     {
         "name" when component == "icon" => IconNames,
+        "format" when component == "dynamic-text" => MacroDeck.Ui.Components.UiTimeFormats.WellKnown.ToArray(),
+        "clip" => ["none", "bounds", "circle", "capsule"],
         "coordinates" => ["widget", "local"],
         "gradient" => ["none", "linear", "radial"],
         "fit" => ["contain", "cover"],
@@ -28,7 +30,7 @@ public static class LayoutOptions
         "weight" => ["regular", "medium", "semibold", "bold"],
         "role" => ["primary", "secondary", "muted"],
         "borderStyle" => ["none", "static", "heartbeat", "breathing", "blink", "comet", "ants", "hue-shift", "rgb"],
-        "fill" or "visible" or "wrap" or "seconds" or "interactive" => ["true", "false"],
+        "fill" or "visible" or "wrap" or "seconds" or "interactive" or "disabled" => ["true", "false"],
         "mainSize" => ["auto"],
         _ => []
     };

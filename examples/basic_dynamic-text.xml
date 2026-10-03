@@ -1,0 +1,4 @@
+<stack id="container" justify="center" gap="5%" padding="5%">
+  <dynamic-text id="time" format="time-24h" seconds="true" size="25%" align="center" />
+  <dynamic-text id="date" format="date-iso" size="12%" align="center" role="muted" />
+</stack>

@@ -27,7 +27,11 @@ is host-controlled. This is a display component, not an input control.
 `name` selects a glyph from the beta.14 SDK's built-in catalogue, such as `play`,
 `pause`, `music-note`, `arrow-up` or `star`. The editor lists the supported names.
 Omitting `name` uses `star`; an unknown name shows a validation error.
-Omitting `size` fits the glyph to the smaller side of its box. Omit `color` to
+The default `size` is 20%. By default the icon occupies a square of that size,
+without expanding in a horizontal stack or centering inside a taller box. Use
+the parent stack's `justify` and `align` to position it. Explicit `fill="true"`
+or numeric `mainSize` opts into a larger native box, where the host centers the
+glyph. This changes the pre-release icon sizing introduced in 0.33.0. Omit `color` to
 use the host's `role` (`primary`, `secondary`, `muted`). Names, colors and sizes
 accept data bindings and conditional styles. These glyphs do not use Icon Packs
 or the protected host image API.
@@ -56,11 +60,89 @@ outside rotated groups.
 ## Component coverage
 
 The XML supports stack/layer, text, images, built-in icons, shapes, range bars,
-charts, sliders, gauges, transforms, clocks and playback progress bars. Pressable
-stacks/layers provide button behavior. Grid, list, toggle, segmented, dial and
-text-field components, general-purpose modifiers and progress text are not yet
+charts, sliders, gauges, transforms, modifiers, responsive layouts, dynamic time
+text, clocks and playback progress bars. Pressable stacks/layers provide button
+behavior. Grid, list, toggle, segmented, dial, text-field and progress text are not yet
 exposed as XML components. Internal use of a host component does not imply XML
 or editor support for all of its properties.
+
+## Range bar
+
+`bar` is the XML name for the native `ui.range-bar`; the editor calls it Range bar.
+`start`, `value` (the end) and optional `marker` use the same `min..max` scale,
+not normalized fractions. All three are clamped to that range. Omit `start` to
+start at `min`; omit `marker` to hide it. Existing bar XML remains valid.
+
+```xml
+<bar id="range" start="{{low}}" value="{{high}}" marker="{{current}}"
+     min="0" max="100" color="#54dfcc" endColor="#2196f3" thickness="6%" />
+```
+
+Use `transitionProperties="start value marker"` to animate these positions.
+The host paints the track and marker; the marker has no separate color setting.
+Both end colors must have the same alpha, which fades the whole component.
+
+## Dynamic time text
+
+```xml
+<dynamic-text id="time" format="time-24h" seconds="true" zone="Asia/Tokyo"
+              size="25%" minSize="12%" align="center" />
+```
+
+The client formats and updates its own clock; no display-update action is needed.
+`format` defaults to `time` and the editor lists the SDK's formats, including
+`date`, `date-iso`, `date-long`, `time-12h`, `time-24h`, `zone-name` and `zone-offset`.
+Omitting `zone` uses the client's time zone. Seconds default to false; the host
+draws them smaller and muted. `size`, `sizeCap`, `minSize`, `weight`, `color`,
+`role` and `align` follow text conventions. This component does not accept literal
+text, fontFace or arbitrary date-format strings.
+
+## Modifier
+
+```xml
+<modifier id="clip" clip="circle" padding="5%" width="80%" height="80%" opacity="0.8">
+  <icon id="art" name="music-note" size="60%" />
+</modifier>
+```
+
+Children overlap inside an implicit layer. The native modifier wraps that layer.
+Use a stack child for sequential layout. Supported attributes are `padding`,
+`opacity`, `clip` (`none`, `bounds`, `circle`, `capsule`), `radius` (rounds bounds
+clipping), `width`, `height`, `minWidth`, `maxWidth`, `minHeight`, `maxHeight` and
+`disabled`. Lengths use the same widget-basis fractions/percentages as other XML
+lengths. Unspecified frame sizes stay unset. `disabled="true"` disables descendant
+interactions. Visibility and conditional styles work as on other components.
+Backgrounds, borders, masks and additional gestures are not exposed by this XML
+modifier yet; use existing stacks/shapes for decoration.
+
+## Responsive layouts
+
+```xml
+<responsive id="layouts">
+  <variant id="compact"><icon id="compactIcon" name="music-note" /></variant>
+  <variant id="wide" minAspect="1.5">
+    <stack id="wideRow" direction="horizontal" align="center" fill="true">
+      <icon id="wideIcon" name="music-note" size="25%" />
+      <text id="wideLabel" size="18%">Music</text>
+    </stack>
+  </variant>
+</responsive>
+```
+
+The first variant is the default; its bounds are ignored. Subsequent variants
+are tried in order, and the first whose bounds all match is displayed. Variant
+children overlap like a layer. Add Responsive in the editor, select it, then add
+Layout variant; drag variants to change their priority/default. Only variants
+may be direct children of responsive, and variants cannot be placed elsewhere.
+
+`minWidth/maxWidth/minHeight/maxHeight` are decimal **deck-cell counts**, not
+percentages. `minAspect/maxAspect` are positive width/height ratios. Minimums are
+inclusive and maximums exclusive, subject to the host's rounding tolerance.
+The client reevaluates on resize; the plugin does not guess the client size.
+All branches are built and count toward limits, including hidden branches. A
+variant hidden by `visibleWhen` is blank if selected; it is not removed from the
+selection order. Older clients show a compatibility message rather than duplicate
+interactive default content. `basic_responsive` demonstrates compact/wide layouts.
 
 ## Clock
 

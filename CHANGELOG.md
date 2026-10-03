@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.34.0 — range markers, client clocks and adaptive layouts
+
+- Add the BASIC Image sources template with JSON fields for an installed icon, a local file, and music-player artwork.
+- Refresh the clock and icon examples; use beta.15 SDK APIs for installed Icon Packs and artwork from other music players, accepting existing host paths and the artwork: prefix.
+- Remove the temporary artwork test player and its image after verification.
+- Extend `bar` with a data-bound start position and optional marker, using the same min/max scale as its value.
+- Add `dynamic-text` for client-updated time and date displays.
+- Add `modifier` for padding, clipping, frame constraints, group opacity and disabled descendants.
+- Add `responsive` with ordered `variant` layouts selected by client dimensions.
+- Add native editor entries, property suggestions and BASIC examples; require the beta.15 SDK and host.
+- Use purple for all layout blocks and refine the Modifier and Responsive examples.
+- Give icons a natural square footprint (20% default size); keep native centering only when an expanded box is explicitly requested. Refresh the Modifier and Transform examples.
+
 ## 0.33.0 — gauges, built-in icons and transforms
 
 - Add `gauge`, `icon` and `transform` XML components and native editor palette entries.

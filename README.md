@@ -6,7 +6,7 @@ An independent plugin by ziopuzzle, not an official Macro Deck product. See [pri
 
 ## Requirements and installation
 
-- Macro Deck **3.0.0-beta.14 or later**. The SDK and CLI are pinned to beta.14.
+- Macro Deck **3.0.0-beta.15 or later**. The SDK and CLI are pinned to beta.15.
 - Development requires **.NET 10 SDK** and **PowerShell 7**.
 - Packaged builds require .NET 10 and ASP.NET Core 10 shared runtimes. The native editor and NuGet dependencies are included, but Microsoft runtimes are not. See [distribution details](docs/distribution.md).
 

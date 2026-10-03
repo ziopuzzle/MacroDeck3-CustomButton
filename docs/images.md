@@ -1,13 +1,15 @@
 # Images
 
-**beta.14 limitation:** Host `/api/music-player/artwork/...` and `/api/icons/...`
-requests can return HTTP 401. These endpoints require client/admin authentication,
-which the plugin session does not supply. Installed `icon-pack:UUID` references use
-the latter endpoint and have the same limitation. Earlier successful local tests do
-not establish supported access. Use local files or accessible HTTP/HTTPS image URLs
-until a supported host image-resolution API is available. See [known issues](known-issues.md).
+The BASIC **Image sources** template (`basic_image`) displays three sources side by side.
+Set `iconPackId` to an installed icon UUID (without the `icon-pack:` prefix),
+`localFilePath` to an absolute path on the host computer, and `artworkUrl` to the
+music-player artwork path. In JSON, escape Windows backslashes, for example
+`"localFilePath": "C:\\Pictures\\cover.png"`. Empty values show a hint instead of
+loading an image. Update `artworkUrl` with a display-data action to follow track changes.
 
-Version 0.23.0 uses the beta.13 SDK and requires Macro Deck 3.0.0-beta.13 or later.
+Requires Macro Deck **3.0.0-beta.15 or later**. Installed icons and music-player
+artwork now use supported SDK resource APIs instead of unauthenticated HTTP.
+
 Add **Image** in the external editor, then enter **Image source (file / URL / Icon Pack)**.
 **Browse…** selects a local file. Paths refer to the computer running Macro Deck,
 not to the phone. Macro Deck distributes the registered bytes to its clients.
@@ -25,14 +27,14 @@ Set initial data to `{"coverUrl":"","title":"","paused":0}`.
 Use **Set display value** to put the cover URL into `coverUrl`; the action can read
 the appropriate Macro Deck variable, just like track titles. Add **Display activated**
 to fetch its current value when the widget appears, and **Variable changed** for later changes.
-Since 0.23.1, WebNowPlaying paths such as `/api/music-player/artwork/408e2083d7e2cca5?instanceId=app.macro-deck.webnowplaying%3A%3Abrowser` also work. Pass the value unchanged through `coverUrl`; the plugin resolves it against the host URL supplied by Macro Deck. No port setting or manual prefix is needed. Paths starting with `/api/` are reserved for host HTTP endpoints on every platform.
+WebNowPlaying paths such as `/api/music-player/artwork/408e2083d7e2cca5?instanceId=app.macro-deck.webnowplaying%3A%3Abrowser` work unchanged through `coverUrl`. The plugin extracts the artwork ID and qualified player instance ID and calls `UiResources.RegisterMusicPlayerArtworkAsync`. No temporary player or desktop credentials are needed. Other paths starting with `/api/` still resolve against the configured host URL.
 
 For a fixed image, use `source="C:\Pictures\cover.png"`, `/home/me/Pictures/cover.png`,
 or an HTTP/HTTPS URL. Escape XML special characters such as `&` as `&amp;` in literal URLs.
 
 | Attribute | Meaning |
 | --- | --- |
-| `source` | Absolute local path, HTTP/HTTPS URL, host `/api/...` URL, or `icon-pack:UUID`; supports display-data bindings and conditional styles. Empty or missing data draws no image. |
+| `source` | Absolute local path, HTTP/HTTPS URL, host `/api/...` URL, `icon-pack:UUID`, or `artwork:/api/music-player/artwork/...`; supports display-data bindings and conditional styles. Empty or missing data draws no image. |
 | `size` | Edge of the square image box, default `100%`. |
 | `fit` | `contain` (default) shows the complete image. `cover` fills the square box and clips the overflow at its center. Both preserve aspect ratio. |
 | `zoom` | 0.1–4, default 1. Multiplier applied after contain/cover fitting. |
@@ -71,12 +73,9 @@ There is no Icon Pack browser in the external editor yet. SVG conversion is not 
 
 Use the **icon's** UUID, not the pack's UUID or name. Copy `icon.reference` from a standard
 button's saved JSON after choosing the icon there. `source="icon-pack:{{iconId}}"` also works.
-The image must be installed in the current Macro Deck instance. This shorthand resolves to
-`/api/icons/UUID/image` on the configured host and uses the same bounded resource registration
-as other image sources. Beta.13 could authorize local requests through its credential-free
-loopback trust. Beta.14 additionally requires a desktop credential for that trust, so
-the same unauthenticated request no longer works. See [known issues](known-issues.md)
-for the verified version difference. No credentials are copied or added by the plugin.
+The image must be installed in the current Macro Deck instance. Both this shorthand
+and `/api/icons/UUID/image` call `UiResources.GetIconAsync` and use the returned
+host-owned resource directly. Removing the widget does not remove the installed icon.
 
 ## Cover (0.24.0)
 
@@ -111,6 +110,25 @@ These properties support the existing value-change transitions, bindings and con
 
 API references: [resources](https://docs.macro-deck.app/ui/reference/resources/),
 [image component](https://docs.macro-deck.app/ui/components/image/).
+
+## Player artwork
+
+Use `artwork:` followed by a host artwork path to request artwork through the
+SDK player API rather than HTTP:
+
+```xml
+<image id="cover" source="artwork:{{artworkUrl}}" fit="contain" />
+```
+
+`artworkUrl` must contain `/api/music-player/artwork/ARTWORK_ID?instanceId=PROVIDER%3A%3APLAYER`.
+If a player is available, its `GetArtworkAsync` result is registered as a UI resource.
+There is no HTTP fallback. The former experimental `sdk-artwork:` prefix is no longer used.
+
+The host resolves the other integration's player through the beta.15 SDK API.
+The player must be enabled and the artwork ID must still be available. An unavailable
+image retains the previous image and retries. No music player is registered by Custom Button.
+Host resources have no pixel dimensions in their handles, so Cover, zoom and offsets
+use client-side image framing with no press events.
 
 ## Refresh and recovery (0.31.2)
 
