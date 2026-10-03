@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.35.1 — line gradients
+
+- Add linear and radial gradients to all line geometry modes, including local coordinates, using native opacity masks rather than segmented paths. Support bindings, conditional styles and transitions with the existing gradient parameters.
+
 ## 0.35.0 — expanded layout limits
 
 - Raise XML limits to 65,536 characters, 512 elements and 32 levels; validate generated node count, JSON depth and size before sending, and bound oversized live-update diffs.

@@ -34,7 +34,7 @@ public sealed class LayoutRenderer
         "rect" => "coordinates x y width height color corner cornerRadius strokeColor strokeWidth gradient endColor gradientAngle gradientX gradientY",
         "circle" or "capsule" => "coordinates x y width height color strokeColor strokeWidth gradient endColor gradientAngle gradientX gradientY",
         "path" => "coordinates x y width height data color strokeColor strokeWidth",
-        "line" => "coordinates x y length thickness direction color x1 y1 x2 y2 cx cy angle",
+        "line" => "coordinates x y length thickness direction color x1 y1 x2 y2 cx cy angle gradient endColor gradientAngle gradientX gradientY",
         "polygon" => "coordinates points color strokeColor strokeWidth",
         "sector" => "coordinates cx cy radius startAngle sweepAngle color strokeColor strokeWidth",
         _ => throw new FormatException($"Unsupported component: {type}")
@@ -484,6 +484,18 @@ public sealed class LayoutRenderer
         }
         var result = Build();
         if (result == null) return null;
+        if (node.Name.LocalName == "line" && Choice("gradient", "none") is var lineGradient && lineGradient != "none")
+        {
+            var start = colors["color"];
+            var end = Color("endColor", start.Hex);
+            if (start.Alpha != colors["endColor"].Alpha)
+                throw new FormatException("Use the same alpha for both gradient colors. Use opacity to fade the entire shape.");
+            var stops = new[] { new UiMaskStop { Offset = 0, Opacity = 0 }, new UiMaskStop { Offset = 1, Opacity = 1 } };
+            var mask = lineGradient == "radial"
+                ? UiMask.Radial(Length("gradientX", .5, 1), Length("gradientY", .5, 1), stops)
+                : UiMask.Linear(N("gradientAngle", 90, -360, 360), stops);
+            result = GradientLine(result, start.Rgb, end, start.Opacity, mask, attributes.ContainsKey("angle") || attributes.ContainsKey("x1"));
+        }
         if (result is UiTextRun textRun && Integer("maxLines", 1, 1, 8) is var lines && lines > 1)
         {
             // beta.11 gives line-clamped text extra vertical ink padding. A separate clipping
@@ -499,6 +511,30 @@ public sealed class LayoutRenderer
             result = result with { Events = new[] { UiComponentEvents.Press, UiComponentEvents.LongPress, UiComponentEvents.PressStart, UiComponentEvents.PressEnd }
                 .Select(name => UiEventHandler.On(name, () => input(new(key, name)))).ToArray() };
         return result;
+    }
+
+    // Paint an opaque base and a masked end colour, then apply alpha once to the group.
+    // Both copies retain identical geometry, including local coordinates and flat ends.
+    private static UiElement GradientLine(UiElement source, string start, string end, double opacity, UiMask mask, bool stroke)
+    {
+        UiElement Paint(UiElement element, string color) => element switch
+        {
+            UiShape shape => stroke ? shape with { StrokeColor = color } : shape with { Color = color },
+            UiModifier modifier => modifier with { Opacity = 1, Child = Paint(modifier.Child!, color) },
+            UiStack stack => stack with { Children = stack.Children.Select(child => Paint(child, color)).ToArray() },
+            _ => throw new InvalidOperationException("Unexpected line paint component.")
+        };
+        var size = source is UiComponentLeaf leaf ? leaf.MainSize : ((UiComponentContainer)source).MainSize;
+        var fill = source is UiComponentLeaf leafFill ? leafFill.Fill : ((UiComponentContainer)source).Fill;
+        UiElement Copy(string color, bool expand) => Paint(source, color) switch
+        {
+            UiComponentLeaf child => child with { Key = "line", MainSize = default, Fill = expand ? UiValue.Of(true) : default },
+            UiComponentContainer child => child with { Key = "line", MainSize = default, Fill = expand ? UiValue.Of(true) : default },
+            _ => throw new InvalidOperationException("Unexpected line layout component.")
+        };
+        return AlphaPaint.Fade(AlphaPaint.Layer(new UiLayer { Key = source.Key, MainSize = size, Fill = fill,
+            Children = [new UiStack { Key = "start", Fill = true, Children = [Copy(start, true)] },
+                new UiModifier { Key = "end", Fill = true, Mask = mask, Child = Copy(end, false) }] }), opacity);
     }
 }
 

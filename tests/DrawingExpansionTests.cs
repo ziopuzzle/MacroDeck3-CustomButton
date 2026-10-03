@@ -14,6 +14,27 @@ public class DrawingExpansionTests
     }
     private static UiNode Render(string xml, string json = "{}") => new UiView(ButtonTests.Surface(), new LayoutRenderer(xml).Render(DataHub.ParseValues(json))).Tree.Root;
 
+    [TestCase("x1='10%' y1='80%' x2='90%' y2='20%'", "linear")]
+    [TestCase("cx='50%' cy='50%' length='40%' angle='-45'", "radial")]
+    [TestCase("direction='vertical' length='80%'", "linear")]
+    [TestCase("coordinates='local' direction='horizontal' length='80%'", "linear")]
+    public void LineGradientKeepsGeometryAndAppliesAlphaOnce(string geometry, string kind)
+    {
+        var nodes = ButtonTests.Nodes(Render($"<line id='line' {geometry} gradient='{kind}' color='#ff000080' endColor='{{{{end}}}}' gradientAngle='135'/>", "{\"end\":\"#00ff0080\"}")).ToArray();
+        var shapes = nodes.Where(n => n.Type == "ui.shape").ToArray();
+        Assert.That(shapes, Has.Length.EqualTo(2));
+        var paint = shapes[0].Properties.ContainsKey("strokeColor") ? "strokeColor" : "color";
+        Assert.That(shapes.Select(n => n.Properties[paint].GetString()), Is.EqualTo(new[] { "#ff0000", "#00ff00" }));
+        if (shapes[0].Properties.ContainsKey("path"))
+            Assert.That(shapes[1].Properties["path"].GetString(), Is.EqualTo(shapes[0].Properties["path"].GetString()));
+        var mask = nodes.Single(n => n.Properties.ContainsKey("mask")).Properties["mask"].GetProperty(kind);
+        Assert.That(mask.GetProperty("stops")[1].GetProperty("opacity").GetDouble(), Is.EqualTo(1));
+        Assert.That(nodes.Count(n => n.Properties.TryGetValue("opacity", out var alpha) && alpha.GetDouble() == 128d / 255), Is.EqualTo(1));
+    }
+
+    [Test] public void LineGradientRejectsDifferentAlpha() => Assert.Throws<FormatException>(() =>
+        Render("<line id='line' gradient='linear' color='#ff000080' endColor='#ffffff'/>"));
+
     [Test] public void EndpointsAndGradientAnglesInterpolateWithoutChangingIdentity()
     {
         var clock = new Clock(); var animation = new DisplayAnimation(clock);
@@ -91,4 +112,3 @@ public class DrawingExpansionTests
         history.Redo(); Assert.That(history.Xml, Does.Contain("<layer"));
     }
 }
-

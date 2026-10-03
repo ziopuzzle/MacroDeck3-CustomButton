@@ -8,7 +8,7 @@ For rectangles/circles/capsules/paths and legacy length-based lines, `x/y/width/
 
 Endpoint lines, polygons and sectors already have normalized geometry; local mode additionally makes their allocation fill the parent rather than reserve one widget-basis unit. A zero-size parent still cannot display anything.
 
-**Limits:** gradient fills remain available only with widget coordinates. Stroke width and endpoint-line thickness still use the widget basis because the host's path stroke uses that basis even for normalized paths. Set these explicitly for small regions. This mode does not change text/font sizes, stack padding/gaps, images or other components.
+**Limits:** rectangle, circle and capsule gradient fills remain available only with widget coordinates. Line gradients support both coordinate modes. Stroke width and endpoint-line thickness still use the widget basis because the host's path stroke uses that basis even for normalized paths. Set these explicitly for small regions. This mode does not change text/font sizes, stack padding/gaps, images or other components.
 
 ## Two-point lines and gradients (0.26.0)
 
@@ -27,7 +27,7 @@ Old `x/y/length/direction` lines are still supported, but cannot be combined wit
 <circle id="disc" width="40%" height="40%" color="#ffffff" endColor="#2196f3" gradient="radial" gradientX="30%" gradientY="30%" />
 ```
 
-This uses the host's [gradient background and clipping API](https://docs.macro-deck.app/ui/components/modifier/), without uploaded images or bands of shapes. Gradient colors must have equal alpha; use component opacity to fade the entire result. Strokes keep their independent color/alpha. Gradient circles require equal width and height. Path, polygon, sector and line gradient fills are not implemented because this API cannot clip a background to arbitrary path geometry. Multi-stop gradients and different alpha per stop remain future work.
+This uses the host's [gradient background and clipping API](https://docs.macro-deck.app/ui/components/modifier/), without uploaded images or bands of shapes. Gradient colors must have equal alpha; use component opacity to fade the entire result. Strokes keep their independent color/alpha. Gradient circles require equal width and height. Path, polygon and sector gradient fills are not implemented because this API cannot clip a background to arbitrary path geometry. Multi-stop gradients and different alpha per stop remain future work.
 
 See [the combined example](../examples/basic_gradation.xml). In the editor, Add component has subcategories; the component menu offers both Wrap in stack and Wrap in layer. Wrapping preserves the selected subtree and IDs, and supports undo/redo.
 
@@ -104,3 +104,13 @@ The beta.11 reader accepts only RGB strings. The plugin sends six-digit RGB and 
 
 With initial JSON `{"used":1500,"capacity":2000}`, this is 60% long. Expressions support arithmetic, remainder, rounding, range functions and more. See [calculations and formats](expressions.md) for the full syntax, including millisecond-to-duration formatting. Evaluation occurs on display updates, not as a separate animation loop.
 
+
+## Line gradients (0.35.1)
+
+All line modes support `gradient="none|linear|radial"`, `endColor`, `gradientAngle`, `gradientX` and `gradientY`, including `coordinates="local"`. The parameters use the same defaults as shape gradients. The gradient spans the line's allocated box, not the distance between its endpoints; use `gradientAngle` to choose its direction (0 up, 90 right, 180 down). For endpoint/angle lines, the box is the entire path canvas.
+
+```xml
+<line id="gradientLine" x1="10%" y1="50%" x2="90%" y2="50%" thickness="4%" color="#2196f3a0" endColor="#54dfcca0" gradient="linear" gradientAngle="90" />
+```
+
+Native opacity masks blend two identical line shapes without dividing the stroke into segments. Both colors must have the same alpha, applied once to the combined result. Bindings, conditional styles and transitions work with the same gradient attributes as other shapes. Two shapes and mask/layout wrappers count toward rendering limits.
