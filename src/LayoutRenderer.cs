@@ -25,6 +25,7 @@ public sealed class LayoutRenderer
         "icon" => "name size color role",
         "gauge" => "value min max startAngle endAngle color thickness",
         "image" => "source size fit zoom offsetX offsetY transition brightness saturation",
+        "svg" => "rasterSize size fit zoom offsetX offsetY transition brightness saturation",
         "text" => "size sizeCap minSize weight fontFace color role digits align wrap maxLines",
         "bar" => "value start marker min max color endColor thickness",
         "chart" => "key min max points color plotTop thickness",
@@ -73,7 +74,7 @@ public sealed class LayoutRenderer
             if (!LayoutDocument.IsContainer(node) && node.Elements().Any(e => e.Name != "style")) throw new FormatException($"{node.Name} cannot contain child components.");
             if (node.Name == "responsive" && node.Elements().Any(e => e.Name != "variant" && e.Name != "style")) throw new FormatException("Responsive children must be variant components; the first is the default layout.");
             if (node.Name == "variant" && node.Parent?.Name != "responsive") throw new FormatException("Place variant directly inside responsive.");
-            if (node.Name.LocalName != "text" && node.Nodes().OfType<XText>().Any(t => !string.IsNullOrWhiteSpace(t.Value))) throw new FormatException("Place text inside a text component.");
+            if (node.Name.LocalName is not ("text" or "svg") && node.Nodes().OfType<XText>().Any(t => !string.IsNullOrWhiteSpace(t.Value))) throw new FormatException("Place text inside a text or SVG component.");
         }
     }
     public static string Expand(string text, IReadOnlyDictionary<string, JsonElement> values)
@@ -283,7 +284,11 @@ public sealed class LayoutRenderer
                         StartAngle = N("startAngle", -135, -3600, 3600), EndAngle = N("endAngle", 135, -3600, 3600),
                         LevelColor = Color("color", "#54dfcc"), Thickness = Length("thickness", .04, 1) };
                 case "image":
-                    var resource = images?.Invoke(key, A("source"));
+                case "svg":
+                    var source = node.Name.LocalName == "svg"
+                        ? SvgTemplate.Source(string.Concat(node.Nodes().OfType<XText>().Select(t => t.Value)), value => Expand(value, values), Integer("rasterSize", 512, 64, 1024))
+                        : A("source");
+                    var resource = images?.Invoke(key, source);
                     var imageSize = Length("size", 1, 1);
                     var image = new UiImage { Key = key, Fill = fill, MainSize = mainSize, Size = imageSize,
                         Source = resource == null ? default : UiValue.Of(resource), Transition = Choice("transition", "none") == "none" ? default : UiValue.Of("crossfade"),
@@ -505,7 +510,7 @@ public sealed class LayoutRenderer
             result = new UiModifier { Key = key, MainSize = mainSize, Fill = fill, Clip = "bounds",
                 Frame = new UiFrame { MaxHeight = maxHeight }, Child = textRun with { Key = "text", MainSize = default, Fill = default } };
         }
-        if (node.Name.LocalName is not ("image" or "modifier"))
+        if (node.Name.LocalName is not ("image" or "svg" or "modifier"))
             result = AlphaPaint.Fade(AlphaPaint.Apply(result, colors), N("opacity", 1), animated.Contains("opacity") && duration > 0);
         if (input != null && (node.Name.LocalName is "stack" or "layer") && B("interactive", false))
             result = result with { Events = new[] { UiComponentEvents.Press, UiComponentEvents.LongPress, UiComponentEvents.PressStart, UiComponentEvents.PressEnd }

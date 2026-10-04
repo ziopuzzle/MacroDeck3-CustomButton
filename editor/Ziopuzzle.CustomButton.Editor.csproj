@@ -22,6 +22,7 @@
     <Compile Include="../src/ShapePaths.cs;../src/DisplayColor.cs;../src/AlphaPaint.cs;../src/DisplayMath.cs;../src/LayoutDropPlacement.cs;../src/LayoutOptions.cs;../src/LayoutDocument.cs;../src/LayoutEditHistory.cs;../src/LayoutRenderer.cs;../src/DataHub.cs;../src/DisplayCondition.cs;../src/PreviewSelection.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../src/LocalShapePath.cs" Link="Shared/LocalShapePath.cs" />
     <Compile Include="../src/LayoutLimits.cs" Link="Shared/LayoutLimits.cs" />
+    <Compile Include="../src/SvgTemplate.cs" Link="Shared/SvgTemplate.cs" />
   </ItemGroup>
 </Project>
 

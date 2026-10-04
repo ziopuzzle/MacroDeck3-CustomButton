@@ -40,6 +40,7 @@ Initial data: `{"title":"CPU","value":42}`. Initial data supplies values until u
 - Layout: `stack`, `layer`, text, conditional visibility/styles, expressions and numeric formatting.
 - Data: range bars, History Graph, clocks and time-based progress bars.
 - Images: local files and HTTP/HTTPS URLs with data bindings, opacity and crossfade. See [images](docs/images.md).
+- SVG: inline shapes, paths, text and gradients with XML-safe variable bindings, rendered as cached transparent images. See [variable SVG](docs/svg.md).
 - Geometry: rectangles, circles, capsules, lines, paths, sectors and polygons.
 - Input: independent press targets and sliders, with target IDs filled in by the event shortcuts.
 - Color: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA` (alpha last), plus component opacity.

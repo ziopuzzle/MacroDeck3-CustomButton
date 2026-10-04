@@ -19,6 +19,22 @@ public static class TestApp
 }
 public class EditorTests
 {
+    [AvaloniaTest] public void SvgMarkupEditorPreservesBindingsAndCdata()
+    {
+        var w = new EditorWindow("<svg id='drawing'><![CDATA[<svg width='100' height='100'><circle r='20'/></svg>]]></svg>", "{\"color\":\"#ff0000\"}", true); w.Show(); Flush(w);
+        try
+        {
+            var field = Find<TextBox>(w, "field_text");
+            Assert.That(field.AcceptsReturn, Is.True);
+            field.Text = "<svg width='100' height='100'><circle cx='50' cy='50' r='20' fill='{{color}}'/></svg>"; Flush(w);
+            var node = XElement.Parse(w.LayoutXml);
+            Assert.That(node.Nodes().OfType<XCData>(), Has.Exactly(1).Items);
+            Assert.That(node.Value, Does.Contain("{{color}}"));
+            Find<TextBox>(w, "field_rasterSize").Text = "256"; Flush(w);
+            Assert.That(XElement.Parse(w.LayoutXml).Attribute("rasterSize")!.Value, Is.EqualTo("256"));
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
     [AvaloniaTest] public void LineModeSwitchRemovesCompetingCoordinates()
     {
         var w = new EditorWindow("<line id='line' x1='10%' y1='50%' x2='90%' y2='50%'/>", "{}", true); w.Show(); Flush(w);
@@ -87,8 +103,9 @@ public class EditorTests
             var groups = add.ContextMenu!.Items.Cast<MenuItem>().ToArray();
             Assert.That(groups.Select(g => g.Header), Is.EqualTo(new[] { "Layout", "Text and images", "Data and controls", "Shapes" }));
             var entries = groups.SelectMany(g => g.Items.Cast<MenuItem>()).ToArray();
-            Assert.That(entries.Length, Is.EqualTo(23));
-            Assert.That(entries.Select(e => e.Header).Distinct().Count(), Is.EqualTo(23));
+            Assert.That(entries.Length, Is.EqualTo(24));
+            Assert.That(entries.Select(e => e.Header).Distinct().Count(), Is.EqualTo(24));
+            Assert.That(groups[1].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("▧ SVG"));
             Assert.That(groups[0].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("↻ Transform"));
             Assert.That(groups[1].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("☆ Icon"));
             Assert.That(groups[2].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("◴ Gauge"));

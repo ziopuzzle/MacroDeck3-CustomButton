@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.36.0 — variable-driven SVG
+
+- Add an SVG component with XML-safe data bindings and expressions for text, colors and geometry; render self-contained shapes, paths, text, gradients and clipping paths as transparent PNG resources.
+- Add native editor markup editing and a BASIC Variable SVG template. Preserve image fitting, positioning, opacity and crossfade controls.
+- Cache unchanged SVG and coalesce changed content to at most five renders per second per element. Limit raster size to 64–1024 pixels and reject scripts, external references, embedded images and stylesheets.
+
 ## 0.35.1 — line gradients
 
 - Add linear and radial gradients to all line geometry modes, including local coordinates, using native opacity masks rather than segmented paths. Support bindings, conditional styles and transitions with the existing gradient parameters.

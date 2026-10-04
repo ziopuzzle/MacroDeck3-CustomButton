@@ -24,7 +24,7 @@ public sealed partial class EditorWindow
         tools.Children.Add(Button("Reset input", () => { history.Set(originalXml, coalesce); propertyDirty = false; Publish(); Refresh(); })); properties.Children.Add(tools);
         properties.Children.Add(new TextBlock { Text = T("Valid settings are applied automatically."), Foreground = B("#bbbbbb") });
         var attributes = new Dictionary<string, TextBox>(); TextBox? text = null;
-        if (node.Name == "text") text = Field(properties, "Display text", string.Concat(node.Nodes().OfType<XText>().Select(n => n.Value)), "text", node.Name.LocalName);
+        if (node.Name == "text" || node.Name == "svg") text = Field(properties, node.Name == "svg" ? "SVG markup" : "Display text", string.Concat(node.Nodes().OfType<XText>().Select(n => n.Value)), "text", node.Name.LocalName);
         var allowed = LayoutRenderer.Allowed(node.Name.LocalName).Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var common = new StackPanel { Spacing = 6 };
         var transitions = new StackPanel { Spacing = 6 };
@@ -71,7 +71,7 @@ public sealed partial class EditorWindow
         updateDraftDescription = () =>
         {
             var draft = new XElement(node);
-            if (text != null) { draft.Nodes().OfType<XText>().Remove(); draft.AddFirst(new XText(text.Text ?? "")); }
+            if (text != null) { draft.Nodes().OfType<XText>().Remove(); draft.AddFirst(node.Name == "svg" ? new XCData(text.Text ?? "") : new XText(text.Text ?? "")); }
             foreach (var pair in attributes) draft.SetAttributeValue(pair.Key, string.IsNullOrWhiteSpace(pair.Value.Text) ? null : pair.Value.Text);
             if (lineMode != null)
                 foreach (var name in geometryFields.Keys.Where(name => !geometryNames[lineMode.SelectedIndex].Contains(name))) draft.SetAttributeValue(name, null);
@@ -132,8 +132,14 @@ public sealed partial class EditorWindow
         panel.Children.Add(new TextBlock { Text = T(label), Foreground = B("#bbbbbb") });
         var row = new DockPanel { LastChildFill = true };
         var box = new TextBox { Name = "field_" + attribute, Text = value, MinWidth = 40, Padding = new Thickness(7, 5) };
+        if (component == "svg" && attribute == "text")
+        {
+            box.AcceptsReturn = true; box.TextWrapping = TextWrapping.Wrap;
+            box.MinHeight = 180; box.MaxHeight = 420;
+        }
         ToolTip.SetTip(box, T("Leave blank for the default. Use {{dataName}}, {{= used / total * 100:F1}}%, or {{= floor(position / 1000):duration}} for milliseconds. Math supports floor, ceil, round, abs, min, max, clamp and more."));
         if (attribute == "id") ToolTip.SetTip(box, "Unique element ID. Valid edits apply automatically. Update matching action-event filters separately.");
+        if (attribute == "rasterSize") ToolTip.SetTip(box, "SVG image's longest edge in pixels: 64–1024, default 512. The aspect ratio is preserved. SVG variables update with display data; unchanged SVG is cached.");
         if (attribute == "transitionMs") ToolTip.SetTip(box, "0 disables transitions. Range: 0–10000 ms. Only later changes animate; the initial value appears immediately.");
         if (attribute == "angle") ToolTip.SetTip(box, "Degrees: 0 points right, 90 down. Use cx/cy/length; clear x1/y1/x2/y2 and x/y/direction. Animate angle to rotate a needle without shortening it. Use a square box for a circular sweep.");
         if (attribute is "offsetX" or "offsetY") ToolTip.SetTip(box, "Use a fraction from -1 to 1: 0.2 moves by 20% of the image box. Positive X moves right; positive Y moves down. The offset is applied after zoom. Supports data bindings and transitions.");

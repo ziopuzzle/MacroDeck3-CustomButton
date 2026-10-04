@@ -15,6 +15,7 @@ public sealed class SessionImages : IAsyncDisposable
         public double AspectRatio = 1;
         public Task Work = Task.CompletedTask;
         public DateTime RetryAfter;
+        public DateTime StartAfter;
         public string? Fingerprint;
         public int Failures;
         public bool Active = true;
@@ -33,7 +34,7 @@ public sealed class SessionImages : IAsyncDisposable
     public long Revision => Interlocked.Read(ref revision);
     public bool NeedsRefresh
     {
-        get { lock (gate) return slots.Values.Any(s => s.Active && s.Work.IsCompleted && clock.GetUtcNow().UtcDateTime >= s.RetryAfter); }
+        get { lock (gate) return slots.Values.Any(s => s.Active && s.Work.IsCompleted && clock.GetUtcNow().UtcDateTime >= s.RetryAfter && clock.GetUtcNow().UtcDateTime >= s.StartAfter); }
     }
     public SessionImages(IUiResourceRegistry registry, HttpClient http, Action<string>? diagnostic = null, Uri? hostUrl = null, TimeProvider? clock = null)
     { this.registry = registry; this.http = http; this.diagnostic = diagnostic; this.hostUrl = hostUrl; this.clock = clock ?? TimeProvider.System; }
@@ -52,9 +53,10 @@ public sealed class SessionImages : IAsyncDisposable
             slot.Active = true;
             if (slot.Source != source) { slot.Source = source; slot.RetryAfter = default; slot.Failures = 0; }
             if (source is "" or "—") slot.Resource = null;
-            if (slot.Work.IsCompleted && clock.GetUtcNow().UtcDateTime >= slot.RetryAfter)
+            if (slot.Work.IsCompleted && clock.GetUtcNow().UtcDateTime >= slot.RetryAfter && clock.GetUtcNow().UtcDateTime >= slot.StartAfter)
             {
                 slot.RetryAfter = DateTime.MaxValue;
+                slot.StartAfter = source.StartsWith(SvgTemplate.Prefix, StringComparison.Ordinal) ? clock.GetUtcNow().UtcDateTime.AddMilliseconds(200) : default;
                 slot.Work = Task.Run(() => LoadAsync(slot, source));
             }
             return (slot.Resource, slot.AspectRatio);
@@ -105,7 +107,8 @@ public sealed class SessionImages : IAsyncDisposable
                 {
                     slot.Resource = resource; slot.AspectRatio = aspectRatio;
                     slot.Failures = 0;
-                    slot.RetryAfter = source is "" or "—" ? DateTime.MaxValue : clock.GetUtcNow().UtcDateTime.AddSeconds(30);
+                    slot.RetryAfter = source is "" or "—" || source.StartsWith(SvgTemplate.Prefix, StringComparison.Ordinal)
+                        ? DateTime.MaxValue : clock.GetUtcNow().UtcDateTime.AddSeconds(30);
                 }
             }
         }

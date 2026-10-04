@@ -52,7 +52,7 @@ public sealed partial class EditorWindow : Window
         ["transform"] = "↻ Transform", ["icon"] = "☆ Icon", ["gauge"] = "◴ Gauge",
         ["chart"] = "⌁ History graph", ["clock"] = "◷ Clock", ["progress-bar"] = "▷ Playback progress", ["slider"] = "● Slider",
         ["rect"] = "▰ Rectangle", ["line"] = "╱ Line", ["polygon"] = "△ Polygon", ["sector"] = "◔ Sector",
-        ["image"] = "▧ Image", ["circle"] = "○ Circle", ["capsule"] = "▰ Capsule", ["path"] = "◇ Path"
+        ["svg"] = "▧ SVG", ["image"] = "▧ Image", ["circle"] = "○ Circle", ["capsule"] = "▰ Capsule", ["path"] = "◇ Path"
     };
     private static IBrush B(string text) => Brush.Parse(text);
     private static string Id(XElement node) => (string)node.Attribute("id")!;
@@ -137,7 +137,7 @@ public sealed partial class EditorWindow : Window
             var menu = new ContextMenu();
             foreach (var (label, types) in new[] {
                 ("Layout", new[] { "stack", "layer", "transform", "modifier", "responsive", "variant" }),
-                ("Text and images", new[] { "text", "image", "icon", "dynamic-text" }),
+                ("Text and images", new[] { "text", "image", "svg", "icon", "dynamic-text" }),
                 ("Data and controls", new[] { "bar", "chart", "clock", "progress-bar", "slider", "gauge" }),
                 ("Shapes", new[] { "rect", "circle", "capsule", "line", "polygon", "sector", "path" }) })
             {

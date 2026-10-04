@@ -47,7 +47,7 @@ foreach ($name in ($packages.Keys | Sort-Object)) {
         $licensePath = Join-Path $path $license
         if (-not (Test-Path $licensePath)) { throw "Missing declared license for $name" }
         Copy-Item $licensePath (Join-Path $folder 'DECLARED-LICENSE.txt')
-    } elseif ($license -notin @('MIT','Apache-2.0')) {
+    } elseif ($license -notin @('MIT','Apache-2.0','MS-PL')) {
         throw "Review unhandled license for ${name}: $license"
     }
 }

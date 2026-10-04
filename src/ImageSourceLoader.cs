@@ -13,6 +13,8 @@ public static class ImageSourceLoader
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxBytes);
         source = source.Trim();
+        if (source.StartsWith(SvgTemplate.Prefix, StringComparison.Ordinal))
+            return await SvgRasterizer.RenderAsync(source, maxBytes, cancellationToken);
         if (string.IsNullOrEmpty(source)) throw new FormatException("Choose an image file or an HTTP/HTTPS URL.");
         if (source.StartsWith("icon-pack:", StringComparison.OrdinalIgnoreCase))
         {

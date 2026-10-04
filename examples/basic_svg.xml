@@ -1,0 +1,15 @@
+<svg id="drawing" size="100%" rasterSize="512"><![CDATA[
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160" viewBox="0 0 240 160">
+  <defs>
+    <linearGradient id="paint" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="{{color}}" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="232" height="152" rx="18" fill="#152638" />
+  <text x="120" y="50" text-anchor="middle" font-family="sans-serif" font-size="22" fill="#ffffff">{{title}}</text>
+  <rect x="20" y="75" width="200" height="22" rx="5" fill="#34495e" />
+  <rect x="20" y="75" width="{{= clamp(value, 0, 100) * 2}}" height="22" rx="5" fill="url(#paint)" />
+  <text x="120" y="130" text-anchor="middle" font-family="sans-serif" font-size="24" fill="{{color}}">{{value:0}}%</text>
+</svg>
+]]></svg>

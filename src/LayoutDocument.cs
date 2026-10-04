@@ -59,6 +59,7 @@ public sealed class LayoutDocument
             case "circle": case "capsule": child.SetAttributeValue("width", "40%"); child.SetAttributeValue("height", type == "circle" ? "40%" : "20%"); child.SetAttributeValue("color", "#54dfcc"); break;
             case "path": child.SetAttributeValue("data", "M0 0 L1 0.5 L0 1 Z"); child.SetAttributeValue("width", "40%"); child.SetAttributeValue("height", "40%"); child.SetAttributeValue("color", "#54dfcc"); break;
             case "image": child.SetAttributeValue("source", "{{imageUrl}}"); child.SetAttributeValue("size", "100%"); break;
+            case "svg": child.Add(new XCData("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"200\" viewBox=\"0 0 200 200\"><circle cx=\"100\" cy=\"100\" r=\"80\" fill=\"#54dfcc\"/></svg>")); child.SetAttributeValue("size", "100%"); break;
             case "text": child.Value = "Text"; child.SetAttributeValue("size", "18%"); break;
             case "polygon": child.SetAttributeValue("points", "10%,90%;50%,10%;90%,90%"); child.SetAttributeValue("color", "#54dfcc"); break;
             case "sector": child.SetAttributeValue("radius", "40%"); child.SetAttributeValue("startAngle", "-90"); child.SetAttributeValue("sweepAngle", "120"); child.SetAttributeValue("color", "#54dfcc"); break;

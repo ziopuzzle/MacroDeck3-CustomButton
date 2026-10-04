@@ -194,7 +194,7 @@ The value is normalized and clamped to min/max (defaults 0/100). Direction defau
 | UiShape | rect / circle / capsule / line / polygon / sector / path |
 | UiModifier | Alpha, opacity and shape frames |
 
-Dynamic/progress text can be composed with text and values. Text input, lists, toggles, dials, segmented controls and grids are not exposed in this XML schema. Images use registered host resources. See [shapes](shapes.md) and [images](images.md).
+Dynamic/progress text can be composed with text and values. Text input, lists, toggles, dials, segmented controls and grids are not exposed in this XML schema. Images use registered host resources. The `svg` component renders inline variable-bound SVG to these same resources. See [shapes](shapes.md), [images](images.md) and [variable SVG](svg.md).
 
 ## Layout limits
 
