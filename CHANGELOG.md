@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.36.3 — conditional-style XML formatting
+
+- Normalize indentation inside images and other non-text components so conditional styles and closing tags stay on separate lines after GUI edits. Preserve text whitespace, SVG CDATA and condition order.
+
 ## 0.36.2 — image and SVG tint
 
 - Add optional `color` to images and SVGs to recolour the entire artwork while preserving its alpha mask. Support data bindings, conditional styles and colour interpolation; tint alpha multiplies component opacity.

@@ -5,6 +5,24 @@ namespace Ziopuzzle.CustomButton.Tests;
 
 public class LayoutFormattingTests
 {
+    [TestCase("image")][TestCase("icon")][TestCase("bar")][TestCase("line")]
+    public void StylesInsideLeafComponentsAreIndentedAndRemainInOrder(string type)
+    {
+        var xml = $"<stack id='root'><{type} id='art'>\n    <style when='state == 1' color='#ff0000'/>\n<style when='state == 2' color='#00ff00'/><style when='state == 3' color='#0000ff'/></{type}></stack>";
+        var formatted = new LayoutDocument(xml).Serialize();
+        Assert.That(formatted, Is.EqualTo($"<stack id=\"root\">\n  <{type} id=\"art\">\n    <style when=\"state == 1\" color=\"#ff0000\" />\n    <style when=\"state == 2\" color=\"#00ff00\" />\n    <style when=\"state == 3\" color=\"#0000ff\" />\n  </{type}>\n</stack>"));
+        Assert.That(new LayoutDocument(formatted).Serialize(), Is.EqualTo(formatted));
+    }
+
+    [Test] public void FormattingPreservesSvgCdataAlongsideStyles()
+    {
+        const string content = "\n<svg width='100' height='100'>\n  <text x='10' y='20'> A &amp; B </text>\n</svg>\n";
+        var xml = "<svg id='art'><![CDATA[" + content + "]]><style when='state == 1' color='#ff0000'/></svg>";
+        var formatted = new LayoutDocument(xml).Serialize();
+        var saved = XElement.Parse(formatted, LoadOptions.PreserveWhitespace);
+        Assert.That(saved.Nodes().OfType<XCData>().Single().Value, Is.EqualTo(content));
+        Assert.That(new LayoutDocument(formatted).Serialize(), Is.EqualTo(formatted));
+    }
     [Test] public void GuiEditsRemoveOrphanIndentationAndPutEachComponentOnItsOwnLine()
     {
         var history = new LayoutEditHistory("<stack id='root'>\n  \n  <layer id='layer'><chart id='chart' key='cpu_value'/><stack id='row'><text id='value'>{{cpu_value}}%</text><bar id='bar' value='{{value}}'/></stack></layer></stack>");

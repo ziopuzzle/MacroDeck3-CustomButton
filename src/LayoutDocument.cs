@@ -19,10 +19,10 @@ public sealed class LayoutDocument
     public static bool IsContainer(XElement element) => element.Name.LocalName is "stack" or "layer" or "transform" or "modifier" or "responsive" or "variant";
     public string Serialize()
     {
-        // Only layout containers have insignificant whitespace. Text nodes (including
-        // whitespace-only labels and mixed text/style content) must remain untouched.
+        // All non-text components can contain styles with insignificant indentation.
+        // Preserve text and SVG content, including whitespace-only labels and CDATA.
         var formatted = new XElement(Root);
-        foreach (var container in formatted.DescendantsAndSelf().Where(IsContainer))
+        foreach (var container in formatted.DescendantsAndSelf().Where(e => e.Name.LocalName is not ("text" or "svg")))
             container.Nodes().OfType<XText>().Where(t => string.IsNullOrWhiteSpace(t.Value)).Remove();
         var output = new StringBuilder();
         using (var writer = XmlWriter.Create(output, new XmlWriterSettings
