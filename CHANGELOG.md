@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.36.1 — image alignment and transparency
+
+- Give images and SVGs a natural square footprint based on `size`, so horizontal and vertical stacks can align them without extra centered space. Ordinary contain images still support explicit expanded allocation through `fill` or `mainSize`.
+- Use the host's supported transparent background for Icon Pack and artwork cover/zoom rendering, preventing the button accent color from covering transparent pixels or lower layers.
+
 ## 0.36.0 — variable-driven SVG
 
 - Add an SVG component with XML-safe data bindings and expressions for text, colors and geometry; render self-contained shapes, paths, text, gradients and clipping paths as transparent PNG resources.

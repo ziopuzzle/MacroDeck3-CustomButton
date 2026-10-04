@@ -290,7 +290,8 @@ public sealed class LayoutRenderer
                         : A("source");
                     var resource = images?.Invoke(key, source);
                     var imageSize = Length("size", 1, 1);
-                    var image = new UiImage { Key = key, Fill = fill, MainSize = mainSize, Size = imageSize,
+                    var imageFill = B("fill", false);
+                    var image = new UiImage { Key = key, Fill = imageFill, MainSize = mainSize, Size = imageSize,
                         Source = resource == null ? default : UiValue.Of(resource), Transition = Choice("transition", "none") == "none" ? default : UiValue.Of("crossfade"),
                         Opacity = N("opacity", 1), Brightness = N("brightness", 1, 0, 2), Saturation = N("saturation", 1, 0, 2) };
                     var fit = Choice("fit", "contain");
@@ -299,17 +300,25 @@ public sealed class LayoutRenderer
                     var offsetY = N("offsetY", 0, -1, 1);
                     // Explicit framing keeps a stable tree while data-bound values change.
                     if (fit == "contain" && !attributes.ContainsKey("zoom") && !attributes.ContainsKey("offsetX") && !attributes.ContainsKey("offsetY")
-                        && !(duration > 0 && animated.Overlaps(new[] { "zoom", "offsetX", "offsetY" }))) return image;
+                        && !(duration > 0 && animated.Overlaps(new[] { "zoom", "offsetX", "offsetY" })))
+                    {
+                        if (imageFill || attributes.ContainsKey("mainSize") && A("mainSize") != "auto") return image;
+                        // ui.image centres artwork within the entire allocated cross axis. Give it
+                        // a natural square footprint so its parent's start/center/end alignment wins.
+                        return new UiModifier { Key = key, Fill = false,
+                            Frame = new UiFrame { Width = UiLength.OfBasis(imageSize), Height = UiLength.OfBasis(imageSize) },
+                            Child = image with { Key = "art", Fill = default, MainSize = default } };
+                    }
                     var aspect = imageAspectRatio?.Invoke(key) ?? 1;
                     if (double.IsNaN(aspect))
-                        return new UiModifier { Key = key, Fill = fill, MainSize = mainSize, Clip = "bounds", Radius = 0,
+                        return new UiModifier { Key = key, Fill = imageFill, MainSize = mainSize, Clip = "bounds", Radius = 0,
                             Frame = new UiFrame { Width = UiLength.OfBasis(imageSize), Height = UiLength.OfBasis(imageSize) },
                             Child = new UiButton { Key = "art", Source = image.Source, Transition = image.Transition,
-                                Background = "#00000000", Fit = fit, Zoom = zoom, OffsetX = offsetX, OffsetY = offsetY,
+                                Background = "transparent", Fit = fit, Zoom = zoom, OffsetX = offsetX, OffsetY = offsetY,
                                 Opacity = image.Opacity, Brightness = image.Brightness, Saturation = image.Saturation,
                                 Children = [] } };
                     if (!double.IsFinite(aspect) || aspect <= 0) aspect = 1;
-                    return new UiModifier { Key = key, Fill = fill, MainSize = mainSize, Clip = "bounds",
+                    return new UiModifier { Key = key, Fill = imageFill, MainSize = mainSize, Clip = "bounds",
                         Frame = new UiFrame { Width = UiLength.OfBasis(imageSize), Height = UiLength.OfBasis(imageSize) },
                         Child = new UiTransform { Key = "crop", Zoom = zoom * (fit == "cover" ? Math.Max(aspect, 1 / aspect) : 1), OffsetX = offsetX, OffsetY = offsetY,
                             Children = [image with { Key = "art", Fill = true, MainSize = default }] } };

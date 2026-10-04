@@ -65,6 +65,7 @@ public class HostImageSourceTests
         var image = ButtonTests.Nodes(root).Single(n => n.Type == "ui.button");
         Assert.That(image.Properties["fit"].GetString(), Is.EqualTo("cover"));
         Assert.That(image.Properties["zoom"].GetDouble(), Is.EqualTo(1.2));
+        Assert.That(image.Properties["background"].GetString(), Is.EqualTo("transparent"));
         Assert.That(image.Properties.ContainsKey("events"), Is.False);
     }
 }

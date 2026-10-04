@@ -5,6 +5,31 @@ namespace Ziopuzzle.CustomButton.Tests;
 
 public class ImageFramingTests
 {
+    [TestCase("vertical", "start", "")]
+    [TestCase("horizontal", "start", "")]
+    [TestCase("vertical", "end", "zoom='1'")]
+    [TestCase("horizontal", "end", "fit='cover'")]
+    public void ImagesKeepANaturalSquareFootprintInStacks(string direction, string alignment, string extra)
+    {
+        var root = new UiView(ButtonTests.Surface(), new LayoutRenderer($"<stack id='parent' direction='{direction}' justify='{alignment}' align='{alignment}'><image id='art' size='70%' {extra}/></stack>")
+            .Render(DataHub.ParseValues("{}"), imageAspectRatio: _ => double.NaN)).Tree.Root;
+        var frame = root.Children.Single();
+        Assert.That(frame.Type, Is.EqualTo("ui.modifier"));
+        Assert.That(frame.Properties["fill"].GetBoolean(), Is.False);
+        Assert.That(frame.Properties["frame"].GetProperty("width").GetProperty("basis").GetDouble(), Is.EqualTo(.7));
+        Assert.That(frame.Properties["frame"].GetProperty("height").GetProperty("basis").GetDouble(), Is.EqualTo(.7));
+        foreach (var button in ButtonTests.Nodes(root).Where(n => n.Type == "ui.button"))
+            Assert.That(button.Properties["background"].GetString(), Is.EqualTo("transparent"));
+    }
+
+    [Test] public void LayerArtworkDoesNotIntroduceAnOpaqueBackground()
+    {
+        var root = new UiView(ButtonTests.Surface(), new LayoutRenderer("<layer id='root'><icon id='under' name='star'/><image id='over' size='70%' fit='cover'/></layer>")
+            .Render(DataHub.ParseValues("{}"), imageAspectRatio: _ => double.NaN)).Tree.Root;
+        Assert.That(ButtonTests.Nodes(root).Any(n => n.Type == "ui.icon"), Is.True);
+        var button = ButtonTests.Nodes(root).Single(n => n.Type == "ui.button");
+        Assert.That(button.Properties["background"].GetString(), Is.EqualTo("transparent"));
+    }
     private sealed class Clock : TimeProvider
     {
         public long Milliseconds;
