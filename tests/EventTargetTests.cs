@@ -32,6 +32,28 @@ public class EventTargetTests
         Assert.That(Target(), Is.EqualTo("test-widget"));
     }
 
+    [Test] public async Task RepeatedSelfSelectionAlwaysSendsTheConcreteIdBackToTheEditor()
+    {
+        await using var config = new ConfigurationSession(ButtonTests.Surface("config"), TestLayouts.Sample with { Flows = Flows(target: "other-widget") });
+        var revision = config.BuildTree().Revision;
+        for (var i = 0; i < 3; i++)
+        {
+            config.Dispatch(new UiEvent { NodeId = "flows", Name = "change", Revision = revision, Data = Flows() });
+            var patches = config.DrainPatches();
+            Assert.That(patches, Is.Not.Empty);
+            Assert.That(patches[0].FromRevision, Is.EqualTo(revision));
+            var echoed = patches.SelectMany(p => p.Operations).Last(p => p.NodeId == "flows" && p.Properties?.ContainsKey("value") == true).Properties!["value"];
+            Assert.That(echoed[0].GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("test-widget"));
+            revision = patches[^1].ToRevision;
+            Assert.That(config.BuildTree().Revision, Is.EqualTo(revision));
+        }
+        config.Dispatch(new UiEvent { NodeId = "flows", Name = "change", Revision = revision, Data = Flows(target: "other-widget") });
+        var next = config.DrainPatches();
+        Assert.That(next[0].FromRevision, Is.EqualTo(revision));
+        var value = ButtonTests.Nodes(config.BuildTree().Root).Single(n => n.Id == "flows").Properties["value"];
+        Assert.That(value[0].GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("other-widget"));
+    }
+
     [Test] public void HelpDistinguishesDecorativeLabelsAndInteractiveParents()
     {
         const string layout = "<stack id='panel'><stack id='play' interactive='true'><text id='label'>Play</text></stack><slider id='volume' key='volume' interactive='true'/></stack>";

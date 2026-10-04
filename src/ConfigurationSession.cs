@@ -16,6 +16,9 @@ public sealed class ConfigurationSession : IUiSession
     private readonly UiView view;
     private readonly NativeEditorSession nativeEditor = new();
     private bool disposed;
+    private bool echoFlows;
+    private int revisionOffset;
+    private readonly Func<JsonElement> currentFlows;
     public ConfigurationSession(UiSurface surface, ButtonSettings settings)
     {
         var channel = new UiState<string>(settings.Channel);
@@ -24,6 +27,7 @@ public sealed class ConfigurationSession : IUiSession
         var wholeButtonInteraction = new UiState<bool>(settings.WholeButtonInteraction);
         var widgetId = surface.Attributes.TryGetValue("widgetId", out var owner) && owner.ValueKind == JsonValueKind.String ? owner.GetString() : null;
         var flows = new UiState<JsonElement>(settings.Flows);
+        currentFlows = () => flows.Value;
         var orderTarget = new UiState<string>("");
         var flowMessage = new UiState<string>("");
         // Repair existing self-target filters when reopening, as well as on editor changes.
@@ -118,7 +122,14 @@ public sealed class ConfigurationSession : IUiSession
                         new UiActionsListEditor { Key = "flows", CanRun = true, LiteralOnly = true,
                             Binding = Bind.Custom(() => flows.Value, value =>
                             {
-                                try { flows.Value = ButtonEvents.Normalize(value, widgetId); flowMessage.Value = ""; }
+                                try
+                                {
+                                    var normalized = ButtonEvents.Normalize(value, widgetId);
+                                    // The editor updates optimistically. Even if our canonical value
+                                    // is unchanged, it must receive the corrected value again.
+                                    echoFlows |= normalized.GetRawText() != value.GetRawText();
+                                    flows.Value = normalized; flowMessage.Value = "";
+                                }
                                 catch (Exception e) when (e is FormatException or JsonException or InvalidOperationException) { flowMessage.Value = e.Message; }
                             }) }
                     ] },
@@ -154,9 +165,35 @@ public sealed class ConfigurationSession : IUiSession
         => Faulted?.Invoke(this, new UiSessionFaultedEventArgs("Configuration interaction failed.", e.Exception));
     public event EventHandler? Changed;
     public event EventHandler<UiSessionFaultedEventArgs>? Faulted;
-    public UiTree BuildTree() => view.Tree;
-    public IReadOnlyList<UiPatch> DrainPatches() => view.DrainPatches();
-    public void Dispatch(UiEvent uiEvent) { if (!disposed) view.Dispatch(uiEvent); }
+    public UiTree BuildTree()
+    {
+        var tree = view.Tree;
+        return tree with { Revision = checked(tree.Revision + revisionOffset) };
+    }
+    public IReadOnlyList<UiPatch> DrainPatches()
+    {
+        var patches = view.DrainPatches().Select(p => p with {
+            FromRevision = checked(p.FromRevision + revisionOffset), ToRevision = checked(p.ToRevision + revisionOffset) }).ToList();
+        if (!echoFlows) return patches;
+        echoFlows = false;
+        var operation = new UiPatchOperation { Op = UiPatchOperations.SetProperties, NodeId = "flows",
+            Properties = new Dictionary<string, JsonElement> { ["value"] = currentFlows() } };
+        if (patches.Count > 0)
+            patches[^1] = patches[^1] with { Operations = patches[^1].Operations.Append(operation).ToArray() };
+        else
+        {
+            var from = checked(view.Tree.Revision + revisionOffset);
+            revisionOffset = checked(revisionOffset + 1);
+            patches.Add(new UiPatch { FromRevision = from, ToRevision = checked(from + 1), Operations = [operation] });
+        }
+        return patches;
+    }
+    public void Dispatch(UiEvent uiEvent)
+    {
+        if (disposed) return;
+        view.Dispatch(uiEvent with { Revision = uiEvent.Revision is { } revision ? revision - revisionOffset : null });
+        if (echoFlows) Changed?.Invoke(this, EventArgs.Empty);
+    }
     public async ValueTask DisposeAsync()
     {
         if (disposed) return;

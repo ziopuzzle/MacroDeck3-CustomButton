@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.36.4 — repeated self-target selection
+
+- Send normalized Custom Button event targets back to the action editor even when the saved value is unchanged. Repeatedly choosing Use this widget now restores the concrete widget ID instead of leaving the editor's optimistic `$self` value visible.
+
 ## 0.36.3 — conditional-style XML formatting
 
 - Normalize indentation inside images and other non-text components so conditional styles and closing tags stay on separate lines after GUI edits. Preserve text whitespace, SVG CDATA and condition order.
