@@ -139,6 +139,7 @@ public sealed partial class EditorWindow
         }
         ToolTip.SetTip(box, T("Leave blank for the default. Use {{dataName}}, {{= used / total * 100:F1}}%, or {{= floor(position / 1000):duration}} for milliseconds. Math supports floor, ceil, round, abs, min, max, clamp and more."));
         if (attribute == "id") ToolTip.SetTip(box, "Unique element ID. Valid edits apply automatically. Update matching action-event filters separately.");
+        if (attribute == "color" && component is "image" or "svg") ToolTip.SetTip(box, "Optional single-colour tint. Preserves the image alpha mask and replaces all RGB colours. Leave blank for original colours. Supports bindings, conditions and colour transitions. Colour alpha multiplies opacity. Requires client mask support; tinted artwork does not crossfade on beta.15.");
         if (attribute == "rasterSize") ToolTip.SetTip(box, "SVG image's longest edge in pixels: 64–1024, default 512. The aspect ratio is preserved. SVG variables update with display data; unchanged SVG is cached.");
         if (attribute == "transitionMs") ToolTip.SetTip(box, "0 disables transitions. Range: 0–10000 ms. Only later changes animate; the initial value appears immediately.");
         if (attribute == "angle") ToolTip.SetTip(box, "Degrees: 0 points right, 90 down. Use cx/cy/length; clear x1/y1/x2/y2 and x/y/direction. Animate angle to rotate a needle without shortening it. Use a square box for a circular sweep.");

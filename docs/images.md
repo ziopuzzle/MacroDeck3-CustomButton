@@ -41,12 +41,15 @@ or an HTTP/HTTPS URL. Escape XML special characters such as `&` as `&amp;` in li
 | `offsetX`, `offsetY` | −1–1, default 0. Shift right/down by a fraction of the image box, after scaling. Use `0.2` for 20%. |
 | `mainSize`, `fill` | Images default to a natural `size` × `size` footprint (`fill=false`) so the parent stack controls alignment. Ordinary contain images can explicitly request an expanded allocation with `fill=true` or `mainSize`; artwork is centered within it. Cover/zoom framing retains the square crop box. |
 | `opacity` | 0–1; supports the existing opacity animation. |
+| `color` | Optional single-colour tint, including alpha. Replaces all RGB colours while retaining the image's alpha mask. Blank preserves original colours. Supports bindings, conditional styles and colour transitions; colour alpha multiplies `opacity`. |
 | `brightness`, `saturation` | 0–2, default 1. Saturation 0 is grayscale. |
 | `transition` | `none` (default) or `crossfade`, the host's fixed 220 ms artwork transition. |
 | `visible`, `visibleWhen` | Normal visibility rules. |
 
 Place an image inside an interactive stack to make it clickable, or inside a layer
 to put text and controls over it. Image itself does not emit input events.
+
+For a monochrome Icon Pack image, add `color="{{iconColor}}"` (for example `#54dfcc80`). Tint uses the host's native image mask and does not download/re-upload the image. It also works on the `svg` component, recolouring all SVG parts together. On beta.15, clients without CSS mask support show the original colours, and tinted artwork does not crossfade. Brightness and saturation are applied to the tint too. Tint uses the square image frame even when the source dimensions are known.
 
 PNG, JPEG, WebP and GIF are accepted. SVG is not supported by the host resource API.
 The plugin limits each file/download to 2 MiB; the host additionally enforces its

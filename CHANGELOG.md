@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.36.2 — image and SVG tint
+
+- Add optional `color` to images and SVGs to recolour the entire artwork while preserving its alpha mask. Support data bindings, conditional styles and colour interpolation; tint alpha multiplies component opacity.
+- Use the host's native tint rendering for Icon Packs, local/remote images and SVG resources. Leaving color blank restores original colours. On beta.15, tint requires client mask support and disables artwork crossfade.
+
 ## 0.36.1 — image alignment and transparency
 
 - Give images and SVGs a natural square footprint based on `size`, so horizontal and vertical stacks can align them without extra centered space. Ordinary contain images still support explicit expanded allocation through `fill` or `mainSize`.

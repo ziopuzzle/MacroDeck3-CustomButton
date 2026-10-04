@@ -5,6 +5,38 @@ namespace Ziopuzzle.CustomButton.Tests;
 
 public class ImageFramingTests
 {
+    [TestCase("image", false)][TestCase("image", true)][TestCase("svg", false)]
+    public void TintPreservesTransparentBackgroundAndMultipliesAlpha(string type, bool hostImage)
+    {
+        var content = type == "svg" ? "<![CDATA[<svg width='10' height='10'><rect width='10' height='10'/></svg>]]>" : "";
+        var root = new UiView(ButtonTests.Surface(), new LayoutRenderer($"<{type} id='art' color='{{{{tint}}}}' opacity='0.5' fit='cover' zoom='1.2'>{content}</{type}>")
+            .Render(DataHub.ParseValues("{\"tint\":\"#ff880080\"}"), imageAspectRatio: _ => hostImage ? double.NaN : 2)).Tree.Root;
+        var image = ButtonTests.Nodes(root).Single(n => n.Type == "ui.button");
+        Assert.That(image.Properties["tint"].GetString(), Is.EqualTo("#ff8800"));
+        Assert.That(image.Properties["background"].GetString(), Is.EqualTo("transparent"));
+        Assert.That(image.Properties["opacity"].GetDouble(), Is.EqualTo(.5 * 128 / 255));
+        Assert.That(image.Properties["zoom"].GetDouble(), Is.EqualTo(1.2));
+        Assert.That(image.Properties["fit"].GetString(), Is.EqualTo("cover"));
+    }
+
+    [Test] public void ConditionalTintCanClearWithoutChangingNodeIdentity()
+    {
+        var renderer = new LayoutRenderer("<image id='art'><style when='active == 1' color='#00ff00'/></image>");
+        MacroDeck.Ui.Model.Nodes.UiNode Render(int active) => new UiView(ButtonTests.Surface(), renderer.Render(DataHub.ParseValues($"{{\"active\":{active}}}"))).Tree.Root;
+        var tinted = Render(1); var original = Render(0);
+        Assert.That(ButtonTests.Nodes(original).Select(n => n.Id), Is.EqualTo(ButtonTests.Nodes(tinted).Select(n => n.Id)));
+        Assert.That(ButtonTests.Nodes(original).Single(n => n.Type == "ui.button").Properties.ContainsKey("tint"), Is.False);
+    }
+
+    [Test] public void TintSupportsColourInterpolation()
+    {
+        var clock = new Clock(); var animation = new DisplayAnimation(clock);
+        var renderer = new LayoutRenderer("<image id='art' color='{{color}}' transitionMs='1000' transitionProperties='color' colorSpace='srgb' easing='linear'/>");
+        string Tint(string color) => ButtonTests.Nodes(new UiView(ButtonTests.Surface(), renderer.Render(DataHub.ParseValues($"{{\"color\":\"{color}\"}}"), animation: animation)).Tree.Root)
+            .Single(n => n.Type == "ui.button").Properties["tint"].GetString()!;
+        Tint("#000000"); Tint("#ffffff"); clock.Milliseconds = 500;
+        Assert.That(Tint("#ffffff"), Is.EqualTo("#808080"));
+    }
     [TestCase("vertical", "start", "")]
     [TestCase("horizontal", "start", "")]
     [TestCase("vertical", "end", "zoom='1'")]

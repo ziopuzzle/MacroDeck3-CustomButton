@@ -24,8 +24,8 @@ public sealed class LayoutRenderer
         "dynamic-text" => "zone format seconds size sizeCap minSize weight color role align",
         "icon" => "name size color role",
         "gauge" => "value min max startAngle endAngle color thickness",
-        "image" => "source size fit zoom offsetX offsetY transition brightness saturation",
-        "svg" => "rasterSize size fit zoom offsetX offsetY transition brightness saturation",
+        "image" => "source size fit zoom offsetX offsetY transition brightness saturation color",
+        "svg" => "rasterSize size fit zoom offsetX offsetY transition brightness saturation color",
         "text" => "size sizeCap minSize weight fontFace color role digits align wrap maxLines",
         "bar" => "value start marker min max color endColor thickness",
         "chart" => "key min max points color plotTop thickness",
@@ -291,15 +291,21 @@ public sealed class LayoutRenderer
                     var resource = images?.Invoke(key, source);
                     var imageSize = Length("size", 1, 1);
                     var imageFill = B("fill", false);
+                    var imageOpacity = N("opacity", 1);
+                    // Keep the native tint-capable tree stable when a conditional colour is cleared.
+                    var tintMode = attributes.ContainsKey("color") || node.Elements("style").Any(s => s.Attribute("color") != null)
+                        || duration > 0 && animated.Contains("color");
+                    var tint = A("color") is "" or "—" ? null : Color("color", "#ffffff");
+                    var tintAlpha = tint == null ? 1 : colors["color"].Opacity;
                     var image = new UiImage { Key = key, Fill = imageFill, MainSize = mainSize, Size = imageSize,
                         Source = resource == null ? default : UiValue.Of(resource), Transition = Choice("transition", "none") == "none" ? default : UiValue.Of("crossfade"),
-                        Opacity = N("opacity", 1), Brightness = N("brightness", 1, 0, 2), Saturation = N("saturation", 1, 0, 2) };
+                        Opacity = imageOpacity, Brightness = N("brightness", 1, 0, 2), Saturation = N("saturation", 1, 0, 2) };
                     var fit = Choice("fit", "contain");
                     var zoom = N("zoom", 1, .1, 4);
                     var offsetX = N("offsetX", 0, -1, 1);
                     var offsetY = N("offsetY", 0, -1, 1);
                     // Explicit framing keeps a stable tree while data-bound values change.
-                    if (fit == "contain" && !attributes.ContainsKey("zoom") && !attributes.ContainsKey("offsetX") && !attributes.ContainsKey("offsetY")
+                    if (!tintMode && fit == "contain" && !attributes.ContainsKey("zoom") && !attributes.ContainsKey("offsetX") && !attributes.ContainsKey("offsetY")
                         && !(duration > 0 && animated.Overlaps(new[] { "zoom", "offsetX", "offsetY" })))
                     {
                         if (imageFill || attributes.ContainsKey("mainSize") && A("mainSize") != "auto") return image;
@@ -310,12 +316,13 @@ public sealed class LayoutRenderer
                             Child = image with { Key = "art", Fill = default, MainSize = default } };
                     }
                     var aspect = imageAspectRatio?.Invoke(key) ?? 1;
-                    if (double.IsNaN(aspect))
+                    if (double.IsNaN(aspect) || tintMode)
                         return new UiModifier { Key = key, Fill = imageFill, MainSize = mainSize, Clip = "bounds", Radius = 0,
                             Frame = new UiFrame { Width = UiLength.OfBasis(imageSize), Height = UiLength.OfBasis(imageSize) },
                             Child = new UiButton { Key = "art", Source = image.Source, Transition = image.Transition,
                                 Background = "transparent", Fit = fit, Zoom = zoom, OffsetX = offsetX, OffsetY = offsetY,
-                                Opacity = image.Opacity, Brightness = image.Brightness, Saturation = image.Saturation,
+                                Tint = tint == null ? default : UiValue.Of(tint),
+                                Opacity = imageOpacity * tintAlpha, Brightness = image.Brightness, Saturation = image.Saturation,
                                 Children = [] } };
                     if (!double.IsFinite(aspect) || aspect <= 0) aspect = 1;
                     return new UiModifier { Key = key, Fill = imageFill, MainSize = mainSize, Clip = "bounds",
