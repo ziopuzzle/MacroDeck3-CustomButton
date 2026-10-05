@@ -19,6 +19,42 @@ public static class TestApp
 }
 public class EditorTests
 {
+    [AvaloniaTest] public void InvalidInputCanBeDiscardedWithoutLosingValidHistory()
+    {
+        var w = new EditorWindow("<rect id='shape'/>", "{}", true); w.Show(); Flush(w);
+        try
+        {
+            Assert.That(Find<Button>(w, "undo").IsEnabled, Is.False);
+            Find<TextBox>(w, "field_color").Text = "#ff0000";
+            Find<TextBox>(w, "field_color").Text = "#00ff00";
+            Find<TextBox>(w, "field_color").Text = "invalid"; Flush(w);
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Contain("shape"));
+            Click(w, Find<Button>(w, "undo"));
+            Assert.That(w.LayoutXml, Does.Contain("#00ff00"));
+            Assert.That(Find<TextBox>(w, "field_color").Text, Is.EqualTo("#00ff00"));
+            Click(w, Find<Button>(w, "undo"));
+            Assert.That(XElement.Parse(w.LayoutXml).Attribute("color"), Is.Null);
+            Click(w, Find<Button>(w, "redo"));
+            Assert.That(w.LayoutXml, Does.Contain("#00ff00"));
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+    [AvaloniaTest] public void DuplicateXmlSelectsTheOffendingLineAndKeepsTheValidLayout()
+    {
+        var w = new EditorWindow("<stack id='root'/>", "{}", true); w.Show(); Flush(w);
+        try
+        {
+            var tab = w.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().Single(b => b.Content?.ToString() == "XML");
+            tab.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(w);
+            var xml = Find<TextBox>(w, "xml");
+            xml.Text = "<stack id='root'>\n  <text id='same'>A</text>\n  <bar id='same'/>\n</stack>";
+            Click(w, w.GetVisualDescendants().OfType<Button>().Single(b => b.Content?.ToString() == "Apply XML"));
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Contain("Duplicate ID").And.Contain("line 3"));
+            Assert.That(xml.SelectedText, Does.Contain("bar id='same'"));
+            Assert.That(w.LayoutXml, Is.EqualTo("<stack id='root'/>"));
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
     [AvaloniaTest] public void SvgMarkupEditorPreservesBindingsAndCdata()
     {
         var w = new EditorWindow("<svg id='drawing'><![CDATA[<svg width='100' height='100'><circle r='20'/></svg>]]></svg>", "{\"color\":\"#ff0000\"}", true); w.Show(); Flush(w);
@@ -63,6 +99,9 @@ public class EditorTests
             Assert.That(XElement.Parse(w.LayoutXml).Attribute("id")!.Value, Is.EqualTo("renamed"));
             Find<TextBox>(w, "field_text").Text = "Updated"; Flush(w);
             Assert.That(XElement.Parse(w.LayoutXml).Value, Is.EqualTo("Updated"));
+            Click(w, Find<Button>(w, "undo"));
+            Assert.That(XElement.Parse(w.LayoutXml).Attribute("id")!.Value, Is.EqualTo("renamed"));
+            Assert.That(XElement.Parse(w.LayoutXml).Value, Is.EqualTo("Hello"));
             Click(w, Find<Button>(w, "undo"));
             Assert.That(XElement.Parse(w.LayoutXml).Attribute("id")!.Value, Is.EqualTo("title"));
             Find<TextBox>(w, "field_id").Text = "";

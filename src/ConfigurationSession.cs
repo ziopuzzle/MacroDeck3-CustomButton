@@ -19,6 +19,9 @@ public sealed class ConfigurationSession : IUiSession
     private bool echoFlows;
     private int revisionOffset;
     private readonly Func<JsonElement> currentFlows;
+    private readonly bool publishInitialCorrection;
+    private Timer? initialCorrectionTimer;
+    private int initialCorrectionStarted, initialCorrectionReady;
     public ConfigurationSession(UiSurface surface, ButtonSettings settings)
     {
         var channel = new UiState<string>(settings.Channel);
@@ -26,12 +29,23 @@ public sealed class ConfigurationSession : IUiSession
         var values = new UiState<string>(settings.InitialValues);
         var wholeButtonInteraction = new UiState<bool>(settings.WholeButtonInteraction);
         var widgetId = surface.Attributes.TryGetValue("widgetId", out var owner) && owner.ValueKind == JsonValueKind.String ? owner.GetString() : null;
+        publishInitialCorrection = !string.IsNullOrWhiteSpace(widgetId) && settings.ConfigurationWidgetId != widgetId;
         var flows = new UiState<JsonElement>(settings.Flows);
         currentFlows = () => flows.Value;
         var orderTarget = new UiState<string>("");
         var flowMessage = new UiState<string>("");
+        string? copiedWidgetMessage = null;
         // Repair existing self-target filters when reopening, as well as on editor changes.
-        try { flows.Value = ButtonEvents.Normalize(flows.Value, widgetId); }
+        try
+        {
+            flows.Value = ButtonEvents.Normalize(flows.Value, widgetId);
+            if (!string.IsNullOrWhiteSpace(widgetId) && !string.IsNullOrWhiteSpace(settings.ConfigurationWidgetId)
+                && settings.ConfigurationWidgetId != widgetId)
+            {
+                flows.Value = ActionEditorDefaults.RetargetEvents(flows.Value, widgetId, settings.ConfigurationWidgetId);
+                copiedWidgetMessage = "Copied/imported widget detected. Event targets matching the source widget have been updated. Save to apply.";
+            }
+        }
         catch (FormatException e) { flowMessage.Value = e.Message; }
         var mode = new UiState<string>(settings.Design?.Preset ?? "xml");
         var editorStatus = new UiState<string>("Build the layout in a separate editor window. The preview remains on this screen.");
@@ -64,7 +78,16 @@ public sealed class ConfigurationSession : IUiSession
             {
                 Key = "properties", Children =
                 [
-                    new UiStringInput { Key = "channel", Label = TextCatalog.Reference("Channel"), Description = TextCatalog.Reference("Use the same channel as the update action. Buttons on the same channel share data."), LiteralOnly = true, Binding = Bind.To(channel) },
+                    new UiStringInput { Key = "channel", Label = TextCatalog.Reference("Channel"), Description = "Changing this also updates matching channels in this widget's display-data actions. Buttons on the same channel share data.", LiteralOnly = true,
+                        Binding = Bind.Custom(() => channel.Value, value =>
+                        {
+                            flows.Value = ActionEditorDefaults.ChangeChannel(flows.Value, channel.Value, value);
+                            channel.Value = value;
+                        }) },
+                    // Persist provenance through the normal configuration transaction, not a runtime write.
+                    new UiStringInput { Key = "configurationWidgetId", LiteralOnly = true,
+                        Binding = Bind.Custom(() => widgetId ?? settings.ConfigurationWidgetId, _ => { }),
+                        VisibleWhen = new UiVisibleWhen { ParameterName = "channel", Values = [], SiblingValue = () => channel.Value } },
                     new UiBooleanInput { Key = "wholeButtonInteraction", Label = "Whole button interaction", Description = "Disable whole-button gestures and their press effect. Interactive elements and sliders remain available.", Binding = Bind.To(wholeButtonInteraction) },
                     new UiJsonInput { Key = "initialValues", Label = TextCatalog.Reference("Initial data JSON (before receiving data)"), LiteralOnly = true, Binding = Bind.To(values) },
                     new UiProse { Key = "hint", Text = TextCatalog.Reference("Use matching data names in your update actions and display layout.") }
@@ -78,6 +101,19 @@ public sealed class ConfigurationSession : IUiSession
                     [
                     new UiTab { Key = "actionsTab", Label = TextCatalog.Reference("Actions"), Children =
                     [
+                        ..(copiedWidgetMessage == null ? Array.Empty<UiElement>() : new UiElement[]
+                        {
+                            new UiBanner { Key = "copiedWidgetNotice", Text = copiedWidgetMessage, Severity = "error" }
+                        }),
+                        new UiConfigButton { Key = "retargetEvents", Label = "Target this widget in all events", Events = [UiEventHandler.On(UiConfigEvents.Activate, () =>
+                        {
+                            try
+                            {
+                                flows.Value = ActionEditorDefaults.RetargetEvents(flows.Value, widgetId);
+                                flowMessage.Value = "All event widget targets now refer to this widget. Save to apply.";
+                            }
+                            catch (FormatException e) { flowMessage.Value = e.Message; }
+                        })] },
                         new UiProse { Key = "flowHelp", Text = TextCatalog.Reference("Configure actions for each event and save before testing. Check event targets after duplicating a button.") },
                         new UiProse { Key = "controlHelp", Text = TextCatalog.Reference("Select a target, then choose + Add event. Display activated, Display update and Variable changed are under Other (updates and variables). Use Display activated to read current values when the saved button becomes visible. Select the watched variable after adding Variable changed.") },
                         new UiConfigStack { Key = "eventShortcuts", Direction = "horizontal", Wrap = true, Children =
@@ -124,7 +160,7 @@ public sealed class ConfigurationSession : IUiSession
                             {
                                 try
                                 {
-                                    var normalized = ButtonEvents.Normalize(value, widgetId);
+                                    var normalized = ActionEditorDefaults.ApplyChannel(flows.Value, ButtonEvents.Normalize(value, widgetId), channel.Value);
                                     // The editor updates optimistically. Even if our canonical value
                                     // is unchanged, it must receive the corrected value again.
                                     echoFlows |= normalized.GetRawText() != value.GetRawText();
@@ -168,10 +204,20 @@ public sealed class ConfigurationSession : IUiSession
     public UiTree BuildTree()
     {
         var tree = view.Tree;
+        // The host intentionally ignores values in the opening snapshot for dirty tracking.
+        // Send a later revision so both remapped filters and ownership metadata enter its draft.
+        if (publishInitialCorrection && !disposed && Interlocked.Exchange(ref initialCorrectionStarted, 1) == 0)
+            initialCorrectionTimer = new Timer(_ =>
+            {
+                if (disposed) return;
+                Interlocked.Exchange(ref initialCorrectionReady, 1);
+                Changed?.Invoke(this, EventArgs.Empty);
+            }, null, TimeSpan.FromMilliseconds(500), Timeout.InfiniteTimeSpan);
         return tree with { Revision = checked(tree.Revision + revisionOffset) };
     }
     public IReadOnlyList<UiPatch> DrainPatches()
     {
+        if (Interlocked.Exchange(ref initialCorrectionReady, 0) != 0) echoFlows = true;
         var patches = view.DrainPatches().Select(p => p with {
             FromRevision = checked(p.FromRevision + revisionOffset), ToRevision = checked(p.ToRevision + revisionOffset) }).ToList();
         if (!echoFlows) return patches;
@@ -198,6 +244,7 @@ public sealed class ConfigurationSession : IUiSession
     {
         if (disposed) return;
         disposed = true;
+        if (initialCorrectionTimer != null) await initialCorrectionTimer.DisposeAsync();
         view.Changed -= OnChanged;
         view.HandlerFaulted -= OnHandlerFaulted;
         await nativeEditor.DisposeAsync();

@@ -15,6 +15,7 @@ namespace Ziopuzzle.CustomButton;
 public sealed partial class EditorWindow : Window
 {
     private readonly LayoutEditHistory history;
+    private Button undoButton = null!, redoButton = null!;
     private readonly bool testing;
     private readonly Action<string>? sendDraft;
     private readonly string language;
@@ -22,7 +23,7 @@ public sealed partial class EditorWindow : Window
     private readonly StackPanel rows = new() { Spacing = 6 }, properties = new() { Spacing = 6 };
     private readonly ScrollViewer scroll;
     private readonly TextBox xml = new() { Name = "xml", AcceptsReturn = true, AcceptsTab = true, FontFamily = new FontFamily("monospace"), TextWrapping = TextWrapping.NoWrap };
-    private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap, Foreground = B("#bbbbbb") };
+    private readonly TextBlock status = new() { Name = "status", TextWrapping = TextWrapping.Wrap, Foreground = B("#bbbbbb") };
     private readonly ToggleButton guiTab = new() { Content = "GUI" }, xmlTab = new() { Content = "XML" };
     private readonly HashSet<string> collapsed = [];
     private readonly List<Row> targets = [];
@@ -79,7 +80,8 @@ public sealed partial class EditorWindow : Window
         grid.ColumnDefinitions[0].MinWidth = 420; grid.ColumnDefinitions[2].MinWidth = 280;
         var middle = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 8 };
         var toolbar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        toolbar.Children.Add(Button("↶ Undo", () => Undo(false), "undo")); toolbar.Children.Add(Button("↷ Redo", () => Undo(true), "redo"));
+        undoButton = Button("↶ Undo", () => Undo(false), "undo"); redoButton = Button("↷ Redo", () => Undo(true), "redo");
+        toolbar.Children.Add(undoButton); toolbar.Children.Add(redoButton);
         toolbar.Children.Add(AddButton(() => selected)); middle.Children.Add(toolbar);
         scroll = new ScrollViewer { Name = "blocksScroll", Content = rows, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(10) };
         canvas = new Grid { ClipToBounds = true }; canvas.Children.Add(scroll); canvas.Children.Add(indicator);
@@ -127,7 +129,24 @@ public sealed partial class EditorWindow : Window
     private void Guard(Action action)
     {
         try { action(); }
-        catch (Exception e) when (e is FormatException or System.Xml.XmlException or InvalidOperationException or IOException) { Say(e.Message); }
+        catch (Exception e) when (e is FormatException or System.Xml.XmlException or InvalidOperationException or IOException)
+        {
+            Say(e.Message);
+            if (xmlDirty)
+            {
+                var line = e is System.Xml.XmlException xe ? xe.LineNumber : e.Data["LayoutLine"] as int? ?? 0;
+                var column = e is System.Xml.XmlException xc ? xc.LinePosition : e.Data["LayoutColumn"] as int? ?? 0;
+                if (line > 0)
+                {
+                    var text = xml.Text ?? ""; var offset = 0;
+                    for (var i = 1; i < line && offset < text.Length; i++) { var end = text.IndexOf('\n', offset); offset = end < 0 ? text.Length : end + 1; }
+                    offset = Math.Min(text.Length, offset + Math.Max(0, column - 1));
+                    xml.Focus(); xml.CaretIndex = offset; xml.SelectionStart = offset;
+                    var endOfLine = text.IndexOf('\n', offset);
+                    xml.SelectionEnd = endOfLine < 0 ? text.Length : endOfLine;
+                }
+            }
+        }
     }
     private Button AddButton(Func<string> target)
     {
@@ -172,13 +191,20 @@ public sealed partial class EditorWindow : Window
         foreach (var (label, value) in new[] { ("Apply", "apply"), ("Discard", "discard"), ("Cancel", "cancel") }) choices.Children.Add(Button(label, () => dialog.Close(value)));
         panel.Children.Add(choices); dialog.Content = panel; return await dialog.ShowDialog<string?>(this);
     }
-    private void ApplyXml() { history.Set(xml.Text ?? ""); xmlDirty = propertyDirty = false; Publish(); Refresh(); }
+    private void ApplyXml() { _ = new LayoutRenderer(xml.Text ?? "").Render(initialValues); history.Set(xml.Text ?? ""); xmlDirty = propertyDirty = false; Publish(); Refresh(); }
     private void Edit(Func<LayoutDocument, string> edit)
     {
         if (!ResolvePending()) return;
         selected = history.Edit(edit); Publish(); Refresh();
     }
-    private void Undo(bool redo) { if (!ResolvePending()) return; if (redo) history.Redo(); else history.Undo(); Publish(); Refresh(); }
+    private void UpdateHistoryButtons() { undoButton.IsEnabled = history.CanUndo || propertyDirty; redoButton.IsEnabled = history.CanRedo && !propertyDirty; }
+    private void Undo(bool redo)
+    {
+        if (xmlDirty) { if (!ResolvePending()) return; }
+        // Incomplete property input has not entered history. Undo discards it first.
+        if (propertyDirty) { propertyDirty = false; Refresh(); Say("Incomplete input discarded."); return; }
+        if (redo) history.Redo(); else history.Undo(); Publish(); Refresh();
+    }
     private void Publish()
     {
         if (sendDraft == null) return;
@@ -194,7 +220,8 @@ public sealed partial class EditorWindow : Window
         try
         {
             sendDraft(JsonSerializer.Serialize(new { layout = history.Xml, basis }));
-            basis = history.Xml; Say("Changes sent to the draft. Save in Macro Deck to finish.");
+            basis = history.Xml;
+            if (!propertyDirty && !xmlDirty) Say("Changes sent to the draft. Save in Macro Deck to finish.");
         }
         catch (IOException) { Disconnect(); }
     }
@@ -214,6 +241,7 @@ public sealed partial class EditorWindow : Window
         foreach (var ancestor in doc.Find(selected).Ancestors()) collapsed.Remove(Id(ancestor));
         targets.Clear(); rows.Children.Clear(); AddRows(doc.Root, 0);
         xml.Text = history.Xml; xmlDirty = false; rebuilding = false; MakeProperties();
+        UpdateHistoryButtons();
         Dispatcher.UIThread.Post(() => scroll.Offset = offset, DispatcherPriority.Loaded);
     }
     private void Select(string id)

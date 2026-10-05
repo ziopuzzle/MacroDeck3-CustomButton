@@ -10,18 +10,19 @@ namespace Ziopuzzle.CustomButton;
 public sealed partial class EditorWindow
 {
     private Action? updateDraftDescription;
+    private string propertyGroup = "";
     private void MakeProperties()
     {
         updateDraftDescription = null;
         properties.Children.Clear(); propertyDirty = false;
         var node = new LayoutDocument(history.Xml).Find(selected);
         var originalXml = history.Xml;
-        var coalesce = false;
+        history.EndGroup();
         var heading = new TextBlock { Text = T(Types[node.Name.LocalName]) + " · " + selected, FontSize = 17, FontWeight = FontWeight.SemiBold };
         properties.Children.Add(heading);
         var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
 
-        tools.Children.Add(Button("Reset input", () => { history.Set(originalXml, coalesce); propertyDirty = false; Publish(); Refresh(); })); properties.Children.Add(tools);
+        tools.Children.Add(Button("Reset input", () => { history.Set(originalXml); propertyDirty = false; Publish(); Refresh(); })); properties.Children.Add(tools);
         properties.Children.Add(new TextBlock { Text = T("Valid settings are applied automatically."), Foreground = B("#bbbbbb") });
         var attributes = new Dictionary<string, TextBox>(); TextBox? text = null;
         if (node.Name == "text" || node.Name == "svg") text = Field(properties, node.Name == "svg" ? "SVG markup" : "Display text", string.Concat(node.Nodes().OfType<XText>().Select(n => n.Value)), "text", node.Name.LocalName);
@@ -91,7 +92,8 @@ public sealed partial class EditorWindow
                 if (current.Parent == null) next = new LayoutDocument(draft.ToString()).Serialize();
                 else { current.ReplaceWith(draft); next = document.Serialize(); }
                 _ = new LayoutRenderer(next).Render(initialValues);
-                if (next != history.Xml) { history.Set(next, coalesce); coalesce = true; }
+                if (next != history.Xml) history.SetGrouped(next, propertyGroup);
+                UpdateHistoryButtons();
                 var renamed = selected != Id(draft);
                 if (renamed)
                 {
@@ -107,7 +109,7 @@ public sealed partial class EditorWindow
                 Publish();
             }
             catch (Exception e) when (e is FormatException or System.Xml.XmlException or InvalidOperationException)
-            { Say("Input incomplete: " + e.Message + " The last valid display is kept."); }
+            { UpdateHistoryButtons(); Say("Input incomplete in '" + selected + "': " + e.Message + " The last valid display is kept."); }
         };
         applyProperties = () =>
         {
@@ -123,7 +125,7 @@ public sealed partial class EditorWindow
                 ? new Dictionary<string, string> { ["x1"] = "10%", ["y1"] = "50%", ["x2"] = "90%", ["y2"] = "50%" }
                 : lineMode.SelectedIndex == 1 ? new Dictionary<string, string> { ["angle"] = "0" } : new Dictionary<string, string>();
             foreach (var pair in defaults) if (string.IsNullOrWhiteSpace(attributes[pair.Key].Text)) attributes[pair.Key].Text = pair.Value;
-            rebuilding = false; ShowGeometry(); propertyDirty = true; updateDraftDescription();
+            rebuilding = false; ShowGeometry(); propertyGroup = "lineMode"; propertyDirty = true; updateDraftDescription();
         };
         updateDraftDescription();
     }
@@ -200,7 +202,8 @@ public sealed partial class EditorWindow
         var options = LayoutOptions.Choices(component, attribute);
         if (options.Length > 0) Menu("▾", "Suggested values", new[] { ("Use default", "") }.Concat(options.Select(o => (o, o))), false);
         if (keys.Length > 0 && attribute != "id") Menu("{ }", "Insert display data", keys.Select(k => { var v = attribute is "key" or "when" or "visibleWhen" ? k : "{{" + k + "}}"; return (v, v); }), true);
-        box.PropertyChanged += (_, e) => { if (e.Property == TextBox.TextProperty && !rebuilding) { propertyDirty = true; updateDraftDescription?.Invoke(); } }; row.Children.Add(box); panel.Children.Add(row); return box;
+        var groupKey = Guid.NewGuid().ToString();
+        box.PropertyChanged += (_, e) => { if (e.Property == TextBox.TextProperty && !rebuilding) { propertyGroup = groupKey; propertyDirty = true; updateDraftDescription?.Invoke(); } }; row.Children.Add(box); panel.Children.Add(row); return box;
     }
     private static string Label(string attribute) => attribute switch
     {

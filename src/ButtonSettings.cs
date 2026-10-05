@@ -8,6 +8,7 @@ public sealed record ButtonSettings(string Channel, string Layout, string Initia
     public DesignSettings? Design { get; init; }
     public bool WholeButtonInteraction { get; init; } = true;
     public JsonElement Flows { get; init; } = ButtonEvents.Empty;
+    public string ConfigurationWidgetId { get; init; } = "";
     public const string DefaultLayout = "<stack id=\"container\"></stack>";
     public static ButtonSettings Default { get; } = new("demo", DefaultLayout, "{}");
     // XML is the saved design. Old templateId values remain accepted by the schema but do not
@@ -31,6 +32,7 @@ public sealed record ButtonSettings(string Channel, string Layout, string Initia
           "layout":{"type":"string","maxLength":16000},
           "initialValues":{"type":"string","maxLength":16000},
           "wholeButtonInteraction":{"type":"boolean"},
+          "configurationWidgetId":{"type":"string","maxLength":256},
           "editorLanguage":{"type":"string","maxLength":64},
           "pressScriptId":{"type":"string","maxLength":256},
           "updateScriptId":{"type":"string","maxLength":256},
@@ -43,6 +45,7 @@ public sealed record ButtonSettings(string Channel, string Layout, string Initia
         string Get(string key, string fallback) => data.ValueKind == JsonValueKind.Object && data.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString()! : fallback;
         return new(Get("channel", Default.Channel), Get("layout", Default.Layout), Get("initialValues", Default.InitialValues))
         {
+            ConfigurationWidgetId = Get("configurationWidgetId", ""),
             Design = new(data), Flows = data.ValueKind == JsonValueKind.Object && data.TryGetProperty("flows", out var flows) && flows.ValueKind == JsonValueKind.Array ? flows.Clone() : ButtonEvents.Empty,
             WholeButtonInteraction = !(data.ValueKind == JsonValueKind.Object && data.TryGetProperty("wholeButtonInteraction", out var interaction) && interaction.ValueKind == JsonValueKind.False)
         };

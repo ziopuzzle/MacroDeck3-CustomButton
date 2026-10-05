@@ -48,34 +48,48 @@ public sealed class LayoutRenderer
     {
         if (layout.Length > LayoutLimits.XmlCharacters) throw new FormatException($"Layouts must not exceed {LayoutLimits.XmlCharacters} characters.");
         using var reader = XmlReader.Create(new StringReader(layout), new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = LayoutLimits.XmlCharacters });
-        root = XElement.Load(reader);
+        root = XElement.Load(reader, LoadOptions.SetLineInfo);
         var nodes = root.DescendantsAndSelf().ToArray();
         if (nodes.Length > LayoutLimits.XmlElements) throw new FormatException($"Layouts must not exceed {LayoutLimits.XmlElements} XML elements, including styles.");
         if (nodes.Any(e => e.Ancestors().Count() >= LayoutLimits.XmlDepth)) throw new FormatException($"Layouts must not exceed {LayoutLimits.XmlDepth} XML levels, including the root.");
-        var ids = new HashSet<string>(StringComparer.Ordinal);
+        var ids = new Dictionary<string, XElement>(StringComparer.Ordinal);
         foreach (var node in nodes)
         {
-            if (node.Name.Namespace != XNamespace.None) throw new FormatException("XML namespaces are not supported.");
-            if (node.Name.LocalName == "style")
+            try
             {
-                if (node.Parent == null || node.Parent.Name.LocalName == "style" || node.HasElements || !string.IsNullOrWhiteSpace(node.Value)) throw new FormatException("Place style directly inside a component and leave it empty.");
-                var condition = (string?)node.Attribute("when") ?? throw new FormatException("A style needs a when condition.");
-                DisplayCondition.Evaluate(condition, new Dictionary<string, JsonElement>());
+                if (node.Name.Namespace != XNamespace.None) throw new FormatException("XML namespaces are not supported.");
+                if (node.Name.LocalName == "style")
+                {
+                    if (node.Parent == null || node.Parent.Name.LocalName == "style" || node.HasElements || !string.IsNullOrWhiteSpace(node.Value)) throw new FormatException("Place style directly inside a component and leave it empty.");
+                    var condition = (string?)node.Attribute("when") ?? throw new FormatException("A style needs a when condition.");
+                    DisplayCondition.Evaluate(condition, new Dictionary<string, JsonElement>());
+                    foreach (var attribute in node.Attributes())
+                        if (attribute.Name != "when" && (attribute.Name == "id" || !Allowed(node.Parent.Name.LocalName).Split(' ').Contains(attribute.Name.ToString()))) throw new FormatException("Unsupported style attribute: " + attribute.Name);
+                    continue;
+                }
+                var id = (string?)node.Attribute("id") ?? throw new FormatException("Each component needs an id.");
+                if (!Regex.IsMatch(id, "^[A-Za-z][A-Za-z0-9_-]{0,31}$")) throw new FormatException($"Invalid ID '{id}': IDs must begin with a letter and contain at most 32 letters, digits, underscores or hyphens.");
+                if (ids.TryGetValue(id, out var first)) throw new FormatException($"Duplicate ID '{id}'. First defined on <{first.Name}> at line {((IXmlLineInfo)first).LineNumber}, column {((IXmlLineInfo)first).LinePosition}.");
+                ids.Add(id, node);
+                var allowed = Allowed(node.Name.LocalName);
                 foreach (var attribute in node.Attributes())
-                    if (attribute.Name != "when" && (attribute.Name == "id" || !Allowed(node.Parent.Name.LocalName).Split(' ').Contains(attribute.Name.ToString()))) throw new FormatException("Unsupported style attribute: " + attribute.Name);
-                continue;
-            }
-            var id = (string?)node.Attribute("id") ?? throw new FormatException("Each component needs an id.");
-            if (!Regex.IsMatch(id, "^[A-Za-z][A-Za-z0-9_-]{0,31}$") || !ids.Add(id)) throw new FormatException("IDs must begin with a letter, contain at most 32 characters and be unique.");
-            var allowed = Allowed(node.Name.LocalName);
-            foreach (var attribute in node.Attributes())
-                if (!allowed.Split(' ').Contains(attribute.Name.ToString())) throw new FormatException($"Unsupported attribute on {node.Name}: {attribute.Name}");
-            if (node.Attribute("visibleWhen") is { } conditionAttribute) DisplayCondition.Evaluate(conditionAttribute.Value, new Dictionary<string, JsonElement>());
-            if (!LayoutDocument.IsContainer(node) && node.Elements().Any(e => e.Name != "style")) throw new FormatException($"{node.Name} cannot contain child components.");
-            if (node.Name == "responsive" && node.Elements().Any(e => e.Name != "variant" && e.Name != "style")) throw new FormatException("Responsive children must be variant components; the first is the default layout.");
-            if (node.Name == "variant" && node.Parent?.Name != "responsive") throw new FormatException("Place variant directly inside responsive.");
-            if (node.Name.LocalName is not ("text" or "svg") && node.Nodes().OfType<XText>().Any(t => !string.IsNullOrWhiteSpace(t.Value))) throw new FormatException("Place text inside a text or SVG component.");
+                    if (!allowed.Split(' ').Contains(attribute.Name.ToString())) throw new FormatException($"Unsupported attribute on {node.Name}: {attribute.Name}");
+                if (node.Attribute("visibleWhen") is { } conditionAttribute) DisplayCondition.Evaluate(conditionAttribute.Value, new Dictionary<string, JsonElement>());
+                if (!LayoutDocument.IsContainer(node) && node.Elements().Any(e => e.Name != "style")) throw new FormatException($"{node.Name} cannot contain child components.");
+                if (node.Name == "responsive" && node.Elements().Any(e => e.Name != "variant" && e.Name != "style")) throw new FormatException("Responsive children must be variant components; the first is the default layout.");
+                if (node.Name == "variant" && node.Parent?.Name != "responsive") throw new FormatException("Place variant directly inside responsive.");
+                if (node.Name.LocalName is not ("text" or "svg") && node.Nodes().OfType<XText>().Any(t => !string.IsNullOrWhiteSpace(t.Value))) throw new FormatException("Place text inside a text or SVG component.");
+                }
+            catch (FormatException e) { throw LocatedError(node, e); }
         }
+    }
+    private static FormatException LocatedError(XElement node, Exception error)
+    {
+        var location = (IXmlLineInfo)node;
+        var owner = node.Name == "style" ? node.Parent : node;
+        var result = new FormatException($"<{node.Name}> (ID '{owner?.Attribute("id")?.Value ?? "missing"}'): {error.Message} (line {location.LineNumber}, column {location.LinePosition})", error);
+        result.Data["LayoutLine"] = location.LineNumber; result.Data["LayoutColumn"] = location.LinePosition;
+        return result;
     }
     public static string Expand(string text, IReadOnlyDictionary<string, JsonElement> values)
         => Slot.Replace(Regex.Replace(text, @"\{\{\s*=([^{}]*)\}\}", m =>
@@ -103,8 +117,12 @@ public sealed class LayoutRenderer
     }
     private static UiElement? Make(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio)
     {
-        var element = MakeCore(node, values, history, parentHorizontal, selectedId, input, animation, images, imageAspectRatio);
-        return element != null && (string?)node.Attribute("id") == selectedId ? PreviewSelection.Highlight(element) : element;
+        try
+        {
+            var element = MakeCore(node, values, history, parentHorizontal, selectedId, input, animation, images, imageAspectRatio);
+            return element != null && (string?)node.Attribute("id") == selectedId ? PreviewSelection.Highlight(element) : element;
+        }
+        catch (FormatException e) when (!e.Data.Contains("LayoutLine")) { throw LocatedError(node, e); }
     }
     private static UiElement? MakeCore(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio)
     {
@@ -558,5 +576,3 @@ public sealed class LayoutRenderer
                 new UiModifier { Key = "end", Fill = true, Mask = mask, Child = Copy(end, false) }] }), opacity);
     }
 }
-
-

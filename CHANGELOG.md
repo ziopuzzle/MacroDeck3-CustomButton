@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.37.0 — action setup, editor history and diagnostics
+
+- Publish a follow-up configuration revision after opening copied/imported or previously untracked widgets so the host can expose Save without a manual edit.
+
+- Record the configuration's widget ID on save. Opening a copied or imported widget's configuration retargets only event widget fields that match the recorded source ID; explicit targets for other widgets remain unchanged. Save the destination configuration to apply the correction. Older data without a recorded ID is not guessed.
+- Changing the sidebar Channel updates matching channel parameters in this widget's Set display value and Set display data from JSON actions, including nested loops and branches. Other channels and other providers' actions are preserved.
+
+- Group continuous edits to the same property into one undo step, separating different fields and pauses of 800 ms or more. Keep up to 100 steps and disable unavailable Undo/Redo controls.
+- Allow Undo to discard incomplete property input without losing the last valid layout. Keep validation errors visible while earlier valid changes are sent to the host.
+- Report component IDs and XML line/column locations for layout validation and rendering errors; report both definitions of a duplicate ID. Select the offending XML line when applying invalid XML.
+
+- Initialize the default channel of newly added Set display value and Set display data from JSON actions from the Custom Button widget's current channel, including actions nested in loops and branches. Preserve existing actions and explicitly configured channels on pasted actions.
+- Add Target this widget in all events to replace event widget targets with the current widget ID in one click while preserving actions and other event conditions.
+
 ## 0.36.4 — repeated self-target selection
 
 - Send normalized Custom Button event targets back to the action editor even when the saved value is unchanged. Repeatedly choosing Use this widget now restores the concrete widget ID instead of leaving the editor's optimistic `$self` value visible.

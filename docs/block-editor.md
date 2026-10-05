@@ -9,7 +9,8 @@ Open **Drawing > Open editor** to launch the separate Avalonia editor. The templ
 - Drag the left handle to reorder. The upper/lower edges insert before/after; a container's center inserts inside it.
 - Blue insertion lines show ordering; a blue frame shows a nesting target. Cycles and invalid leaf targets are rejected. The root only accepts insertions inside itself.
 - Use the row menu to duplicate, delete or wrap in a stack. Collapse containers to hide their children in the editor without changing the drawing.
-- Undo/Redo tracks up to 30 layout changes. It does not include host-side actions, initial JSON or template selection.
+- Undo/Redo tracks up to 100 layout changes. Continuous edits to the same field (including color picker changes) form one step; changing fields or pausing for at least 800 ms starts another. It does not include host-side actions, initial JSON or template selection.
+- Undo discards incomplete property input first, keeping the last valid layout. A further Undo reverts the preceding valid edit. Unavailable history buttons are disabled. Keyboard shortcuts outside text inputs are Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z and Ctrl/Cmd+Y; text inputs retain their own text-editing undo.
 
 This edits order and parent/child structure, rather than directly dragging rendered controls on a free-position canvas.
 
@@ -22,6 +23,8 @@ Use `{{value}}`, `{{value:F1}}` or arithmetic expressions in supported fields. A
 ## XML and saving
 
 The XML tab supports validation and formatting. Container whitespace is normalized with two-space indentation, while text contents and mixed text/style whitespace are preserved. Invalid drafts are not applied. Input must be resolved before switching contexts; closing can offer apply/discard/cancel.
+
+Validation messages identify the component and its XML line and column. Duplicate IDs include the first definition's location as well as the conflicting definition. Applying invalid XML selects the offending line. Rendering errors also identify the originating component; conditional content that is not currently rendered may require different preview data to validate its values.
 
 Edits are sent to the host configuration draft. Save in Macro Deck to persist them. If the host XML changes while this editor is open, conflict detection stops overwriting it; copy any needed draft, close and reopen. Closing the host configuration closes its editor.
 

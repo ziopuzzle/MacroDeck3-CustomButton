@@ -2,6 +2,14 @@
 
 The plugin uses the public native action editor and plugin events; no host patch is required. Actions is the initial configuration tab. Empty flows are not generated automatically.
 
+New **Set display value** and **Set display data from JSON** actions use the widget's current Channel instead of the default `demo`, including inside loops and branches. Their Channel can still be edited. Pasted or duplicated actions retain explicit non-default channels. Changing the sidebar Channel also updates these actions when their channel exactly matches the previous sidebar value; other channels, variable expressions and other providers' actions remain unchanged.
+
+After copying a widget, choose **Target this widget in all events** to overwrite every event widget-target field with the current widget ID, then save. Element IDs, variable filters and action parameters remain unchanged; events without widget targets are unaffected.
+
+From 0.37.0, saving configuration records its owning widget ID in `configurationWidgetId`. After copying or importing such a widget, **open the destination configuration and save it**: event targets matching the recorded source ID are automatically replaced with the destination ID. References to other widgets remain unchanged. Save the source once with this version before copying or exporting it. Older data without this ID cannot be safely inferred; use the bulk button or edit targets manually. This is a configuration-time correction, not a copy/import hook: until the destination is saved, its stored event filters still refer to the source. References between multiple separately imported widgets are not remapped as a group.
+
+An initial correction is published shortly after opening configuration, making the corrected draft available to the host's Save button without editing another field. The saved JSON is only changed when you save. Opening older data without an owner ID also makes the new ownership metadata available for saving.
+
 Choose an input target, then select an event in **+ Add event**. Target widget/component IDs are inserted automatically. Select **Other (updates and variables)** for Display update (1 second) or the standard Variable changed event. For the latter, select the variable to watch in the created flow. Identical event conditions are not added twice; existing actions are preserved.
 
 Native Short Press, Long Press, Touch Start and Touch End flows are converted to scoped Custom Button events. Saved `$self` targets are resolved to the widget ID when opening/editing configuration. Save before testing and review targets after duplicating a widget. Previews do not publish press events.
