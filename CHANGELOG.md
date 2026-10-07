@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.39.1 — trackpad gesture history and axis direction
+
+- Add a position started event. Pointer down now emits started instead of adjusting; movement emits adjusting and release emits changed.
+- Include startX/startY and previousX/previousY in all position events. Previous coordinates refer to the preceding emitted position event; start events initialize both pairs to the current position.
+- Replace trackpad minX/maxX/minY/maxY with leftValue/rightValue/topValue/bottomValue. Descending ranges are supported with positive snapping increments anchored to the left/top edge. Update existing trackpad XML attribute names when upgrading.
+
 ## 0.39.0 — two-axis trackpad
 
 - Add a Trackpad component with independent X/Y data keys, ranges and snapping, a position crosshair and alpha colors.

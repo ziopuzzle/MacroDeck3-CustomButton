@@ -8,6 +8,35 @@ namespace Ziopuzzle.CustomButton.Tests;
 
 public class ControlInputTests
 {
+    [Test] public async Task TrackpadSupportsDescendingAxesAndRetainsGestureHistory()
+    {
+        var setup = await Open("<trackpad id='pad' leftValue='100' rightValue='-100' topValue='100' bottomValue='0' stepX='10' stepY='5' interactive='true'/>");
+        await using var session = setup.Session;
+        void Send(string name, object data) => session.Dispatch(new() { NodeId = Find(session, "pad").Id, Name = name, Data = JsonSerializer.SerializeToElement(data) });
+        Send("pointer-down", new { id = 1, x = .25, y = .25, t = 0, width = 1, height = 1 });
+        Send("pointer-move", new { samples = new[] { new { id = 1, x = .51, y = .61, t = 1 } } });
+        Send("pointer-up", new { id = 1, x = 2, y = -1, t = 2 });
+        var events = setup.Context.Events.Published.Where(e => e.EventId.StartsWith("element-position-")).ToArray();
+        Assert.That(events.Select(e => e.EventId), Is.EqualTo(new[] { "element-position-start", "element-position-adjust", "element-position-change" }));
+        var start = events[0].Parameters!.Value; var move = events[1].Parameters!.Value; var end = events[2].Parameters!.Value;
+        Assert.Multiple(() => {
+            Assert.That(start.GetProperty("x").GetDouble(), Is.EqualTo(50));
+            Assert.That(start.GetProperty("previousX").GetDouble(), Is.EqualTo(50));
+            Assert.That(move.GetProperty("x").GetDouble(), Is.EqualTo(0));
+            Assert.That(move.GetProperty("y").GetDouble(), Is.EqualTo(40));
+            Assert.That(move.GetProperty("previousY").GetDouble(), Is.EqualTo(75));
+            Assert.That(end.GetProperty("x").GetDouble(), Is.EqualTo(-100));
+            Assert.That(end.GetProperty("y").GetDouble(), Is.EqualTo(100));
+            Assert.That(end.GetProperty("startX").GetDouble(), Is.EqualTo(50));
+            Assert.That(end.GetProperty("previousX").GetDouble(), Is.EqualTo(0));
+            Assert.That(end.GetProperty("previousY").GetDouble(), Is.EqualTo(40));
+        });
+        Send("pointer-down", new { id = 2, x = .5, y = .5, t = 3, width = 1, height = 1 });
+        var restart = setup.Context.Events.Published.Last(e => e.EventId == "element-position-start").Parameters!.Value;
+        Assert.That(restart.GetProperty("startX").GetDouble(), Is.EqualTo(0));
+        Assert.That(restart.GetProperty("previousY").GetDouble(), Is.EqualTo(50));
+    }
+
     [Test] public async Task TrackpadFollowsExternalValuesWithoutPublishingInput()
     {
         var setup = await Open("<trackpad id='pad' interactive='true'/>"); await using var session = setup.Session;
@@ -24,14 +53,14 @@ public class ControlInputTests
     }
 
     [TestCase("keyX='same' keyY='same'")]
-    [TestCase("minX='10' maxX='5'")]
+    [TestCase("leftValue='10' rightValue='10'")]
     [TestCase("stepY='-1'")]
     public void TrackpadRejectsInvalidConfiguration(string attributes)
         => Assert.Throws<FormatException>(() => new LayoutRenderer($"<trackpad id='pad' {attributes}/>").Render(new Dictionary<string, JsonElement>()));
 
     [Test] public async Task TrackpadKeepsContactAcrossRedrawsAndPublishesBothAxes()
     {
-        const string xml = "<trackpad id='pad' keyX='x' keyY='y' minX='-100' maxX='100' stepX='10' interactive='true'/>";
+        const string xml = "<trackpad id='pad' keyX='x' keyY='y' leftValue='-100' rightValue='100' stepX='10' interactive='true'/>";
         var setup = await Open(xml); await using var session = setup.Session;
         void Send(string name, object data) => session.Dispatch(new() { NodeId = Find(session, "pad").Id, Name = name, Data = JsonSerializer.SerializeToElement(data) });
         Send("pointer-down", new { id = 1, x = .5, y = .25, t = 0, width = 2, height = .5 });
@@ -46,9 +75,9 @@ public class ControlInputTests
             Assert.That(final.GetProperty("y").GetDouble(), Is.EqualTo(0));
             Assert.That(final.GetProperty("levelX").GetDouble(), Is.EqualTo(1));
             Assert.That(final.GetProperty("keyY").GetString(), Is.EqualTo("y"));
-            Assert.That(ButtonEvents.InputEvents(xml, "pad").Select(e => e.Id), Is.EqualTo(new[] { "element-position-adjust", "element-position-change" }));
+            Assert.That(ButtonEvents.InputEvents(xml, "pad").Select(e => e.Id), Is.EqualTo(new[] { "element-position-start", "element-position-adjust", "element-position-change" }));
         });
-        Assert.That(setup.Context.Events.Published.Count(e => e.EventId == "element-position-adjust"), Is.EqualTo(2));
+        Assert.That(setup.Context.Events.Published.Count(e => e.EventId == "element-position-adjust"), Is.EqualTo(1));
         Send("pointer-move", new { samples = new[] { new { id = 1, x = 0, y = 0, t = 5 } } });
         Assert.That(setup.Integration.Hub.Snapshot("demo").Values["x"].GetDouble(), Is.EqualTo(100));
     }

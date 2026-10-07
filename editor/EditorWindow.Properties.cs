@@ -225,7 +225,7 @@ public sealed partial class EditorWindow
         "x1" => "Start X (0–100%)", "y1" => "Start Y (0–100%)", "x2" => "End X (0–100%)", "y2" => "End Y (0–100%)",
         "gradient" => "Fill gradient", "gradientAngle" => "Gradient angle (0 up, 90 right)", "gradientX" => "Radial center X (0–100%)", "gradientY" => "Radial center Y (0–100%)",
         "transitionMs" => "Transition duration (ms)", "transitionProperties" => "Transition properties (space separated)", "easing" => "Transition easing", "colorSpace" => "Color interpolation space",
-        "keyX" => "X data key", "keyY" => "Y data key", "minX" => "X minimum", "maxX" => "X maximum", "minY" => "Y minimum", "maxY" => "Y maximum", "stepX" => "X step (0 = continuous)", "stepY" => "Y step (0 = continuous)",
+        "keyX" => "X data key", "keyY" => "Y data key", "leftValue" => "Left edge value", "rightValue" => "Right edge value", "topValue" => "Top edge value", "bottomValue" => "Bottom edge value", "stepX" => "X step (0 = continuous)", "stepY" => "Y step (0 = continuous)",
         "interactive" => "Enable interaction", "step" => "Value step", "key" => "Display data key",
         "opacity" => "Opacity (0–1)", "strokeColor" => "Stroke color", "strokeWidth" => "Stroke width", "cornerRadius" => "Corner radius", "data" => "Path (absolute coordinates)",
         "cx" => "Center X", "cy" => "Center Y", "radius" => "Radius", "startAngle" => "Start angle (degrees)", "sweepAngle" => "Sweep angle (degrees)", "points" => "Point count / polygon coordinates (x,y; x,y; …)",

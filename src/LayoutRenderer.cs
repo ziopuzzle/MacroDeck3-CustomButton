@@ -35,7 +35,7 @@ public sealed class LayoutRenderer
         "dial" => "value key min max step startAngle endAngle color thickness interactive",
         "toggle" => "value key size color interactive",
         "segmented" => "value key color interactive",
-        "trackpad" => "keyX keyY minX maxX minY maxY stepX stepY color background interactive",
+        "trackpad" => "keyX keyY leftValue rightValue topValue bottomValue stepX stepY color background interactive",
         "rect" => "coordinates x y width height color corner cornerRadius strokeColor strokeWidth gradient endColor gradientAngle gradientX gradientY",
         "circle" or "capsule" => "coordinates x y width height color strokeColor strokeWidth gradient endColor gradientAngle gradientX gradientY",
         "path" => "coordinates x y width height data color strokeColor strokeWidth",
@@ -48,6 +48,7 @@ public sealed class LayoutRenderer
     private sealed class PadContact
     {
         public int? Id;
+        public double StartX, StartY, PreviousX, PreviousY;
         public double Width, Height;
         public long LastSeen;
     }
@@ -463,11 +464,11 @@ public sealed class LayoutRenderer
                     var keyX = A("keyX", "x"); var keyY = A("keyY", "y");
                     DataHub.ValidateName(keyX); DataHub.ValidateName(keyY);
                     if (keyX == keyY) throw new FormatException("Trackpad keyX and keyY must be different.");
-                    var minX = N("minX", 0, -1e12, 1e12); var maxX = N("maxX", 100, -1e12, 1e12);
-                    var minY = N("minY", 0, -1e12, 1e12); var maxY = N("maxY", 100, -1e12, 1e12);
-                    if (maxX <= minX || maxY <= minY) throw new FormatException("Trackpad maximums must exceed minimums.");
-                    var stepX = N("stepX", 0, 0, maxX - minX); var stepY = N("stepY", 0, 0, maxY - minY);
-                    double PadSnap(double n, double min, double max, double step) => Math.Clamp(step == 0 ? n : min + Math.Round((n - min) / step, MidpointRounding.AwayFromZero) * step, min, max);
+                    var minX = N("leftValue", 0, -1e12, 1e12); var maxX = N("rightValue", 100, -1e12, 1e12);
+                    var minY = N("topValue", 0, -1e12, 1e12); var maxY = N("bottomValue", 100, -1e12, 1e12);
+                    if (maxX == minX || maxY == minY) throw new FormatException("Trackpad opposite edges must have different values.");
+                    var stepX = N("stepX", 0, 0, Math.Abs(maxX - minX)); var stepY = N("stepY", 0, 0, Math.Abs(maxY - minY));
+                    double PadSnap(double n, double min, double max, double step) => Math.Clamp(step == 0 ? n : min + Math.Round((n - min) / step, MidpointRounding.AwayFromZero) * step, Math.Min(min, max), Math.Max(min, max));
                     double PadLevel(string dataKey, double min, double max, double step)
                     {
                         var n = values.TryGetValue(dataKey, out var v) && double.TryParse(v.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) && double.IsFinite(parsed) ? parsed : min;
@@ -482,7 +483,14 @@ public sealed class LayoutRenderer
                         contact.LastSeen = Environment.TickCount64;
                         var x = PadSnap(minX + Math.Clamp(sample.X / contact.Width, 0, 1) * (maxX - minX), minX, maxX, stepX);
                         var y = PadSnap(minY + Math.Clamp(sample.Y / contact.Height, 0, 1) * (maxY - minY), minY, maxY, stepY);
-                        input!(new(key, eventName, Position: new(x, y, (x - minX) / (maxX - minX), (y - minY) / (maxY - minY), keyX, keyY)));
+                        if (eventName == "position-start")
+                            contact.StartX = contact.PreviousX = x;
+                        if (eventName == "position-start")
+                            contact.StartY = contact.PreviousY = y;
+                        var position = new TrackpadValue(x, y, (x - minX) / (maxX - minX), (y - minY) / (maxY - minY), keyX, keyY,
+                            contact.StartX, contact.StartY, contact.PreviousX, contact.PreviousY);
+                        contact.PreviousX = x; contact.PreviousY = y;
+                        input!(new(key, eventName, Position: position));
                     }
                     var padEvents = enabled ? new[]
                     {
@@ -491,7 +499,7 @@ public sealed class LayoutRenderer
                             if (!e.TryGetPointerDown(out var down) || down.Width <= 0 || down.Height <= 0) return UiEventOutcome.Rejected("Expected pointer position and positive dimensions.");
                             if (contact.Id != null && Environment.TickCount64 - contact.LastSeen < 2000) return UiEventOutcome.Accepted;
                             contact.Id = down.Sample.Id; contact.Width = down.Width; contact.Height = down.Height;
-                            PadPublish(down.Sample, "position-adjust"); return UiEventOutcome.Accepted;
+                            PadPublish(down.Sample, "position-start"); return UiEventOutcome.Accepted;
                         }),
                         UiEventHandler.On(UiComponentEvents.PointerMove, e =>
                         {

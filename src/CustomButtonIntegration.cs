@@ -80,6 +80,8 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
             {
                 payload["x"] = position.X; payload["y"] = position.Y;
                 payload["levelX"] = position.LevelX; payload["levelY"] = position.LevelY;
+                payload["startX"] = position.StartX; payload["startY"] = position.StartY;
+                payload["previousX"] = position.PreviousX; payload["previousY"] = position.PreviousY;
                 payload["keyX"] = position.KeyX; payload["keyY"] = position.KeyY;
             }
             events?.Publish("element-" + input.EventName, payload);

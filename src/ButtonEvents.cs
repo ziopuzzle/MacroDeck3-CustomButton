@@ -23,7 +23,7 @@ public static class ButtonEvents
     {
         ["press"] = "Element press", ["long-press"] = "Element long press", ["press-start"] = "Element touch start", ["press-end"] = "Element touch end",
         ["adjust"] = "Element value adjusting", ["change"] = "Element value changed",
-        ["position-adjust"] = "Element position adjusting", ["position-change"] = "Element position changed"
+        ["position-start"] = "Element position started", ["position-adjust"] = "Element position adjusting", ["position-change"] = "Element position changed"
     };
     public static IReadOnlyList<EventDefinition> Definitions { get; } = Names.Select(p => new EventDefinition
     {
@@ -42,7 +42,11 @@ public static class ButtonEvents
             ActionParameter.Text("elementId", label: TextCatalog.Reference("Element ID (XML id)"), required: true) }.Concat(p.Key is "adjust" or "change"
                 ? new[] { ActionParameter.Number("value", label: TextCatalog.Reference("Input value"), required: true),
                     ActionParameter.Number("level", label: TextCatalog.Reference("Level (0–1)"), required: true),
-                    ActionParameter.Text("key", label: TextCatalog.Reference("Display data key"), required: true) } : p.Key is "position-adjust" or "position-change" ? new[] {
+                    ActionParameter.Text("key", label: TextCatalog.Reference("Display data key"), required: true) } : p.Key is "position-start" or "position-adjust" or "position-change" ? new[] {
+                    ActionParameter.Number("startX", label: TextCatalog.Reference("Start X value"), required: true),
+                    ActionParameter.Number("startY", label: TextCatalog.Reference("Start Y value"), required: true),
+                    ActionParameter.Number("previousX", label: TextCatalog.Reference("Previous X value"), required: true),
+                    ActionParameter.Number("previousY", label: TextCatalog.Reference("Previous Y value"), required: true),
                     ActionParameter.Number("x", label: TextCatalog.Reference("X value"), required: true),
                     ActionParameter.Number("y", label: TextCatalog.Reference("Y value"), required: true),
                     ActionParameter.Number("levelX", label: TextCatalog.Reference("X level (0–1)"), required: true),
@@ -127,7 +131,7 @@ public static class ButtonEvents
     {
         if (string.IsNullOrEmpty(elementId)) return Definitions.Where(d => Names.ContainsKey(d.Id) && d.Id is not (Tick or Activated)).ToArray();
         var target = InputTargets(layout).FirstOrDefault(t => t.Id == elementId);
-        return target == null ? [] : Definitions.Where(d => target.Kind == "trackpad" ? d.Id is "element-position-adjust" or "element-position-change" : target.Kind is "slider" or "dial"
+        return target == null ? [] : Definitions.Where(d => target.Kind == "trackpad" ? d.Id is "element-position-start" or "element-position-adjust" or "element-position-change" : target.Kind is "slider" or "dial"
             ? d.Id is "element-adjust" or "element-change" : target.Kind is "toggle" or "segmented" ? d.Id == "element-change" : d.Id is "element-press" or "element-long-press" or "element-press-start" or "element-press-end").ToArray();
     }
 
@@ -221,7 +225,7 @@ public static class ButtonEvents
             if (string.IsNullOrEmpty(id) || eventId.GetString()?.StartsWith("element-", StringComparison.Ordinal) != true) continue;
             var candidates = eventId.GetString() == "element-adjust" ? sliders.Where(e => e.Name.LocalName is "slider" or "dial").ToArray()
                 : eventId.GetString() == "element-change" ? sliders.Where(e => e.Name.LocalName != "trackpad").ToArray()
-                : eventId.GetString() is "element-position-adjust" or "element-position-change" ? sliders.Where(e => e.Name.LocalName == "trackpad").ToArray() : pressTargets;
+                : eventId.GetString() is "element-position-start" or "element-position-adjust" or "element-position-change" ? sliders.Where(e => e.Name.LocalName == "trackpad").ToArray() : pressTargets;
             if (candidates.Any(e => (string?)e.Attribute("id") == id)) continue;
             var parent = elements.FirstOrDefault(e => (string?)e.Attribute("id") == id)?.Ancestors().FirstOrDefault(candidates.Contains);
             notes.Add(parent == null ? $"'{id}' is not a target for {eventId.GetString()}." : $"'{id}' is not interactive. Use its parent ID '{(string?)parent.Attribute("id")}'.");
