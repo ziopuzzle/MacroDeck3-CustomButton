@@ -75,7 +75,7 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
         void PublishControl(ControlInput input)
         {
             var payload = new Dictionary<string, object?> { ["widgetId"] = ownerWidgetId, ["elementId"] = input.ElementId };
-            if (input.Value is { } value) { payload["value"] = value; payload["level"] = input.Level; payload["key"] = input.DataKey; }
+            if (input.Value is { } value) { payload["value"] = value; payload["previousValue"] = input.PreviousValue; payload["level"] = input.Level; payload["key"] = input.DataKey; }
             if (input.Position is { } position)
             {
                 payload["x"] = position.X; payload["y"] = position.Y;

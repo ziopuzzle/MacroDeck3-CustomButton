@@ -41,6 +41,7 @@ public static class ButtonEvents
         PayloadParameters = new[] { ActionParameter.Text("widgetId", label: TextCatalog.Reference("Target widget ID"), required: true),
             ActionParameter.Text("elementId", label: TextCatalog.Reference("Element ID (XML id)"), required: true) }.Concat(p.Key is "adjust" or "change"
                 ? new[] { ActionParameter.Number("value", label: TextCatalog.Reference("Input value"), required: true),
+                    ActionParameter.Number("previousValue", label: TextCatalog.Reference("Previous value"), required: true),
                     ActionParameter.Number("level", label: TextCatalog.Reference("Level (0–1)"), required: true),
                     ActionParameter.Text("key", label: TextCatalog.Reference("Display data key"), required: true) } : p.Key is "position-start" or "position-changing" or "position-end" ? new[] {
                     ActionParameter.Number("startX", label: TextCatalog.Reference("Start X value"), required: true),

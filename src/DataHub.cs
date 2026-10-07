@@ -93,10 +93,16 @@ public sealed class DataHub(TimeProvider? timeProvider = null)
             ? points.TakeLast(count).Select(p => p.Value).ToArray() : [];
     }
     public void Update(string channel, IReadOnlyDictionary<string, JsonElement> values, bool replace = false)
+        => UpdateCore(channel, values, replace, null);
+    internal JsonElement? UpdateValue(string channel, string key, JsonElement value)
+        => UpdateCore(channel, new Dictionary<string, JsonElement> { [key] = value }, false, key);
+    private JsonElement? UpdateCore(string channel, IReadOnlyDictionary<string, JsonElement> values, bool replace, string? previousKey)
     {
         ValidateName(channel);
+        JsonElement? previous = null;
         lock (gate)
         {
+            if (previousKey != null && channels.TryGetValue(channel, out var prior) && prior.TryGetValue(previousKey, out var oldValue)) previous = oldValue;
             if (!channels.ContainsKey(channel) && channels.Count >= 256) throw new FormatException("The maximum of 256 channels has been reached.");
             var merged = !replace && channels.TryGetValue(channel, out var old) ? new Dictionary<string, JsonElement>(old, StringComparer.Ordinal) : new(StringComparer.Ordinal);
             foreach (var pair in values) { ValidateName(pair.Key); merged[pair.Key] = pair.Value.Clone(); }
@@ -120,6 +126,7 @@ public sealed class DataHub(TimeProvider? timeProvider = null)
             snapshots.Remove(channel);
         }
         Updated?.Invoke(channel);
+        return previous;
     }
 }
 

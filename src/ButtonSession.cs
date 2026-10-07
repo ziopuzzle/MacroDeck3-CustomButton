@@ -272,7 +272,16 @@ public sealed class ButtonSession : IUiSession
                 [position.KeyY] = JsonSerializer.SerializeToElement(position.Y)
             });
         if (input.DataKey != null && input.Value is { } value)
-            hub?.Update(settings.Channel, new Dictionary<string, JsonElement> { [input.DataKey] = input.BooleanValue is { } on ? JsonSerializer.SerializeToElement(on) : JsonSerializer.SerializeToElement(value) });
+        {
+            var previous = hub?.UpdateValue(settings.Channel, input.DataKey, input.BooleanValue is { } on ? JsonSerializer.SerializeToElement(on) : JsonSerializer.SerializeToElement(value));
+            if (previous is { } raw)
+            {
+                if (input.BooleanValue != null && (raw.ToString() == "1" || bool.TryParse(raw.ToString(), out _)))
+                    input = input with { PreviousValue = raw.ToString() == "1" || bool.Parse(raw.ToString()) ? 1 : 0 };
+                else if (double.TryParse(raw.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number) && double.IsFinite(number))
+                    input = input with { PreviousValue = number };
+            }
+        }
         onControlInput?.Invoke(input);
     }
     private void TrackNodes(UiNode root, long revision)

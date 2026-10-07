@@ -35,5 +35,7 @@ public class EventCatalogTests
             Assert.That(ButtonEvents.ElementTargetHelp(JsonSerializer.SerializeToElement(new[] { new { @event = flow } }), layout, "widget"), Does.Not.Contain("not a target"));
         }
         Assert.That(events.Select(e => e.GetProperty("localId").GetString()), Does.Contain("element-adjust").And.Contain("element-change"));
+        foreach (var id in new[] { "element-adjust", "element-change" })
+            Assert.That(events.Single(e => e.GetProperty("localId").GetString() == id).GetProperty("payloadParameters").EnumerateArray().Select(p => p.GetProperty("name").GetString()), Does.Contain("previousValue"));
     }
 }

@@ -8,6 +8,24 @@ namespace Ziopuzzle.CustomButton.Tests;
 
 public class ControlInputTests
 {
+    [TestCase("slider", "0.75", "25", 25, 75)]
+    [TestCase("dial", "0.75", "25", 25, 75)]
+    [TestCase("toggle", "false", "true", 1, 0)]
+    [TestCase("segmented", "0", "1", 1, 0)]
+    public async Task PreviousValueReadsExternalDataBeforeEachInput(string type, string payload, string external, double before, double after)
+    {
+        var content = type == "segmented" ? "<text id='a'>A</text><text id='b'>B</text>" : "";
+        var setup = await Open($"<{type} id='control' key='gain' interactive='true'>{content}</{type}>");
+        await using var session = setup.Session;
+        var id = ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Type == "ui." + type).Id;
+        setup.Integration.Hub.Update("demo", DataHub.ParseValues("{\"gain\":" + external + "}"));
+        void Send() => session.Dispatch(new() { NodeId = id, Name = "change", Data = JsonDocument.Parse(payload).RootElement.Clone() });
+        Send(); Send();
+        var events = setup.Context.Events.Published.Where(e => e.EventId == "element-change").ToArray();
+        Assert.That(events[0].Parameters!.Value.GetProperty("previousValue").GetDouble(), Is.EqualTo(before));
+        Assert.That(events[1].Parameters!.Value.GetProperty("previousValue").GetDouble(), Is.EqualTo(after));
+    }
+
     [Test] public async Task TrackpadRestoresActiveContactAfterSessionReplacement()
     {
         var continuity = new AnimationContinuity(); var hub = new DataHub(); var inputs = new List<ControlInput>();
@@ -156,6 +174,7 @@ public class ControlInputTests
         else Assert.That(value.GetDouble(), Is.EqualTo(expected));
         var published = setup.Context.Events.Published.Single(e => e.EventId == "element-change").Parameters!.Value;
         Assert.That(published.GetProperty("value").GetDouble(), Is.EqualTo(expected));
+        Assert.That(published.GetProperty("previousValue").GetDouble(), Is.EqualTo(0));
         Assert.That(published.GetProperty("elementId").GetString(), Is.EqualTo("control"));
     }
 

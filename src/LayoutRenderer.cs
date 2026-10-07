@@ -547,7 +547,7 @@ public sealed class LayoutRenderer
                             Events = input != null && B("interactive", false) ? [UiEventHandler.On(UiComponentEvents.Change, e =>
                             {
                                 if (!e.TryGetBoolean(out var next)) return UiEventOutcome.Rejected("Expected a boolean.");
-                                input(new(key, "change", next ? 1 : 0, next ? 1 : 0, controlKey, next));
+                                input(new(key, "change", next ? 1 : 0, next ? 1 : 0, controlKey, next, PreviousValue: on ? 1 : 0));
                                 return UiEventOutcome.Accepted;
                             })] : [] };
                     }
@@ -565,7 +565,7 @@ public sealed class LayoutRenderer
                         Events = input != null && B("interactive", false) ? [UiEventHandler.On(UiComponentEvents.Change, e =>
                         {
                             if (!e.TryGetDouble(out var index) || !double.IsFinite(index) || index != Math.Truncate(index) || index < 0 || index >= children.Length) return UiEventOutcome.Rejected("Expected a valid segment index.");
-                            input(new(key, "change", index, children.Length == 1 ? 0 : index / (children.Length - 1), controlKey));
+                            input(new(key, "change", index, children.Length == 1 ? 0 : index / (children.Length - 1), controlKey, PreviousValue: selection));
                             return UiEventOutcome.Accepted;
                         })] : [] };
                 case "dial":
@@ -584,7 +584,7 @@ public sealed class LayoutRenderer
                     {
                         if (!e.TryGetDouble(out var level) || !double.IsFinite(level) || level < 0 || level > 1) return UiEventOutcome.Rejected("Expected a level between 0 and 1.");
                         var value = Snap(sliderMin + level * (sliderMax - sliderMin));
-                        input!(new(key, name, value, (value - sliderMin) / (sliderMax - sliderMin), sliderKey));
+                        input!(new(key, name, value, (value - sliderMin) / (sliderMax - sliderMin), sliderKey, PreviousValue: sliderValue));
                         return UiEventOutcome.Accepted;
                     });
                     if (node.Name == "dial") return new UiDial { Key = key, Fill = fill, MainSize = mainSize,

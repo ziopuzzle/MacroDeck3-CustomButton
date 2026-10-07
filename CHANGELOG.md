@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.39.4 — previous control values
+
+- Add numeric previousValue to Value changing/changed events for Slider, Dial, Toggle and Segmented. Existing event IDs are unchanged.
+- Read the stored value atomically before applying each input, including external updates. Initial values or component defaults apply before the first stored value. Toggle uses 0/1; Segmented uses its selection index (-1 when unset).
+- previousValue refers to the immediately preceding value, not the start of a drag. A final slider/dial change may therefore have the same value and previousValue.
+
 ## 0.39.3 — clear input event names
 
 - Use Trackpad start/changing/end with dedicated trackpad-start/changing/end IDs in both registration and shortcuts. Recreate unreleased trackpad bindings after updating.
