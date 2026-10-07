@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.39.3 — clear input event names
+
+- Use Trackpad start/changing/end with dedicated trackpad-start/changing/end IDs in both registration and shortcuts. Recreate unreleased trackpad bindings after updating.
+- Rename the shared slider/dial adjusting event to Value changing and the shared value-change event to Value changed. Rename element press labels to Button press/long press/touch start/touch end. Published element-* IDs remain unchanged.
+- Verify the SDK events.describe response includes all trackpad events and their coordinate payload fields. Restart Macro Deck after updating if its event catalogue still shows old definitions.
+
 ## 0.39.2 — trackpad visibility and session continuity
 
 - Rename trackpad event labels to Element position start, Element position changing and Element position end. Rename the IDs to element-position-start, element-position-changing and element-position-end. Recreate previously configured trackpad adjusting/changed events after updating.

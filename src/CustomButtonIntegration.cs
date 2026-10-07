@@ -84,7 +84,7 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
                 payload["previousX"] = position.PreviousX; payload["previousY"] = position.PreviousY;
                 payload["keyX"] = position.KeyX; payload["keyY"] = position.KeyY;
             }
-            events?.Publish("element-" + input.EventName, payload);
+            events?.Publish(ButtonEvents.ControlEventId(input.EventName), payload);
         }
         return Task.FromResult<IUiSession?>(new ButtonSession(surface, settings, sample ? null : Hub,
             continuity: continuity,

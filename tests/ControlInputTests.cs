@@ -45,8 +45,8 @@ public class ControlInputTests
         Send("pointer-down", new { id = 1, x = .25, y = .25, t = 0, width = 1, height = 1 });
         Send("pointer-move", new { samples = new[] { new { id = 1, x = .51, y = .61, t = 1 } } });
         Send("pointer-up", new { id = 1, x = 2, y = -1, t = 2 });
-        var events = setup.Context.Events.Published.Where(e => e.EventId.StartsWith("element-position-")).ToArray();
-        Assert.That(events.Select(e => e.EventId), Is.EqualTo(new[] { "element-position-start", "element-position-changing", "element-position-end" }));
+        var events = setup.Context.Events.Published.Where(e => e.EventId.StartsWith("trackpad-")).ToArray();
+        Assert.That(events.Select(e => e.EventId), Is.EqualTo(new[] { "trackpad-start", "trackpad-changing", "trackpad-end" }));
         var start = events[0].Parameters!.Value; var move = events[1].Parameters!.Value; var end = events[2].Parameters!.Value;
         Assert.Multiple(() => {
             Assert.That(start.GetProperty("x").GetDouble(), Is.EqualTo(50));
@@ -61,7 +61,7 @@ public class ControlInputTests
             Assert.That(end.GetProperty("previousY").GetDouble(), Is.EqualTo(40));
         });
         Send("pointer-down", new { id = 2, x = .5, y = .5, t = 3, width = 1, height = 1 });
-        var restart = setup.Context.Events.Published.Last(e => e.EventId == "element-position-start").Parameters!.Value;
+        var restart = setup.Context.Events.Published.Last(e => e.EventId == "trackpad-start").Parameters!.Value;
         Assert.That(restart.GetProperty("startX").GetDouble(), Is.EqualTo(0));
         Assert.That(restart.GetProperty("previousY").GetDouble(), Is.EqualTo(50));
     }
@@ -78,7 +78,7 @@ public class ControlInputTests
         var after = JsonSerializer.Serialize(Find(session, "cursor"));
         Assert.That(after, Is.Not.EqualTo(before));
         Assert.That(after, Does.Contain("M0.25 0 V1 M0 0.75 H1"));
-        Assert.That(setup.Context.Events.Published.Any(e => e.EventId.StartsWith("element-")), Is.False);
+        Assert.That(setup.Context.Events.Published.Any(e => (e.EventId.StartsWith("element-") || e.EventId.StartsWith("trackpad-"))), Is.False);
     }
 
     [TestCase("keyX='same' keyY='same'")]
@@ -98,15 +98,15 @@ public class ControlInputTests
         Send("pointer-move", new { samples = new[] { new { id = 1, x = 1.22, y = .1, t = 1 }, new { id = 1, x = 1.56, y = .2, t = 2 }, new { id = 2, x = 0.0, y = 0.0, t = 3 } } });
         Assert.That(setup.Integration.Hub.Snapshot("demo").Values["x"].GetDouble(), Is.EqualTo(60));
         Send("pointer-up", new { id = 1, x = 3, y = -1, t = 4 });
-        var final = setup.Context.Events.Published.Single(e => e.EventId == "element-position-end").Parameters!.Value;
+        var final = setup.Context.Events.Published.Single(e => e.EventId == "trackpad-end").Parameters!.Value;
         Assert.Multiple(() => {
             Assert.That(final.GetProperty("x").GetDouble(), Is.EqualTo(100));
             Assert.That(final.GetProperty("y").GetDouble(), Is.EqualTo(0));
             Assert.That(final.GetProperty("levelX").GetDouble(), Is.EqualTo(1));
             Assert.That(final.GetProperty("keyY").GetString(), Is.EqualTo("y"));
-            Assert.That(ButtonEvents.InputEvents(xml, "pad").Select(e => e.Id), Is.EqualTo(new[] { "element-position-start", "element-position-changing", "element-position-end" }));
+            Assert.That(ButtonEvents.InputEvents(xml, "pad").Select(e => e.Id), Is.EqualTo(new[] { "trackpad-start", "trackpad-changing", "trackpad-end" }));
         });
-        Assert.That(setup.Context.Events.Published.Count(e => e.EventId == "element-position-changing"), Is.EqualTo(1));
+        Assert.That(setup.Context.Events.Published.Count(e => e.EventId == "trackpad-changing"), Is.EqualTo(1));
         Send("pointer-move", new { samples = new[] { new { id = 1, x = 0, y = 0, t = 5 } } });
         Assert.That(setup.Integration.Hub.Snapshot("demo").Values["x"].GetDouble(), Is.EqualTo(100));
     }
@@ -119,7 +119,7 @@ public class ControlInputTests
         Send("pointer-down", new { id = 1, x = .5, y = .5, t = 1, width = 1, height = 1 });
         Send("pointer-down", new { id = 2, x = 0, y = 0, t = 2, width = 1, height = 1 });
         Send("pointer-up", new { id = 1, x = 0, y = 0, t = 3, cancelled = true });
-        Assert.That(setup.Context.Events.Published.Count(e => e.EventId.StartsWith("element-")), Is.EqualTo(1));
+        Assert.That(setup.Context.Events.Published.Count(e => (e.EventId.StartsWith("element-") || e.EventId.StartsWith("trackpad-"))), Is.EqualTo(1));
         Assert.That(setup.Integration.Hub.Snapshot("demo").Values["x"].GetDouble(), Is.EqualTo(50));
     }
 
@@ -200,7 +200,7 @@ public class ControlInputTests
         var slider = ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Type == "ui.slider");
         session.Dispatch(new() { NodeId = slider.Id, Name = "adjust", Data = JsonSerializer.SerializeToElement(.775) });
         session.Dispatch(new() { NodeId = slider.Id, Name = "change", Data = JsonSerializer.SerializeToElement(.775) });
-        var events = setup.Context.Events.Published.Where(e => e.EventId.StartsWith("element-")).ToArray();
+        var events = setup.Context.Events.Published.Where(e => (e.EventId.StartsWith("element-") || e.EventId.StartsWith("trackpad-"))).ToArray();
         Assert.That(events.Select(e => e.EventId), Is.EqualTo(new[] { "element-adjust", "element-change" }));
         foreach (var published in events)
         {
@@ -219,7 +219,7 @@ public class ControlInputTests
         var setup = await Open(); await using var session = setup.Session;
         var slider = ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Type == "ui.slider");
         session.Dispatch(new() { NodeId = slider.Id, Name = "change", Data = JsonDocument.Parse(raw).RootElement.Clone() });
-        Assert.That(setup.Context.Events.Published.Any(e => e.EventId.StartsWith("element-")), Is.False);
+        Assert.That(setup.Context.Events.Published.Any(e => (e.EventId.StartsWith("element-") || e.EventId.StartsWith("trackpad-"))), Is.False);
         Assert.That(ButtonTests.Text(session.BuildTree(), ".reading"), Is.EqualTo("0"));
     }
     [TestCase("preview", false, false)][TestCase("widget", true, false)][TestCase("widget", false, true)]
@@ -231,7 +231,7 @@ public class ControlInputTests
             session.Dispatch(new() { NodeId = node.Id, Name = "press" });
             session.Dispatch(new() { NodeId = node.Id, Name = "change", Data = JsonSerializer.SerializeToElement(.5) });
         }
-        Assert.That(setup.Context.Events.Published.Any(e => e.EventId.StartsWith("element-")), Is.False);
+        Assert.That(setup.Context.Events.Published.Any(e => (e.EventId.StartsWith("element-") || e.EventId.StartsWith("trackpad-"))), Is.False);
     }
     [Test] public async Task UnknownHiddenDisabledAndStaleNodesCannotPublish()
     {
@@ -240,7 +240,7 @@ public class ControlInputTests
         foreach (var id in new[] { "root.panel.hidden", "root.panel.off", "root.missing" }) session.Dispatch(new() { NodeId = id, Name = "press" });
         session.Dispatch(new() { NodeId = Find(session, "on").Id, Name = "change", Data = JsonSerializer.SerializeToElement(.5) });
         session.Dispatch(new() { NodeId = Find(session, "on").Id, Name = "press", Revision = -1 });
-        Assert.That(setup.Context.Events.Published.Any(e => e.EventId.StartsWith("element-")), Is.False);
+        Assert.That(setup.Context.Events.Published.Any(e => (e.EventId.StartsWith("element-") || e.EventId.StartsWith("trackpad-"))), Is.False);
     }
     [TestCase("<slider id='s' interactive='true'/>")]
     [TestCase("<slider id='s' key='value' value='50'/>")]

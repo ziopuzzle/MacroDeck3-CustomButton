@@ -21,9 +21,9 @@ public static class ButtonEvents
     };
     private static readonly IReadOnlyDictionary<string, string> ControlNames = new Dictionary<string, string>
     {
-        ["press"] = "Element press", ["long-press"] = "Element long press", ["press-start"] = "Element touch start", ["press-end"] = "Element touch end",
-        ["adjust"] = "Element value adjusting", ["change"] = "Element value changed",
-        ["position-start"] = "Element position start", ["position-changing"] = "Element position changing", ["position-end"] = "Element position end"
+        ["press"] = "Button press", ["long-press"] = "Button long press", ["press-start"] = "Button touch start", ["press-end"] = "Button touch end",
+        ["adjust"] = "Value changing", ["change"] = "Value changed",
+        ["position-start"] = "Trackpad start", ["position-changing"] = "Trackpad changing", ["position-end"] = "Trackpad end"
     };
     public static IReadOnlyList<EventDefinition> Definitions { get; } = Names.Select(p => new EventDefinition
     {
@@ -34,7 +34,7 @@ public static class ButtonEvents
         PayloadParameters = [ActionParameter.Text("widgetId", label: TextCatalog.Reference("Target widget ID"), required: true)]
     }).Concat(ControlNames.Select(p => new EventDefinition
     {
-        Id = "element-" + p.Key, Name = TextCatalog.Reference(p.Value),
+        Id = ControlEventId(p.Key), Name = TextCatalog.Reference(p.Value),
         Description = TextCatalog.Reference("Select an interactive component by its XML id. Slider and dial values use min-max; toggles report 0/1; segmented controls report a zero-based index."),
         ConfigurationParameters = [ActionParameter.WidgetTarget("widgetId", new WidgetTargetOptions { Label = TextCatalog.Reference("Target widget"), Required = true, AllowSelf = false }),
             ActionParameter.Text("elementId", label: TextCatalog.Reference("Element ID (XML id)"), required: true)],
@@ -54,6 +54,8 @@ public static class ButtonEvents
                     ActionParameter.Text("keyX", label: TextCatalog.Reference("X data key"), required: true),
                     ActionParameter.Text("keyY", label: TextCatalog.Reference("Y data key"), required: true) } : []).ToArray()
     })).ToArray();
+    public static string ControlEventId(string name) => name.StartsWith("position-", StringComparison.Ordinal) ? "trackpad-" + name[9..] : "element-" + name;
+    private static bool IsControlEvent(string? id) => id != null && ControlNames.Keys.Any(name => ControlEventId(name) == id);
     public static JsonElement Empty => JsonSerializer.SerializeToElement(Array.Empty<object>());
     public static JsonElement MoveFlow(JsonElement value, string triggerId, int offset)
     {
@@ -84,7 +86,7 @@ public static class ButtonEvents
         string? name = null;
         if (provider == CustomButtonIntegration.PluginId)
         {
-            name = Names.GetValueOrDefault(id) ?? (id.StartsWith("element-", StringComparison.Ordinal) ? ControlNames.GetValueOrDefault(id[8..]) : null);
+            name = Names.GetValueOrDefault(id) ?? ControlNames.FirstOrDefault(p => ControlEventId(p.Key) == id).Value;
             if (name != null && Parameter("elementId") is { Length: > 0 } element) name += " — " + element;
         }
         else if (provider == "macro-deck" && id == "variable-changed")
@@ -101,7 +103,7 @@ public static class ButtonEvents
         var parameters = new JsonArray(new JsonObject { ["name"] = "widgetId", ["type"] = "widget-target",
             ["label"] = JsonSerializer.SerializeToNode(TextCatalog.Reference("Target widget")), ["required"] = true,
             ["optionsSourceId"] = "macrodeck.widgets", ["allowSelf"] = false, ["value"] = widgetId, ["operator"] = "==" });
-        if (eventId.StartsWith("element-", StringComparison.Ordinal))
+        if (IsControlEvent(eventId))
         {
             if (!InputEvents(layout, elementId).Any(d => d.Id == eventId)) throw new FormatException("Select an input component supported by this event.");
             parameters.Add(new JsonObject { ["name"] = "elementId", ["type"] = "string",
@@ -131,7 +133,7 @@ public static class ButtonEvents
     {
         if (string.IsNullOrEmpty(elementId)) return Definitions.Where(d => Names.ContainsKey(d.Id) && d.Id is not (Tick or Activated)).ToArray();
         var target = InputTargets(layout).FirstOrDefault(t => t.Id == elementId);
-        return target == null ? [] : Definitions.Where(d => target.Kind == "trackpad" ? d.Id is "element-position-start" or "element-position-changing" or "element-position-end" : target.Kind is "slider" or "dial"
+        return target == null ? [] : Definitions.Where(d => target.Kind == "trackpad" ? d.Id is "trackpad-start" or "trackpad-changing" or "trackpad-end" : target.Kind is "slider" or "dial"
             ? d.Id is "element-adjust" or "element-change" : target.Kind is "toggle" or "segmented" ? d.Id == "element-change" : d.Id is "element-press" or "element-long-press" or "element-press-start" or "element-press-end").ToArray();
     }
 
@@ -222,10 +224,10 @@ public static class ButtonEvents
             }
             if (Value("widgetId") is { } target && target != "$self" && target != widgetId) continue;
             var id = Value("elementId");
-            if (string.IsNullOrEmpty(id) || eventId.GetString()?.StartsWith("element-", StringComparison.Ordinal) != true) continue;
+            if (string.IsNullOrEmpty(id) || !IsControlEvent(eventId.GetString())) continue;
             var candidates = eventId.GetString() == "element-adjust" ? sliders.Where(e => e.Name.LocalName is "slider" or "dial").ToArray()
                 : eventId.GetString() == "element-change" ? sliders.Where(e => e.Name.LocalName != "trackpad").ToArray()
-                : eventId.GetString() is "element-position-start" or "element-position-changing" or "element-position-end" ? sliders.Where(e => e.Name.LocalName == "trackpad").ToArray() : pressTargets;
+                : eventId.GetString() is "trackpad-start" or "trackpad-changing" or "trackpad-end" ? sliders.Where(e => e.Name.LocalName == "trackpad").ToArray() : pressTargets;
             if (candidates.Any(e => (string?)e.Attribute("id") == id)) continue;
             var parent = elements.FirstOrDefault(e => (string?)e.Attribute("id") == id)?.Ancestors().FirstOrDefault(candidates.Contains);
             notes.Add(parent == null ? $"'{id}' is not a target for {eventId.GetString()}." : $"'{id}' is not interactive. Use its parent ID '{(string?)parent.Attribute("id")}'.");
