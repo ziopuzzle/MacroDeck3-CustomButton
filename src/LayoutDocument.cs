@@ -16,7 +16,7 @@ public sealed class LayoutDocument
     public IEnumerable<XElement> Components => Root.DescendantsAndSelf().Where(e => e.Name != "style");
     public XElement Find(string id) => Components.SingleOrDefault(e => (string?)e.Attribute("id") == id)
         ?? throw new FormatException("The selected component was not found.");
-    public static bool IsContainer(XElement element) => element.Name.LocalName is "stack" or "layer" or "transform" or "modifier" or "responsive" or "variant";
+    public static bool IsContainer(XElement element) => element.Name.LocalName is "stack" or "layer" or "transform" or "modifier" or "responsive" or "variant" or "segmented";
     public string Serialize()
     {
         // All non-text components can contain styles with insignificant indentation.
@@ -49,6 +49,10 @@ public sealed class LayoutDocument
         var child = new XElement(type, new XAttribute("id", NewId(type)));
         switch (type)
         {
+            case "segmented":
+                child.SetAttributeValue("key", "mode"); child.SetAttributeValue("mainSize", "20%");
+                child.Add(new XElement("text", new XAttribute("id", NewId("text")), "A"));
+                break;
             case "responsive": child.Add(new XElement("variant", new XAttribute("id", NewId("variant")))); break;
             case "variant": child.SetAttributeValue("minAspect", "1.5"); break;
             case "modifier": child.SetAttributeValue("clip", "bounds"); break;
@@ -65,7 +69,7 @@ public sealed class LayoutDocument
             case "sector": child.SetAttributeValue("radius", "40%"); child.SetAttributeValue("startAngle", "-90"); child.SetAttributeValue("sweepAngle", "120"); child.SetAttributeValue("color", "#54dfcc"); break;
             case "stack": child.SetAttributeValue("direction", "vertical"); break;
             case "bar": child.SetAttributeValue("value", "{{value}}"); break;
-            case "slider": child.SetAttributeValue("key", "value"); break;
+            case "dial": case "toggle": case "slider": child.SetAttributeValue("key", "value"); break;
             case "chart": child.SetAttributeValue("key", "value"); break;
             case "clock": child.SetAttributeValue("seconds", "true"); break;
             case "rect": child.SetAttributeValue("width", "40%"); child.SetAttributeValue("height", "20%"); child.SetAttributeValue("color", "#54dfcc"); break;

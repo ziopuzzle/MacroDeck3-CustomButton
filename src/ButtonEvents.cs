@@ -34,7 +34,7 @@ public static class ButtonEvents
     }).Concat(ControlNames.Select(p => new EventDefinition
     {
         Id = "element-" + p.Key, Name = TextCatalog.Reference(p.Value),
-        Description = TextCatalog.Reference("Select an interactive component by its XML id. Slider value is scaled to min–max."),
+        Description = TextCatalog.Reference("Select an interactive component by its XML id. Slider and dial values use min-max; toggles report 0/1; segmented controls report a zero-based index."),
         ConfigurationParameters = [ActionParameter.WidgetTarget("widgetId", new WidgetTargetOptions { Label = TextCatalog.Reference("Target widget"), Required = true, AllowSelf = false }),
             ActionParameter.Text("elementId", label: TextCatalog.Reference("Element ID (XML id)"), required: true)],
         PayloadParameters = new[] { ActionParameter.Text("widgetId", label: TextCatalog.Reference("Target widget ID"), required: true),
@@ -92,8 +92,7 @@ public static class ButtonEvents
             ["optionsSourceId"] = "macrodeck.widgets", ["allowSelf"] = false, ["value"] = widgetId, ["operator"] = "==" });
         if (eventId.StartsWith("element-", StringComparison.Ordinal))
         {
-            var kind = eventId is "element-adjust" or "element-change" ? "slider" : "press";
-            if (!InputTargets(layout).Any(t => t.Id == elementId && t.Kind == kind)) throw new FormatException("Select an input component supported by this event.");
+            if (!InputEvents(layout, elementId).Any(d => d.Id == eventId)) throw new FormatException("Select an input component supported by this event.");
             parameters.Add(new JsonObject { ["name"] = "elementId", ["type"] = "string",
                 ["label"] = JsonSerializer.SerializeToNode(TextCatalog.Reference("Element ID (XML id)")), ["required"] = true,
                 ["value"] = elementId, ["operator"] = "==" });
@@ -121,8 +120,8 @@ public static class ButtonEvents
     {
         if (string.IsNullOrEmpty(elementId)) return Definitions.Where(d => Names.ContainsKey(d.Id) && d.Id is not (Tick or Activated)).ToArray();
         var target = InputTargets(layout).FirstOrDefault(t => t.Id == elementId);
-        return target == null ? [] : Definitions.Where(d => target.Kind == "slider"
-            ? d.Id is "element-adjust" or "element-change" : d.Id.StartsWith("element-", StringComparison.Ordinal) && d.Id is not ("element-adjust" or "element-change")).ToArray();
+        return target == null ? [] : Definitions.Where(d => target.Kind is "slider" or "dial"
+            ? d.Id is "element-adjust" or "element-change" : target.Kind is "toggle" or "segmented" ? d.Id == "element-change" : d.Id.StartsWith("element-", StringComparison.Ordinal) && d.Id is not ("element-adjust" or "element-change")).ToArray();
     }
 
     internal static JsonElement AddFlow(JsonElement value, string? widgetId, JsonObject binding)
@@ -143,8 +142,8 @@ public static class ButtonEvents
     public static IReadOnlyList<InputTarget> InputTargets(string layout)
     {
         try { return XDocument.Parse(layout).Descendants().Where(e => CanInteract(e) && e.Attribute("id") != null
-            && e.Name.LocalName is "stack" or "layer" or "slider")
-            .Select(e => new InputTarget((string)e.Attribute("id")!, e.Name.LocalName == "slider" ? "slider" : "press")).Distinct().ToArray(); }
+            && !e.Ancestors("segmented").Any() && e.Name.LocalName is "stack" or "layer" or "slider" or "dial" or "toggle" or "segmented")
+            .Select(e => new InputTarget((string)e.Attribute("id")!, e.Name.LocalName is "slider" or "dial" or "toggle" or "segmented" ? e.Name.LocalName : "press")).Distinct().ToArray(); }
         catch (System.Xml.XmlException) { return []; }
     }
     private static bool CanInteract(XElement e) => (string?)e.Attribute("interactive") == "true"
@@ -195,10 +194,10 @@ public static class ButtonEvents
         catch (System.Xml.XmlException) { return ""; }
         var elements = document.Descendants().Where(e => e.Attribute("id") != null).ToArray();
         var pressTargets = elements.Where(e => (e.Name.LocalName is "stack" or "layer") && CanInteract(e)).ToArray();
-        var sliders = elements.Where(e => e.Name.LocalName == "slider" && CanInteract(e)).ToArray();
+        var sliders = elements.Where(e => (e.Name.LocalName is "slider" or "dial" or "toggle" or "segmented") && CanInteract(e) && !e.Ancestors("segmented").Any()).ToArray();
         var notes = new List<string>();
         if (pressTargets.Length > 0) notes.Add("Press target IDs: " + string.Join(", ", pressTargets.Select(e => (string)e.Attribute("id")!)));
-        if (sliders.Length > 0) notes.Add("Slider target IDs: " + string.Join(", ", sliders.Select(e => (string)e.Attribute("id")!)));
+        if (sliders.Length > 0) notes.Add("Value control target IDs: " + string.Join(", ", sliders.Select(e => (string)e.Attribute("id")!)));
         foreach (var flow in flows.EnumerateArray())
         {
             if (!flow.TryGetProperty("event", out var binding) || !binding.TryGetProperty("providerId", out var provider)
@@ -213,7 +212,8 @@ public static class ButtonEvents
             if (Value("widgetId") is { } target && target != "$self" && target != widgetId) continue;
             var id = Value("elementId");
             if (string.IsNullOrEmpty(id) || eventId.GetString()?.StartsWith("element-", StringComparison.Ordinal) != true) continue;
-            var candidates = eventId.GetString() is "element-adjust" or "element-change" ? sliders : pressTargets;
+            var candidates = eventId.GetString() == "element-adjust" ? sliders.Where(e => e.Name.LocalName is "slider" or "dial").ToArray()
+                : eventId.GetString() == "element-change" ? sliders : pressTargets;
             if (candidates.Any(e => (string?)e.Attribute("id") == id)) continue;
             var parent = elements.FirstOrDefault(e => (string?)e.Attribute("id") == id)?.Ancestors().FirstOrDefault(candidates.Contains);
             notes.Add(parent == null ? $"'{id}' is not a target for {eventId.GetString()}." : $"'{id}' is not interactive. Use its parent ID '{(string?)parent.Attribute("id")}'.");

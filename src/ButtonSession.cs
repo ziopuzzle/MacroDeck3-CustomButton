@@ -262,7 +262,7 @@ public sealed class ButtonSession : IUiSession
     private void HandleControlInput(ControlInput input)
     {
         if (input.DataKey != null && input.Value is { } value)
-            hub?.Update(settings.Channel, new Dictionary<string, JsonElement> { [input.DataKey] = JsonSerializer.SerializeToElement(value) });
+            hub?.Update(settings.Channel, new Dictionary<string, JsonElement> { [input.DataKey] = input.BooleanValue is { } on ? JsonSerializer.SerializeToElement(on) : JsonSerializer.SerializeToElement(value) });
         onControlInput?.Invoke(input);
     }
     private void TrackNodes(UiNode root, long revision)

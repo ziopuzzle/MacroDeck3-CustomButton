@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.38.0 — dial, toggle and segmented controls
+
+- Add Dial, Toggle and Segmented components with data-key bindings, conditional styles, alpha colors, GUI editor entries and BASIC templates.
+- Dial shares slider range, step and adjusting/changed events. Toggle stores boolean data and reports numeric 0/1 in changed events; Segmented stores and reports a zero-based selection index.
+- Center Segmented choice content by default without requiring an extra XML stack. Explicit text alignment remains supported.
+- Include all three controls in event shortcuts. Segmented children are display content only; hidden choices retain their index.
+
 ## 0.37.0 — action setup, editor history and diagnostics
 
 - Publish a follow-up configuration revision after opening copied/imported or previously untracked widgets so the host can expose Save without a manual edit.

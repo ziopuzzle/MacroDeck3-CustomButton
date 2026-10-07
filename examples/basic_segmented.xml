@@ -1,0 +1,8 @@
+<stack id="container" padding="5%" justify="center" gap="5%">
+  <segmented id="modeControl" key="mode" mainSize="25%" color="#2196f3" interactive="true">
+    <text id="off" size="10%" align="center">Off</text>
+    <text id="auto" size="10%" align="center">Auto</text>
+    <text id="on" size="10%" align="center">On</text>
+  </segmented>
+  <text id="selection" size="12%" align="center">Selected: {{mode:0}}</text>
+</stack>

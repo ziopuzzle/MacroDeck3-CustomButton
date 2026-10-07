@@ -69,3 +69,25 @@ The client paints its local slider position during dragging. The plugin sends pr
 
 This release implements press targets and one-dimensional sliders. Trackpads, arbitrary XY drag events, keyboard text inputs and other native input components remain future work. The current event payload and element-ID routing can be extended without making every component a tile-level button.
 
+
+## Dial, toggle and segmented controls
+
+The BASIC Dial, Toggle and Segmented templates provide working starting points. These components require a beta.15-capable client. Set `interactive="true"` and a `key` to enable input. Without interaction enabled they only display data. Use either `key` or `value`, never both. External data updates redraw the controls; user input updates the shared channel before publishing its event.
+
+```xml
+<dial id="volume" key="volume" min="0" max="100" step="1"
+      startAngle="-135" endAngle="135" thickness="5%"
+      color="#54dfcc" interactive="true" />
+<toggle id="enabled" key="enabled" size="20%"
+        mainSize="30%" color="#54dfcc" interactive="true" />
+<segmented id="mode" key="mode" mainSize="25%" interactive="true">
+  <text id="manual" size="10%" align="center">Manual</text>
+  <text id="automatic" size="10%" align="center">Auto</text>
+</segmented>
+```
+
+- **Dial:** numeric data in `min..max` (defaults 0..100), optional `step`, and start/end angles in degrees (zero up, clockwise positive). Events are Element value adjusting and Element value changed, with the scaled value and normalized level, as on a slider.
+- **Toggle:** reads `true`/`false` or 0/1, and writes a JSON boolean to its data key. Element value changed reports numeric `value` and `level` as 0 or 1 to preserve the existing event contract. Use the shared data key when a boolean is needed.
+- **Segmented:** each direct child is one choice. Choice content is centered vertically and horizontally by default; direct text children default to centered text alignment. Explicit text alignment and layouts inside child stacks remain configurable. The data key and Element value changed event use its zero-based index. Missing or out-of-range values show no selection. A hidden child keeps an empty slot so other indices remain stable. Child components are display-only; their interaction handlers are suppressed. Give the control an explicit height with `mainSize` when placing it in a vertical stack.
+
+Choose the component under Input target in Actions, then add its event. Toggle and Segmented support changed events only. Color alpha and component opacity fade the entire control, including its native track and any segment contents.

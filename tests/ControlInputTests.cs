@@ -26,6 +26,47 @@ public class ControlInputTests
         return (integration, context, session);
     }
     private static UiNode Find(ButtonSession session, string suffix) => ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Id.EndsWith("." + suffix));
+    [TestCase("dial", "0.75", 75)]
+    [TestCase("toggle", "true", 1)]
+    [TestCase("segmented", "1", 1)]
+    public async Task NewControlsUpdateDataAndPublishChanges(string type, string payload, double expected)
+    {
+        var contents = type == "segmented" ? "<text id='a'>A</text><text id='b'>B</text>" : "";
+        var setup = await Open($"<{type} id='control' key='gain' interactive='true'>{contents}</{type}>");
+        await using var session = setup.Session;
+        var node = ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Type == "ui." + type);
+        session.Dispatch(new() { NodeId = node.Id, Name = "change", Data = JsonDocument.Parse(payload).RootElement.Clone() });
+        var value = setup.Integration.Hub.Snapshot("demo").Values["gain"];
+        if (type == "toggle") Assert.That(value.GetBoolean(), Is.True);
+        else Assert.That(value.GetDouble(), Is.EqualTo(expected));
+        var published = setup.Context.Events.Published.Single(e => e.EventId == "element-change").Parameters!.Value;
+        Assert.That(published.GetProperty("value").GetDouble(), Is.EqualTo(expected));
+        Assert.That(published.GetProperty("elementId").GetString(), Is.EqualTo("control"));
+    }
+
+    [TestCase("toggle", "1")][TestCase("toggle", "\"true\"")]
+    [TestCase("segmented", "-1")][TestCase("segmented", "2")][TestCase("segmented", "0.5")]
+    [TestCase("dial", "1.1")]
+    public async Task NewControlsRejectInvalidPayloads(string type, string payload)
+    {
+        var contents = type == "segmented" ? "<text id='a'>A</text><text id='b'>B</text>" : "";
+        var setup = await Open($"<{type} id='control' key='gain' interactive='true'>{contents}</{type}>");
+        await using var session = setup.Session;
+        var node = ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Type == "ui." + type);
+        session.Dispatch(new() { NodeId = node.Id, Name = "change", Data = JsonDocument.Parse(payload).RootElement.Clone() });
+        Assert.That(setup.Context.Events.Published.Any(e => e.EventId == "element-change"), Is.False);
+    }
+
+    [Test] public async Task SegmentedKeepsHiddenSlotsAndSuppressesChildInteractions()
+    {
+        const string xml = "<segmented id='mode' key='gain' interactive='true'><stack id='button' interactive='true' visible='false'/><text id='b'>B</text></segmented>";
+        var setup = await Open(xml); await using var session = setup.Session;
+        var node = ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Type == "ui.segmented");
+        Assert.That(node.Children, Has.Count.EqualTo(2));
+        Assert.That(ButtonEvents.InputTargets(xml).Select(t => t.Id), Is.EqualTo(new[] { "mode" }));
+        Assert.That(ButtonEvents.InputEvents(xml, "mode").Select(e => e.Id), Is.EqualTo(new[] { "element-change" }));
+        Assert.Throws<FormatException>(() => ButtonEvents.AddElementEvent(ButtonEvents.Empty, "widget", "element-adjust", "mode", xml));
+    }
     [Test] public async Task SeparateButtonsPublishOriginalXmlIdsWithoutTriggeringTheTile()
     {
         var setup = await Open(); await using var session = setup.Session;

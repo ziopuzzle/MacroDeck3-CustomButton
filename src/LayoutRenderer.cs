@@ -32,6 +32,9 @@ public sealed class LayoutRenderer
         "clock" => "zone seconds color",
         "progress-bar" => "positionMs durationMs anchor rate color endColor thickness",
         "slider" => "value key min max step direction color thickness interactive",
+        "dial" => "value key min max step startAngle endAngle color thickness interactive",
+        "toggle" => "value key size color interactive",
+        "segmented" => "value key color interactive",
         "rect" => "coordinates x y width height color corner cornerRadius strokeColor strokeWidth gradient endColor gradientAngle gradientX gradientY",
         "circle" or "capsule" => "coordinates x y width height color strokeColor strokeWidth gradient endColor gradientAngle gradientX gradientY",
         "path" => "coordinates x y width height data color strokeColor strokeWidth",
@@ -200,13 +203,13 @@ public sealed class LayoutRenderer
         }
         string EndColor() => Color("endColor", colors["color"].Hex);
         var key = (string)node.Attribute("id")!;
-        var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "layer" or "chart" or "clock" or "slider" or "gauge" or "transform" or "modifier" or "responsive");
+        var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "layer" or "chart" or "clock" or "slider" or "dial" or "toggle" or "segmented" or "gauge" or "transform" or "modifier" or "responsive");
         // Keep omitted sizes unset; a numeric ternary would turn default into an explicit zero.
         UiSize mainSize = default;
         if (attributes.ContainsKey("mainSize") && A("mainSize") != "auto") mainSize = Length("mainSize", 0);
         var horizontal = node.Name == "stack" && Choice("direction", "vertical") == "horizontal";
-        var children = node.Elements().Where(e => e.Name != "style").Select(n => Make(n, values, history, horizontal, selectedId, input, animation, images, imageAspectRatio)
-            ?? (node.Name == "responsive" ? new UiLayer { Key = (string)n.Attribute("id")!, Children = [] } : null)).OfType<UiElement>().ToArray();
+        var children = node.Elements().Where(e => e.Name != "style").Select(n => Make(n, values, history, horizontal, selectedId, node.Name == "segmented" ? null : input, animation, images, imageAspectRatio)
+            ?? (node.Name.LocalName is "responsive" or "segmented" ? new UiLayer { Key = (string)n.Attribute("id")!, Children = [] } : null)).OfType<UiElement>().ToArray();
         var textSize = Length("size", .18, 1);
         var minTextSize = Math.Min(Length("minSize", Math.Min(.08, textSize), 1), textSize);
         UiSize TextLength(double size) => attributes.ContainsKey("sizeCap") ? UiSize.Capped(size, N("sizeCap", 32, 1, 256)) : (UiSize)size;
@@ -448,6 +451,43 @@ public sealed class LayoutRenderer
                     Color = attributes.ContainsKey("color") ? UiValue.Of(Color("color", "#ffffff")) : default };
                 case "progress-bar": return new UiProgressBar { Key = key, Fill = fill, MainSize = mainSize,
                     Value = Progress(), StartColor = Color("color", "#54dfcc"), EndColor = EndColor(), Thickness = Length("thickness", .05, 1) };
+                case "toggle":
+                case "segmented":
+                    var controlKey = A("key");
+                    if (controlKey.Length > 0) DataHub.ValidateName(controlKey);
+                    if (B("interactive", false) && controlKey.Length == 0) throw new FormatException("An interactive control needs a key to store its value.");
+                    if (controlKey.Length > 0 && attributes.ContainsKey("value")) throw new FormatException("Use either key or value, not both.");
+                    var rawValue = controlKey.Length > 0 ? values.TryGetValue(controlKey, out var cv) ? cv.ToString() : "" : A("value");
+                    if (node.Name == "toggle")
+                    {
+                        var on = rawValue == "1" || bool.TryParse(rawValue, out var flag) && flag;
+                        if (rawValue is not ("" or "—" or "0" or "1") && !bool.TryParse(rawValue, out _)) throw new FormatException("Toggle value must be true, false, 0 or 1.");
+                        return new UiToggle { Key = key, Fill = fill, MainSize = mainSize, On = on, Size = Length("size", .2, 1), LevelColor = Color("color", "#54dfcc"),
+                            Events = input != null && B("interactive", false) ? [UiEventHandler.On(UiComponentEvents.Change, e =>
+                            {
+                                if (!e.TryGetBoolean(out var next)) return UiEventOutcome.Rejected("Expected a boolean.");
+                                input(new(key, "change", next ? 1 : 0, next ? 1 : 0, controlKey, next));
+                                return UiEventOutcome.Accepted;
+                            })] : [] };
+                    }
+                    if (children.Length == 0) throw new FormatException("Segmented needs at least one child for its choices.");
+                    var selection = -1;
+                    if (rawValue is not ("" or "—") && !int.TryParse(rawValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out selection)) throw new FormatException("Segmented value must be a zero-based integer index.");
+                    // Native segments allocate a box but do not center its content. Keep one
+                    // wrapper per choice so visual alignment never changes selection indices.
+                    var segments = children.Select(child => (UiElement)new UiStack
+                    {
+                        Key = child.Key, Fill = true, Direction = "vertical", Justify = "center", Align = "center",
+                        Children = [child with { Key = "content" }]
+                    }).ToArray();
+                    return new UiSegmented { Key = key, Fill = fill, MainSize = mainSize, Children = segments, Selected = selection, LevelColor = Color("color", "#54dfcc"),
+                        Events = input != null && B("interactive", false) ? [UiEventHandler.On(UiComponentEvents.Change, e =>
+                        {
+                            if (!e.TryGetDouble(out var index) || !double.IsFinite(index) || index != Math.Truncate(index) || index < 0 || index >= children.Length) return UiEventOutcome.Rejected("Expected a valid segment index.");
+                            input(new(key, "change", index, children.Length == 1 ? 0 : index / (children.Length - 1), controlKey));
+                            return UiEventOutcome.Accepted;
+                        })] : [] };
+                case "dial":
                 case "slider":
                     var sliderMin = N("min", 0, -1e12, 1e12); var sliderMax = N("max", 100, -1e12, 1e12);
                     if (sliderMax <= sliderMin) throw new FormatException("For slider, max must be greater than min.");
@@ -466,6 +506,12 @@ public sealed class LayoutRenderer
                         input!(new(key, name, value, (value - sliderMin) / (sliderMax - sliderMin), sliderKey));
                         return UiEventOutcome.Accepted;
                     });
+                    if (node.Name == "dial") return new UiDial { Key = key, Fill = fill, MainSize = mainSize,
+                        Level = Math.Clamp((Snap(sliderValue) - sliderMin) / (sliderMax - sliderMin), 0, 1),
+                        Step = step > 0 ? UiValue.Of(step / (sliderMax - sliderMin)) : default,
+                        StartAngle = N("startAngle", -135, -360, 360), EndAngle = N("endAngle", 135, -360, 360),
+                        LevelColor = Color("color", "#54dfcc"), Thickness = Length("thickness", .04, 1),
+                        Events = input != null && B("interactive", false) ? [Handler(UiComponentEvents.Adjust), Handler(UiComponentEvents.Change)] : [] };
                     return new UiSlider { Key = key, Fill = fill, MainSize = mainSize,
                         Level = Math.Clamp((Snap(sliderValue) - sliderMin) / (sliderMax - sliderMin), 0, 1),
                         Step = step > 0 ? UiValue.Of(step / (sliderMax - sliderMin)) : default,
@@ -498,7 +544,7 @@ public sealed class LayoutRenderer
                     }
                     return AlphaPaint.Layer(new UiLayer { Key = key, Children = layers, Fill = fill, MainSize = mainSize });
                 case "text": return new UiTextRun { Key = key, Text = Expand(string.Concat(node.Nodes().OfType<XText>().Select(t => t.Value)), values), Size = TextLength(textSize), MinSize = TextLength(minTextSize),
-                    Weight = Choice("weight", "regular"), Color = attributes.ContainsKey("role") && !attributes.ContainsKey("color") ? UiValue.None<string>() : UiValue.Of(Color("color", "#ffffff")), Align = Choice("align", "start"),
+                    Weight = Choice("weight", "regular"), Color = attributes.ContainsKey("role") && !attributes.ContainsKey("color") ? UiValue.None<string>() : UiValue.Of(Color("color", "#ffffff")), Align = Choice("align", node.Parent?.Name == "segmented" ? "center" : "start"),
                     Role = Choice("role", "primary"), FontFace = A("fontFace") is var face && face is not ("" or "—") ? UiValue.Of(face) : UiValue.None<string>(),
                     Digits = attributes.ContainsKey("digits") ? UiValue.Of(N("digits", 0, 0, 32)) : UiValue.None<double>(),
                     Wrap = B("wrap", false), MaxLines = Integer("maxLines", 1, 1, 8), Fill = fill, MainSize = mainSize };

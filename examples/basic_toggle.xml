@@ -1,0 +1,5 @@
+<stack id="container" justify="center" align="center" gap="5%" padding="8%">
+  <text id="title" size="14%" align="center">Enabled</text>
+  <toggle id="enabledToggle" key="enabled" size="25%" mainSize="30%" color="#54dfcc" interactive="true" />
+  <text id="state" size="10%" align="center">{{enabled}}</text>
+</stack>

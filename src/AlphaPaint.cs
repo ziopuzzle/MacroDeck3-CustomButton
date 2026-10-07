@@ -48,7 +48,7 @@ public static class AlphaPaint
             if (A("color") != A("endColor")) throw new FormatException("Use the same alpha for both ends of a bar.");
             return Fade(element, A("color"));
         }
-        if (element is UiTextRun or UiDynamicText or UiChart or UiClockDial or UiSlider or UiGauge or UiIcon) return Fade(element, A("color"));
+        if (element is UiTextRun or UiDynamicText or UiChart or UiClockDial or UiSlider or UiDial or UiToggle or UiSegmented or UiGauge or UiIcon) return Fade(element, A("color"));
         if (element is UiStack stack && A("background") != 1)
         {
             if (A("background") == 0) return stack with { Background = default };
