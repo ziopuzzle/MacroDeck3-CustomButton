@@ -76,6 +76,12 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
         {
             var payload = new Dictionary<string, object?> { ["widgetId"] = ownerWidgetId, ["elementId"] = input.ElementId };
             if (input.Value is { } value) { payload["value"] = value; payload["level"] = input.Level; payload["key"] = input.DataKey; }
+            if (input.Position is { } position)
+            {
+                payload["x"] = position.X; payload["y"] = position.Y;
+                payload["levelX"] = position.LevelX; payload["levelY"] = position.LevelY;
+                payload["keyX"] = position.KeyX; payload["keyY"] = position.KeyY;
+            }
             events?.Publish("element-" + input.EventName, payload);
         }
         return Task.FromResult<IUiSession?>(new ButtonSession(surface, settings, sample ? null : Hub,

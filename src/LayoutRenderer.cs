@@ -35,6 +35,7 @@ public sealed class LayoutRenderer
         "dial" => "value key min max step startAngle endAngle color thickness interactive",
         "toggle" => "value key size color interactive",
         "segmented" => "value key color interactive",
+        "trackpad" => "keyX keyY minX maxX minY maxY stepX stepY color background interactive",
         "rect" => "coordinates x y width height color corner cornerRadius strokeColor strokeWidth gradient endColor gradientAngle gradientX gradientY",
         "circle" or "capsule" => "coordinates x y width height color strokeColor strokeWidth gradient endColor gradientAngle gradientX gradientY",
         "path" => "coordinates x y width height data color strokeColor strokeWidth",
@@ -44,6 +45,13 @@ public sealed class LayoutRenderer
         _ => throw new FormatException($"Unsupported component: {type}")
     });
     private readonly XElement root;
+    private sealed class PadContact
+    {
+        public int? Id;
+        public double Width, Height;
+        public long LastSeen;
+    }
+    private readonly Dictionary<string, PadContact> padContacts = new(StringComparer.Ordinal);
     public bool HasRootBackground(IReadOnlyDictionary<string, JsonElement> values)
         => root.Attribute("background") != null || root.Elements("style").Any(style =>
             style.Attribute("background") != null && DisplayCondition.Evaluate((string)style.Attribute("when")!, values));
@@ -118,7 +126,7 @@ public sealed class LayoutRenderer
         try { return Make(root, values, history, false, selectedId, input, animation, images, imageAspectRatio) ?? new UiStack { Key = "hidden", Fill = true, Children = [] }; }
         finally { animation?.EndFrame(); }
     }
-    private static UiElement? Make(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio)
+    private UiElement? Make(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio)
     {
         try
         {
@@ -127,7 +135,7 @@ public sealed class LayoutRenderer
         }
         catch (FormatException e) when (!e.Data.Contains("LayoutLine")) { throw LocatedError(node, e); }
     }
-    private static UiElement? MakeCore(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio)
+    private UiElement? MakeCore(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio)
     {
         var attributes = node.Attributes().ToDictionary(a => a.Name.LocalName, a => a.Value);
         foreach (var style in node.Elements("style"))
@@ -203,7 +211,7 @@ public sealed class LayoutRenderer
         }
         string EndColor() => Color("endColor", colors["color"].Hex);
         var key = (string)node.Attribute("id")!;
-        var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "layer" or "chart" or "clock" or "slider" or "dial" or "toggle" or "segmented" or "gauge" or "transform" or "modifier" or "responsive");
+        var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "layer" or "chart" or "clock" or "trackpad" or "slider" or "dial" or "toggle" or "segmented" or "gauge" or "transform" or "modifier" or "responsive");
         // Keep omitted sizes unset; a numeric ternary would turn default into an explicit zero.
         UiSize mainSize = default;
         if (attributes.ContainsKey("mainSize") && A("mainSize") != "auto") mainSize = Length("mainSize", 0);
@@ -451,6 +459,65 @@ public sealed class LayoutRenderer
                     Color = attributes.ContainsKey("color") ? UiValue.Of(Color("color", "#ffffff")) : default };
                 case "progress-bar": return new UiProgressBar { Key = key, Fill = fill, MainSize = mainSize,
                     Value = Progress(), StartColor = Color("color", "#54dfcc"), EndColor = EndColor(), Thickness = Length("thickness", .05, 1) };
+                case "trackpad":
+                    var keyX = A("keyX", "x"); var keyY = A("keyY", "y");
+                    DataHub.ValidateName(keyX); DataHub.ValidateName(keyY);
+                    if (keyX == keyY) throw new FormatException("Trackpad keyX and keyY must be different.");
+                    var minX = N("minX", 0, -1e12, 1e12); var maxX = N("maxX", 100, -1e12, 1e12);
+                    var minY = N("minY", 0, -1e12, 1e12); var maxY = N("maxY", 100, -1e12, 1e12);
+                    if (maxX <= minX || maxY <= minY) throw new FormatException("Trackpad maximums must exceed minimums.");
+                    var stepX = N("stepX", 0, 0, maxX - minX); var stepY = N("stepY", 0, 0, maxY - minY);
+                    double PadSnap(double n, double min, double max, double step) => Math.Clamp(step == 0 ? n : min + Math.Round((n - min) / step, MidpointRounding.AwayFromZero) * step, min, max);
+                    double PadLevel(string dataKey, double min, double max, double step)
+                    {
+                        var n = values.TryGetValue(dataKey, out var v) && double.TryParse(v.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) && double.IsFinite(parsed) ? parsed : min;
+                        return (PadSnap(n, min, max, step) - min) / (max - min);
+                    }
+                    var lx = PadLevel(keyX, minX, maxX, stepX); var ly = PadLevel(keyY, minY, maxY, stepY);
+                    if (!padContacts.TryGetValue(key, out var contact)) padContacts[key] = contact = new();
+                    var enabled = input != null && B("interactive", false);
+                    if (!enabled) contact.Id = null;
+                    void PadPublish(UiPointerSample sample, string eventName)
+                    {
+                        contact.LastSeen = Environment.TickCount64;
+                        var x = PadSnap(minX + Math.Clamp(sample.X / contact.Width, 0, 1) * (maxX - minX), minX, maxX, stepX);
+                        var y = PadSnap(minY + Math.Clamp(sample.Y / contact.Height, 0, 1) * (maxY - minY), minY, maxY, stepY);
+                        input!(new(key, eventName, Position: new(x, y, (x - minX) / (maxX - minX), (y - minY) / (maxY - minY), keyX, keyY)));
+                    }
+                    var padEvents = enabled ? new[]
+                    {
+                        UiEventHandler.On(UiComponentEvents.PointerDown, e =>
+                        {
+                            if (!e.TryGetPointerDown(out var down) || down.Width <= 0 || down.Height <= 0) return UiEventOutcome.Rejected("Expected pointer position and positive dimensions.");
+                            if (contact.Id != null && Environment.TickCount64 - contact.LastSeen < 2000) return UiEventOutcome.Accepted;
+                            contact.Id = down.Sample.Id; contact.Width = down.Width; contact.Height = down.Height;
+                            PadPublish(down.Sample, "position-adjust"); return UiEventOutcome.Accepted;
+                        }),
+                        UiEventHandler.On(UiComponentEvents.PointerMove, e =>
+                        {
+                            if (!e.TryGetPointerSamples(out var samples)) return UiEventOutcome.Rejected("Expected pointer samples.");
+                            // Keep only the newest position from this contact; never replay a backlog.
+                            var sample = samples.LastOrDefault(s => s.Id == contact.Id);
+                            if (contact.Id != null && samples.Any(s => s.Id == contact.Id)) PadPublish(sample, "position-adjust");
+                            return UiEventOutcome.Accepted;
+                        }),
+                        UiEventHandler.On(UiComponentEvents.PointerUp, e =>
+                        {
+                            if (!e.TryGetPointerUp(out var up)) return UiEventOutcome.Rejected("Expected pointer release.");
+                            if (contact.Id == up.Sample.Id)
+                            {
+                                contact.Id = null;
+                                if (!up.Cancelled) PadPublish(up.Sample, "position-change");
+                            }
+                            return UiEventOutcome.Accepted;
+                        })
+                    } : Array.Empty<UiEventHandler>();
+                    var padColor = DisplayColor.Parse(A("color", "#54dfcc"));
+                    var padBackground = DisplayColor.Parse(A("background", "#252525"));
+                    return AlphaPaint.Layer(new UiLayer { Key = key, Fill = fill, MainSize = mainSize, Events = padEvents, Children = [
+                        AlphaPaint.Fade(new UiShape { Key = "surface", Fill = true, Shape = "path", Path = "M0 0 H1 V1 H0 Z", Color = padBackground.Rgb }, padBackground.Opacity),
+                        AlphaPaint.Fade(new UiShape { Key = "cursor", Fill = true, Shape = "path", Path = FormattableString.Invariant($"M{lx} 0 V1 M0 {ly} H1"), StrokeColor = padColor.Rgb, StrokeWidth = .008 }, padColor.Opacity)
+                    ] });
                 case "toggle":
                 case "segmented":
                     var controlKey = A("key");

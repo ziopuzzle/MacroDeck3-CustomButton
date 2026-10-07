@@ -8,6 +8,63 @@ namespace Ziopuzzle.CustomButton.Tests;
 
 public class ControlInputTests
 {
+    [Test] public async Task TrackpadFollowsExternalValuesWithoutPublishingInput()
+    {
+        var setup = await Open("<trackpad id='pad' interactive='true'/>"); await using var session = setup.Session;
+        var before = JsonSerializer.Serialize(Find(session, "cursor"));
+        setup.Integration.Hub.Update("demo", new Dictionary<string, JsonElement>
+        {
+            ["x"] = JsonSerializer.SerializeToElement(25), ["y"] = JsonSerializer.SerializeToElement(75)
+        });
+        session.Refresh();
+        var after = JsonSerializer.Serialize(Find(session, "cursor"));
+        Assert.That(after, Is.Not.EqualTo(before));
+        Assert.That(after, Does.Contain("M0.25 0 V1 M0 0.75 H1"));
+        Assert.That(setup.Context.Events.Published.Any(e => e.EventId.StartsWith("element-")), Is.False);
+    }
+
+    [TestCase("keyX='same' keyY='same'")]
+    [TestCase("minX='10' maxX='5'")]
+    [TestCase("stepY='-1'")]
+    public void TrackpadRejectsInvalidConfiguration(string attributes)
+        => Assert.Throws<FormatException>(() => new LayoutRenderer($"<trackpad id='pad' {attributes}/>").Render(new Dictionary<string, JsonElement>()));
+
+    [Test] public async Task TrackpadKeepsContactAcrossRedrawsAndPublishesBothAxes()
+    {
+        const string xml = "<trackpad id='pad' keyX='x' keyY='y' minX='-100' maxX='100' stepX='10' interactive='true'/>";
+        var setup = await Open(xml); await using var session = setup.Session;
+        void Send(string name, object data) => session.Dispatch(new() { NodeId = Find(session, "pad").Id, Name = name, Data = JsonSerializer.SerializeToElement(data) });
+        Send("pointer-down", new { id = 1, x = .5, y = .25, t = 0, width = 2, height = .5 });
+        Assert.That(setup.Integration.Hub.Snapshot("demo").Values["x"].GetDouble(), Is.EqualTo(-50));
+        Assert.That(setup.Integration.Hub.Snapshot("demo").Values["y"].GetDouble(), Is.EqualTo(50));
+        Send("pointer-move", new { samples = new[] { new { id = 1, x = 1.22, y = .1, t = 1 }, new { id = 1, x = 1.56, y = .2, t = 2 }, new { id = 2, x = 0.0, y = 0.0, t = 3 } } });
+        Assert.That(setup.Integration.Hub.Snapshot("demo").Values["x"].GetDouble(), Is.EqualTo(60));
+        Send("pointer-up", new { id = 1, x = 3, y = -1, t = 4 });
+        var final = setup.Context.Events.Published.Single(e => e.EventId == "element-position-change").Parameters!.Value;
+        Assert.Multiple(() => {
+            Assert.That(final.GetProperty("x").GetDouble(), Is.EqualTo(100));
+            Assert.That(final.GetProperty("y").GetDouble(), Is.EqualTo(0));
+            Assert.That(final.GetProperty("levelX").GetDouble(), Is.EqualTo(1));
+            Assert.That(final.GetProperty("keyY").GetString(), Is.EqualTo("y"));
+            Assert.That(ButtonEvents.InputEvents(xml, "pad").Select(e => e.Id), Is.EqualTo(new[] { "element-position-adjust", "element-position-change" }));
+        });
+        Assert.That(setup.Context.Events.Published.Count(e => e.EventId == "element-position-adjust"), Is.EqualTo(2));
+        Send("pointer-move", new { samples = new[] { new { id = 1, x = 0, y = 0, t = 5 } } });
+        Assert.That(setup.Integration.Hub.Snapshot("demo").Values["x"].GetDouble(), Is.EqualTo(100));
+    }
+
+    [Test] public async Task TrackpadRejectsUnownedMovesAndCancelsWithoutFinalEvent()
+    {
+        var setup = await Open("<trackpad id='pad' interactive='true'/>"); await using var session = setup.Session;
+        void Send(string name, object data) => session.Dispatch(new() { NodeId = Find(session, "pad").Id, Name = name, Data = JsonSerializer.SerializeToElement(data) });
+        Send("pointer-move", new { samples = new[] { new { id = 1, x = 1, y = 1, t = 0 } } });
+        Send("pointer-down", new { id = 1, x = .5, y = .5, t = 1, width = 1, height = 1 });
+        Send("pointer-down", new { id = 2, x = 0, y = 0, t = 2, width = 1, height = 1 });
+        Send("pointer-up", new { id = 1, x = 0, y = 0, t = 3, cancelled = true });
+        Assert.That(setup.Context.Events.Published.Count(e => e.EventId.StartsWith("element-")), Is.EqualTo(1));
+        Assert.That(setup.Integration.Hub.Snapshot("demo").Values["x"].GetDouble(), Is.EqualTo(50));
+    }
+
     private const string Layout = """
         <stack id="panel">
           <stack id="play" interactive="true" mainSize="30%" background="#12345680"><text id="caption">Play</text></stack>

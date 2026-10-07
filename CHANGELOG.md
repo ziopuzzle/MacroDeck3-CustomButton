@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.39.0 — two-axis trackpad
+
+- Add a Trackpad component with independent X/Y data keys, ranges and snapping, a position crosshair and alpha colors.
+- Update both coordinates together and expose position adjusting/changed events. Track drags outside the surface with clamped values; cancelled contacts do not fire a final change.
+- Add GUI properties, event shortcuts and a BASIC Trackpad template. External data changes update the displayed position.
+
 ## 0.38.0 — dial, toggle and segmented controls
 
 - Add Dial, Toggle and Segmented components with data-key bindings, conditional styles, alpha colors, GUI editor entries and BASIC templates.

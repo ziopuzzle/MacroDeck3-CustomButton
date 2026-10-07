@@ -1,0 +1,4 @@
+<stack id="container" padding="5%" gap="3%">
+  <trackpad id="positionPad" keyX="x" keyY="y" minX="-100" maxX="100" minY="-100" maxY="100" stepX="1" stepY="1" interactive="true" color="#54dfcc" background="#252525" />
+  <text id="positionLabel" size="10%" align="center">X {{x:0}} / Y {{y:0}}</text>
+</stack>

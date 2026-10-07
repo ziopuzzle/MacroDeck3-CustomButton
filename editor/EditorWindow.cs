@@ -51,7 +51,7 @@ public sealed partial class EditorWindow : Window
         ["stack"] = "▤ Stack", ["layer"] = "▧ Layer", ["text"] = "T Text", ["bar"] = "━ Range bar",
         ["modifier"] = "▣ Modifier", ["responsive"] = "▦ Responsive", ["variant"] = "▥ Layout variant", ["dynamic-text"] = "◷ Dynamic text",
         ["transform"] = "↻ Transform", ["icon"] = "☆ Icon", ["gauge"] = "◴ Gauge",
-        ["chart"] = "⌁ History graph", ["clock"] = "◷ Clock", ["progress-bar"] = "▷ Playback progress", ["slider"] = "● Slider", ["dial"] = "◉ Dial", ["toggle"] = "◐ Toggle", ["segmented"] = "▥ Segmented",
+        ["chart"] = "⌁ History graph", ["clock"] = "◷ Clock", ["progress-bar"] = "▷ Playback progress", ["slider"] = "● Slider", ["dial"] = "◉ Dial", ["trackpad"] = "⊕ Trackpad", ["toggle"] = "◐ Toggle", ["segmented"] = "▥ Segmented",
         ["rect"] = "▰ Rectangle", ["line"] = "╱ Line", ["polygon"] = "△ Polygon", ["sector"] = "◔ Sector",
         ["svg"] = "▧ SVG", ["image"] = "▧ Image", ["circle"] = "○ Circle", ["capsule"] = "▰ Capsule", ["path"] = "◇ Path"
     };
@@ -157,7 +157,7 @@ public sealed partial class EditorWindow : Window
             foreach (var (label, types) in new[] {
                 ("Layout", new[] { "stack", "layer", "transform", "modifier", "responsive", "variant" }),
                 ("Text and images", new[] { "text", "image", "svg", "icon", "dynamic-text" }),
-                ("Data and controls", new[] { "bar", "chart", "clock", "progress-bar", "slider", "dial", "toggle", "segmented", "gauge" }),
+                ("Data and controls", new[] { "bar", "chart", "clock", "progress-bar", "slider", "trackpad", "dial", "toggle", "segmented", "gauge" }),
                 ("Shapes", new[] { "rect", "circle", "capsule", "line", "polygon", "sector", "path" }) })
             {
                 var category = new MenuItem { Header = T(label) };

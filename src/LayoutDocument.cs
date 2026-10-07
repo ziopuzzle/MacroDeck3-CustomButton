@@ -69,6 +69,7 @@ public sealed class LayoutDocument
             case "sector": child.SetAttributeValue("radius", "40%"); child.SetAttributeValue("startAngle", "-90"); child.SetAttributeValue("sweepAngle", "120"); child.SetAttributeValue("color", "#54dfcc"); break;
             case "stack": child.SetAttributeValue("direction", "vertical"); break;
             case "bar": child.SetAttributeValue("value", "{{value}}"); break;
+            case "trackpad": child.SetAttributeValue("keyX", "x"); child.SetAttributeValue("keyY", "y"); break;
             case "dial": case "toggle": case "slider": child.SetAttributeValue("key", "value"); break;
             case "chart": child.SetAttributeValue("key", "value"); break;
             case "clock": child.SetAttributeValue("seconds", "true"); break;
