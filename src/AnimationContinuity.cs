@@ -10,7 +10,7 @@ public sealed class AnimationContinuity(TimeProvider? timeProvider = null)
 {
     private readonly TimeProvider clock = timeProvider ?? TimeProvider.System;
     private readonly object gate = new();
-    private readonly Dictionary<string, (long Saved, DisplayAnimation State)> entries = [];
+    private readonly Dictionary<string, (long Saved, DisplayAnimation State, Dictionary<string, LayoutRenderer.PadContact>? Contacts)> entries = [];
     private bool stopped;
     private const int Capacity = 64;
     public static string? Key(UiSurface surface, ButtonSettings settings)
@@ -34,16 +34,27 @@ public sealed class AnimationContinuity(TimeProvider? timeProvider = null)
     }
     public DisplayAnimation? Take(string key)
     {
-        lock (gate) { Prune(); return !stopped && entries.Remove(key, out var entry) ? entry.State : null; }
+        return Take(key, out _);
     }
-    public void Save(string key, DisplayAnimation animation)
+    internal DisplayAnimation? Take(string key, out Dictionary<string, LayoutRenderer.PadContact>? contacts)
+    {
+        lock (gate)
+        {
+            Prune(); contacts = null;
+            if (stopped || !entries.Remove(key, out var entry)) return null;
+            contacts = entry.Contacts;
+            return entry.State;
+        }
+    }
+    public void Save(string key, DisplayAnimation animation) => Save(key, animation, null);
+    internal void Save(string key, DisplayAnimation animation, LayoutRenderer? renderer)
     {
         lock (gate)
         {
             if (stopped) return;
             Prune();
             if (!entries.ContainsKey(key) && entries.Count >= Capacity) entries.Remove(entries.MinBy(p => p.Value.Saved).Key);
-            entries[key] = (clock.GetTimestamp(), animation.Copy());
+            entries[key] = (clock.GetTimestamp(), animation.Copy(), renderer?.CopyContacts());
         }
     }
     public void Stop() { lock (gate) { stopped = true; entries.Clear(); } }

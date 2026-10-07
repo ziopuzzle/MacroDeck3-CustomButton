@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.39.2 — trackpad visibility and session continuity
+
+- Rename trackpad event labels to Element position start, Element position changing and Element position end. Rename the IDs to element-position-start, element-position-changing and element-position-end. Recreate previously configured trackpad adjusting/changed events after updating.
+
+- Add `showCursorWhileTouching` (default false) to show the trackpad crosshair only during contact. Release and cancellation hide it even when coordinates are unchanged.
+- Preserve pointer identity, bounds and gesture history across identical session replacements within two seconds, using isolated, single-use checkpoints. Changed configurations and different widgets do not inherit contact state. Client-side loss of pointer capture or a plugin restart still requires a new touch.
+
 ## 0.39.1 — trackpad gesture history and axis direction
 
 - Add a position started event. Pointer down now emits started instead of adjusting; movement emits adjusting and release emits changed.

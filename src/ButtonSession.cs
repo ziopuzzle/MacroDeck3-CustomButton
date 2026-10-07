@@ -23,6 +23,7 @@ public sealed class ButtonSession : IUiSession
     private readonly DataHub? hub;
     private readonly SessionImages? images;
     private long lastImageRevision;
+    private long lastInputRevision;
     private readonly Func<CancellationToken, Task<ActionResult>>? press;
     private readonly CancellationTokenSource lifetime = new();
     private readonly Task pump;
@@ -78,7 +79,8 @@ public sealed class ButtonSession : IUiSession
         this.surface = surface; this.settings = settings; this.hub = hub; this.press = press;
         this.continuity = continuity;
         continuityKey = continuity == null ? null : AnimationContinuity.Key(surface, settings);
-        var restored = continuityKey == null ? null : continuity!.Take(continuityKey);
+        Dictionary<string, LayoutRenderer.PadContact>? contacts = null;
+        var restored = continuityKey == null ? null : continuity!.Take(continuityKey, out contacts);
         animation = restored ?? new DisplayAnimation();
         try
         {
@@ -86,6 +88,7 @@ public sealed class ButtonSession : IUiSession
             if (settings.Design == null || settings.Design.Preset == "xml")
             {
                 renderer = new(settings.Layout);
+                renderer.RestoreContacts(contacts);
                 initial = DataHub.ParseValues(settings.InitialValues);
             }
         }
@@ -232,7 +235,7 @@ public sealed class ButtonSession : IUiSession
             if (sampleHistory && configurationError == null) hub?.Sample(settings.Channel, initial);
             if (sharedUpdates != null) updateError = sharedUpdates.Error;
             var selection = previewSelection?.Invoke();
-            if (images?.NeedsRefresh != true && (images?.Revision ?? 0) == lastImageRevision && !animation.IsActive && (hub?.Revision(settings.Channel) ?? 0) == lastDataRevision && pressError == lastPressError && updateError == lastUpdateError && selection == lastSelection) return;
+            if ((renderer?.InputRevision ?? 0) == lastInputRevision && images?.NeedsRefresh != true && (images?.Revision ?? 0) == lastImageRevision && !animation.IsActive && (hub?.Revision(settings.Channel) ?? 0) == lastDataRevision && pressError == lastPressError && updateError == lastUpdateError && selection == lastSelection) return;
             var now = Stopwatch.GetTimestamp();
             if (animation.IsActive && lastAnimationFrame != 0 && Stopwatch.GetElapsedTime(lastAnimationFrame, now).TotalMilliseconds > 250)
                 Trace($"animation frame gap {Stopwatch.GetElapsedTime(lastAnimationFrame, now).TotalMilliseconds:F0} ms");
@@ -241,6 +244,7 @@ public sealed class ButtonSession : IUiSession
             lastImageRevision = images?.Revision ?? 0;
             var (next, serialized) = BuildCurrent(snapshot, selection);
             lastSelection = selection;
+            lastInputRevision = renderer?.InputRevision ?? 0;
             lastDataRevision = snapshot.Revision; lastPressError = pressError; lastUpdateError = updateError;
             if (serialized == lastRoot) return;
             var previous = pending?.FromRevision ?? tree.Revision;
@@ -334,7 +338,7 @@ public sealed class ButtonSession : IUiSession
             if (disposed) return;
             disposed = true; running = pressTask;
             if (continuityKey != null && configurationError == null && lastRenderFailure == null)
-                continuity!.Save(continuityKey, animation);
+                continuity!.Save(continuityKey, animation, renderer);
         }
         if (hub != null) hub.Updated -= RequestRefresh;
         activation?.Dispose();

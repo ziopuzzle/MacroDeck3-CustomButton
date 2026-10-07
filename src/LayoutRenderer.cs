@@ -35,7 +35,7 @@ public sealed class LayoutRenderer
         "dial" => "value key min max step startAngle endAngle color thickness interactive",
         "toggle" => "value key size color interactive",
         "segmented" => "value key color interactive",
-        "trackpad" => "keyX keyY leftValue rightValue topValue bottomValue stepX stepY color background interactive",
+        "trackpad" => "keyX keyY leftValue rightValue topValue bottomValue stepX stepY color background interactive showCursorWhileTouching",
         "rect" => "coordinates x y width height color corner cornerRadius strokeColor strokeWidth gradient endColor gradientAngle gradientX gradientY",
         "circle" or "capsule" => "coordinates x y width height color strokeColor strokeWidth gradient endColor gradientAngle gradientX gradientY",
         "path" => "coordinates x y width height data color strokeColor strokeWidth",
@@ -45,7 +45,7 @@ public sealed class LayoutRenderer
         _ => throw new FormatException($"Unsupported component: {type}")
     });
     private readonly XElement root;
-    private sealed class PadContact
+    internal sealed record PadContact
     {
         public int? Id;
         public double StartX, StartY, PreviousX, PreviousY;
@@ -53,6 +53,12 @@ public sealed class LayoutRenderer
         public long LastSeen;
     }
     private readonly Dictionary<string, PadContact> padContacts = new(StringComparer.Ordinal);
+    internal long InputRevision { get; private set; }
+    internal Dictionary<string, PadContact> CopyContacts() => padContacts.ToDictionary(p => p.Key, p => p.Value with { });
+    internal void RestoreContacts(Dictionary<string, PadContact>? contacts)
+    {
+        if (contacts != null) foreach (var pair in contacts) padContacts[pair.Key] = pair.Value with { };
+    }
     public bool HasRootBackground(IReadOnlyDictionary<string, JsonElement> values)
         => root.Attribute("background") != null || root.Elements("style").Any(style =>
             style.Attribute("background") != null && DisplayCondition.Evaluate((string)style.Attribute("when")!, values));
@@ -498,7 +504,7 @@ public sealed class LayoutRenderer
                         {
                             if (!e.TryGetPointerDown(out var down) || down.Width <= 0 || down.Height <= 0) return UiEventOutcome.Rejected("Expected pointer position and positive dimensions.");
                             if (contact.Id != null && Environment.TickCount64 - contact.LastSeen < 2000) return UiEventOutcome.Accepted;
-                            contact.Id = down.Sample.Id; contact.Width = down.Width; contact.Height = down.Height;
+                            InputRevision++; contact.Id = down.Sample.Id; contact.Width = down.Width; contact.Height = down.Height;
                             PadPublish(down.Sample, "position-start"); return UiEventOutcome.Accepted;
                         }),
                         UiEventHandler.On(UiComponentEvents.PointerMove, e =>
@@ -506,7 +512,7 @@ public sealed class LayoutRenderer
                             if (!e.TryGetPointerSamples(out var samples)) return UiEventOutcome.Rejected("Expected pointer samples.");
                             // Keep only the newest position from this contact; never replay a backlog.
                             var sample = samples.LastOrDefault(s => s.Id == contact.Id);
-                            if (contact.Id != null && samples.Any(s => s.Id == contact.Id)) PadPublish(sample, "position-adjust");
+                            if (contact.Id != null && samples.Any(s => s.Id == contact.Id)) PadPublish(sample, "position-changing");
                             return UiEventOutcome.Accepted;
                         }),
                         UiEventHandler.On(UiComponentEvents.PointerUp, e =>
@@ -514,8 +520,8 @@ public sealed class LayoutRenderer
                             if (!e.TryGetPointerUp(out var up)) return UiEventOutcome.Rejected("Expected pointer release.");
                             if (contact.Id == up.Sample.Id)
                             {
-                                contact.Id = null;
-                                if (!up.Cancelled) PadPublish(up.Sample, "position-change");
+                                contact.Id = null; InputRevision++;
+                                if (!up.Cancelled) PadPublish(up.Sample, "position-end");
                             }
                             return UiEventOutcome.Accepted;
                         })
@@ -524,7 +530,7 @@ public sealed class LayoutRenderer
                     var padBackground = DisplayColor.Parse(A("background", "#252525"));
                     return AlphaPaint.Layer(new UiLayer { Key = key, Fill = fill, MainSize = mainSize, Events = padEvents, Children = [
                         AlphaPaint.Fade(new UiShape { Key = "surface", Fill = true, Shape = "path", Path = "M0 0 H1 V1 H0 Z", Color = padBackground.Rgb }, padBackground.Opacity),
-                        AlphaPaint.Fade(new UiShape { Key = "cursor", Fill = true, Shape = "path", Path = FormattableString.Invariant($"M{lx} 0 V1 M0 {ly} H1"), StrokeColor = padColor.Rgb, StrokeWidth = .008 }, padColor.Opacity)
+                        AlphaPaint.Fade(new UiShape { Key = "cursor", Fill = true, Shape = "path", Path = FormattableString.Invariant($"M{lx} 0 V1 M0 {ly} H1"), StrokeColor = padColor.Rgb, StrokeWidth = .008 }, B("showCursorWhileTouching", false) && contact.Id == null ? 0 : padColor.Opacity, force: true)
                     ] });
                 case "toggle":
                 case "segmented":
