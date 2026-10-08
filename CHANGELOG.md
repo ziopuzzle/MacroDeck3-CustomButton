@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.40.1 — property default placeholders
+
+- Show safe literal defaults as property placeholders without writing them into XML. Leave inherited conditional-style values, theme colors, automatic sizing and attribute-presence switches blank.
+
 ## 0.40.0 — grouped GUI properties
 
 - Separate property presentation order from XML validation. Place ID first and group data, layout, appearance, interaction, visibility, animation and advanced settings.

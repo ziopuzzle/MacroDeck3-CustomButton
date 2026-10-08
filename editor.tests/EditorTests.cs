@@ -19,6 +19,26 @@ public static class TestApp
 }
 public class EditorTests
 {
+    [AvaloniaTest] public void PlaceholdersShowSafeDefaultsWithoutWritingThemOrOverridingStyleInheritance()
+    {
+        const string xml = "<text id='title'>Hello<style when='true' color='#ff0000'/></text>";
+        var w = new EditorWindow(xml, "{}", true); w.Show(); Flush(w);
+        try
+        {
+            Assert.That(Find<TextBox>(w, "field_size").Watermark, Is.EqualTo("18%"));
+            Assert.That(Find<TextBox>(w, "field_size").Text, Is.Empty);
+            foreach (var name in new[] { "color", "role", "fill", "mainSize", "minSize", "sizeCap", "digits", "align" })
+                Assert.That(Find<TextBox>(w, "field_" + name).Watermark, Is.Null, name);
+            Assert.That(w.LayoutXml, Is.EqualTo(xml));
+            Find<TextBox>(w, "field_text").Text = "Updated"; Flush(w);
+            Assert.That(XElement.Parse(w.LayoutXml).Attribute("size"), Is.Null);
+            var condition = w.GetVisualDescendants().OfType<Expander>().Single(e => e.Header?.ToString()?.StartsWith("Condition 1:") == true);
+            condition.IsExpanded = true; Flush(w);
+            Assert.That(condition.GetVisualDescendants().OfType<TextBox>().All(t => t.Watermark == null), Is.True);
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
     [AvaloniaTest] public void TextContentIsGroupedAndPropertySectionsStartExpanded()
     {
         var w = new EditorWindow("<text id='title'>Hello</text>", "{}", true); w.Show(); Flush(w);

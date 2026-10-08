@@ -83,7 +83,7 @@ public sealed partial class EditorWindow
             var fields = new Dictionary<string, TextBox>(); var panel = new StackPanel { Spacing = 6 };
             fields["when"] = Field(panel, "Condition expression", (string?)style.Attribute("when") ?? "", "when", node.Name.LocalName);
             var conditionGroups = MakeGroups(panel, condition: true);
-            foreach (var attribute in allowed.Where(a => a != "id")) fields[attribute] = Field(conditionGroups[PropertyLayout.Group(type, attribute)], Label(attribute), (string?)style.Attribute(attribute) ?? "", attribute, type);
+            foreach (var attribute in allowed.Where(a => a != "id")) fields[attribute] = Field(conditionGroups[PropertyLayout.Group(type, attribute)], Label(attribute), (string?)style.Attribute(attribute) ?? "", attribute, type, inherited: true);
             var index = rules.Count; panel.Children.Add(Button("Delete this condition", () => Edit(d => { d.DeleteStyle(selected, index); return selected; })));
             var header = new Expander { Header = $"{T("Condition")} {index + 1}: {(string?)style.Attribute("when")}", Content = panel, HorizontalAlignment = HorizontalAlignment.Stretch };
             properties.Children.Add(header); ruleHeaders.Add(header); rules.Add(fields);
@@ -148,11 +148,11 @@ public sealed partial class EditorWindow
         };
         updateDraftDescription();
     }
-    private TextBox Field(StackPanel panel, string label, string value, string attribute, string component)
+    private TextBox Field(StackPanel panel, string label, string value, string attribute, string component, bool inherited = false)
     {
         panel.Children.Add(new TextBlock { Text = T(label), Foreground = B("#bbbbbb") });
         var row = new DockPanel { LastChildFill = true };
-        var box = new TextBox { Name = "field_" + attribute, Text = value, MinWidth = 40, Padding = new Thickness(7, 5) };
+        var box = new TextBox { Name = "field_" + attribute, Text = value, Watermark = inherited ? null : PropertyDefaults.Get(component, attribute), MinWidth = 40, Padding = new Thickness(7, 5) };
         if (component == "svg" && attribute == "text")
         {
             box.AcceptsReturn = true; box.TextWrapping = TextWrapping.Wrap;
