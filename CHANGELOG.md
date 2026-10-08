@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.40.0 — grouped GUI properties
+
+- Separate property presentation order from XML validation. Place ID first and group data, layout, appearance, interaction, visibility, animation and advanced settings.
+- Group Trackpad settings by axis; put opacity with appearance, image transitions with animation and SVG raster resolution under Advanced.
+- Order line geometry as coordinate basis, mode, then the selected mode's coordinates. Keep condition fields in the same categories, initially opening every property category.
+- Place Text and SVG content inside Content and data. Open all property sections initially.
+- Remember normal property-section expansion per component type while the editor remains open. Preserve XML attributes and automatic editing/undo behavior.
+- Insert bare data keys for Trackpad keyX/keyY fields, matching other data-key fields.
+
 ## 0.39.4 — previous control values
 
 - Add numeric previousValue to Value changing/changed events for Slider, Dial, Toggle and Segmented. Existing event IDs are unchanged.

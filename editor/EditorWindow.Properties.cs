@@ -11,6 +11,7 @@ public sealed partial class EditorWindow
 {
     private Action? updateDraftDescription;
     private string propertyGroup = "";
+    private readonly Dictionary<string, bool> propertyExpansion = new();
     private void MakeProperties()
     {
         updateDraftDescription = null;
@@ -25,10 +26,26 @@ public sealed partial class EditorWindow
         tools.Children.Add(Button("Reset input", () => { history.Set(originalXml); propertyDirty = false; Publish(); Refresh(); })); properties.Children.Add(tools);
         properties.Children.Add(new TextBlock { Text = T("Valid settings are applied automatically."), Foreground = B("#bbbbbb") });
         var attributes = new Dictionary<string, TextBox>(); TextBox? text = null;
-        if (node.Name == "text" || node.Name == "svg") text = Field(properties, node.Name == "svg" ? "SVG markup" : "Display text", string.Concat(node.Nodes().OfType<XText>().Select(n => n.Value)), "text", node.Name.LocalName);
-        var allowed = LayoutRenderer.Allowed(node.Name.LocalName).Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var common = new StackPanel { Spacing = 6 };
-        var transitions = new StackPanel { Spacing = 6 };
+        var type = node.Name.LocalName;
+        var allowed = PropertyLayout.Attributes(type);
+        attributes["id"] = Field(properties, Label("id"), (string?)node.Attribute("id") ?? "", "id", type);
+        Dictionary<string, StackPanel> MakeGroups(StackPanel parent, bool condition = false)
+        {
+            var result = new Dictionary<string, StackPanel>();
+            foreach (var group in PropertyLayout.Groups)
+            {
+                if (!allowed.Any(a => PropertyLayout.Group(type, a) == group) && !(!condition && group == "Content and data" && type is "text" or "svg")) continue;
+                var panel = new StackPanel { Spacing = 6 }; result[group] = panel;
+                var expansionKey = type + ":" + group;
+                var section = new Expander { Name = condition ? null : "group_" + group.Replace(' ', '_'), Header = T(group), Content = panel,
+                    IsExpanded = !condition && propertyExpansion.TryGetValue(expansionKey, out var saved) ? saved : true, HorizontalAlignment = HorizontalAlignment.Stretch };
+                if (!condition) section.PropertyChanged += (_, e) => { if (e.Property == Expander.IsExpandedProperty) propertyExpansion[expansionKey] = section.IsExpanded; };
+                parent.Children.Add(section);
+            }
+            return result;
+        }
+        var groups = MakeGroups(properties);
+        if (node.Name == "text" || node.Name == "svg") text = Field(groups["Content and data"], node.Name == "svg" ? "SVG markup" : "Display text", string.Concat(node.Nodes().OfType<XText>().Select(n => n.Value)), "text", type);
         var geometryNames = new[] { new[] { "x1", "y1", "x2", "y2" }, new[] { "cx", "cy", "length", "angle" }, new[] { "x", "y", "length", "direction" } };
         var geometry = new StackPanel { Spacing = 6 };
         ComboBox? lineMode = null;
@@ -37,13 +54,15 @@ public sealed partial class EditorWindow
             lineMode = new ComboBox { Name = "lineMode", ItemsSource = new[] { "Two endpoints", "Start + length + angle", "Horizontal / vertical" },
                 SelectedIndex = node.Attribute("angle") != null ? 1 : node.Attributes().Any(a => geometryNames[0].Contains(a.Name.LocalName)) ? 0 : 2,
                 HorizontalAlignment = HorizontalAlignment.Stretch };
-            properties.Children.Add(new TextBlock { Text = "Line geometry" });
-            properties.Children.Add(lineMode); properties.Children.Add(geometry);
+            var layout = groups["Layout and geometry"];
+            attributes["coordinates"] = Field(layout, Label("coordinates"), (string?)node.Attribute("coordinates") ?? "", "coordinates", type);
+            layout.Children.Add(new TextBlock { Text = "Line geometry" });
+            layout.Children.Add(lineMode); layout.Children.Add(geometry);
         }
         var geometryFields = new Dictionary<string, StackPanel>();
-        foreach (var attribute in allowed)
+        foreach (var attribute in allowed.Where(a => a != "id" && !(lineMode != null && a == "coordinates")))
         {
-            var panel = attribute is "transitionMs" or "transitionProperties" or "easing" or "colorSpace" ? transitions : attribute is "fill" or "mainSize" or "visible" or "visibleWhen" ? common : properties;
+            var panel = groups[PropertyLayout.Group(type, attribute)];
             if (lineMode != null && geometryNames.Any(names => names.Contains(attribute)))
             {
                 panel = new StackPanel { Spacing = 6 }; geometry.Children.Add(panel); geometryFields[attribute] = panel;
@@ -53,18 +72,18 @@ public sealed partial class EditorWindow
         void ShowGeometry()
         {
             if (lineMode == null) return;
-            foreach (var pair in geometryFields) pair.Value.IsVisible = geometryNames[lineMode.SelectedIndex].Contains(pair.Key);
+            geometry.Children.Clear();
+            foreach (var name in geometryNames[lineMode.SelectedIndex]) geometry.Children.Add(geometryFields[name]);
         }
         ShowGeometry();
-        properties.Children.Add(new Expander { Header = T("Size and visibility"), Content = common, HorizontalAlignment = HorizontalAlignment.Stretch });
-        properties.Children.Add(new Expander { Header = T("Transitions"), Content = transitions, HorizontalAlignment = HorizontalAlignment.Stretch });
         var rules = new List<Dictionary<string, TextBox>>();
         var ruleHeaders = new List<Expander>();
         foreach (var style in node.Elements("style"))
         {
             var fields = new Dictionary<string, TextBox>(); var panel = new StackPanel { Spacing = 6 };
             fields["when"] = Field(panel, "Condition expression", (string?)style.Attribute("when") ?? "", "when", node.Name.LocalName);
-            foreach (var attribute in allowed.Where(a => a != "id")) fields[attribute] = Field(panel, Label(attribute), (string?)style.Attribute(attribute) ?? "", attribute, node.Name.LocalName);
+            var conditionGroups = MakeGroups(panel, condition: true);
+            foreach (var attribute in allowed.Where(a => a != "id")) fields[attribute] = Field(conditionGroups[PropertyLayout.Group(type, attribute)], Label(attribute), (string?)style.Attribute(attribute) ?? "", attribute, type);
             var index = rules.Count; panel.Children.Add(Button("Delete this condition", () => Edit(d => { d.DeleteStyle(selected, index); return selected; })));
             var header = new Expander { Header = $"{T("Condition")} {index + 1}: {(string?)style.Attribute("when")}", Content = panel, HorizontalAlignment = HorizontalAlignment.Stretch };
             properties.Children.Add(header); ruleHeaders.Add(header); rules.Add(fields);
@@ -201,7 +220,7 @@ public sealed partial class EditorWindow
         }
         var options = LayoutOptions.Choices(component, attribute);
         if (options.Length > 0) Menu("▾", "Suggested values", new[] { ("Use default", "") }.Concat(options.Select(o => (o, o))), false);
-        if (keys.Length > 0 && attribute != "id") Menu("{ }", "Insert display data", keys.Select(k => { var v = attribute is "key" or "when" or "visibleWhen" ? k : "{{" + k + "}}"; return (v, v); }), true);
+        if (keys.Length > 0 && attribute != "id") Menu("{ }", "Insert display data", keys.Select(k => { var v = attribute is "key" or "keyX" or "keyY" or "when" or "visibleWhen" ? k : "{{" + k + "}}"; return (v, v); }), true);
         var groupKey = Guid.NewGuid().ToString();
         box.PropertyChanged += (_, e) => { if (e.Property == TextBox.TextProperty && !rebuilding) { propertyGroup = groupKey; propertyDirty = true; updateDraftDescription?.Invoke(); } }; row.Children.Add(box); panel.Children.Add(row); return box;
     }

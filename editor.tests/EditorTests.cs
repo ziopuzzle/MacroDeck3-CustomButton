@@ -19,6 +19,43 @@ public static class TestApp
 }
 public class EditorTests
 {
+    [AvaloniaTest] public void TextContentIsGroupedAndPropertySectionsStartExpanded()
+    {
+        var w = new EditorWindow("<text id='title'>Hello</text>", "{}", true); w.Show(); Flush(w);
+        try
+        {
+            var sections = w.GetVisualDescendants().OfType<Expander>().Where(e => e.Name?.StartsWith("group_") == true).ToArray();
+            Assert.That(sections.All(e => e.IsExpanded), Is.True);
+            var content = Find<Expander>(w, "group_Content_and_data");
+            Assert.That(content.GetVisualDescendants().OfType<TextBox>().Single().Name, Is.EqualTo("field_text"));
+            Find<TextBox>(w, "field_text").Text = "Updated"; Flush(w);
+            Assert.That(XElement.Parse(w.LayoutXml).Value, Is.EqualTo("Updated"));
+            content.IsExpanded = false; Flush(w);
+            Click(w, Find<Button>(w, "undo"));
+            Assert.That(Find<Expander>(w, "group_Content_and_data").IsExpanded, Is.False);
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
+    [AvaloniaTest] public void TrackpadPropertiesGroupAxesAndKeepIdentityFirst()
+    {
+        var w = new EditorWindow("<trackpad id='pad' interactive='true'/>", "{\"x\":50,\"y\":50}", true); w.Show(); Flush(w);
+        try
+        {
+            var properties = (StackPanel)Find<ScrollViewer>(w, "propertiesScroll").Content!;
+            Assert.That(properties.GetVisualDescendants().OfType<TextBox>().First().Name, Is.EqualTo("field_id"));
+            var x = Find<Expander>(w, "group_X_axis");
+            Assert.That(x.GetVisualDescendants().OfType<TextBox>().Select(t => t.Name), Is.EqualTo(new[] { "field_keyX", "field_leftValue", "field_rightValue", "field_stepX" }));
+            var y = Find<Expander>(w, "group_Y_axis");
+            Assert.That(y.GetVisualDescendants().OfType<TextBox>().Select(t => t.Name), Is.EqualTo(new[] { "field_keyY", "field_topValue", "field_bottomValue", "field_stepY" }));
+            Find<TextBox>(w, "field_rightValue").Text = "200"; Flush(w);
+            Assert.That(XElement.Parse(w.LayoutXml).Attribute("rightValue")!.Value, Is.EqualTo("200"));
+            if (Environment.GetEnvironmentVariable("CUSTOMBUTTON_PROPERTY_SCREENSHOT") is { } output)
+            { using var frame = w.CaptureRenderedFrame(); frame!.Save(output); }
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
     [AvaloniaTest] public void InvalidInputCanBeDiscardedWithoutLosingValidHistory()
     {
         var w = new EditorWindow("<rect id='shape'/>", "{}", true); w.Show(); Flush(w);
@@ -66,6 +103,7 @@ public class EditorTests
             var node = XElement.Parse(w.LayoutXml);
             Assert.That(node.Nodes().OfType<XCData>(), Has.Exactly(1).Items);
             Assert.That(node.Value, Does.Contain("{{color}}"));
+            Find<Expander>(w, "group_Advanced").IsExpanded = true; Flush(w);
             Find<TextBox>(w, "field_rasterSize").Text = "256"; Flush(w);
             Assert.That(XElement.Parse(w.LayoutXml).Attribute("rasterSize")!.Value, Is.EqualTo("256"));
         }
@@ -296,6 +334,7 @@ public class EditorTests
     private static void Flush(EditorWindow w) { Dispatcher.UIThread.RunJobs(); w.UpdateLayout(); }
     private static void Click(EditorWindow w, Control c)
     {
+        c.BringIntoView(); Flush(w);
         var p = c.TranslatePoint(new Point(c.Bounds.Width / 2, c.Bounds.Height / 2), w)!.Value;
         w.MouseDown(p, MouseButton.Left); w.MouseUp(p, MouseButton.Left); Flush(w);
     }
