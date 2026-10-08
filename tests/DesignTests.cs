@@ -49,6 +49,8 @@ public class DesignTests
         foreach (var node in ButtonTests.Nodes(config.BuildTree().Root))
         {
             if (!node.Properties.TryGetValue("value", out var value)) continue;
+            // Copy-only chrome has a value but emits no change event and is not saved by the host.
+            if (node.Type == MacroDeck.Ui.Config.UiConfigPrimitives.CopyValue) continue;
             if (node.Properties.TryGetValue("transient", out var transient) && transient.GetBoolean()) continue;
             Assert.That(schema.ContainsKey(node.Id), Is.True, "Every input must save to a declared data key: " + node.Id);
             data[node.Id] = JsonNode.Parse(value.GetRawText());

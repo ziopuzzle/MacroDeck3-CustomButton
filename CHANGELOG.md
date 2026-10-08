@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.41.0 — copyable drawing diagnostics
+
+- Show a compact draft status, a deduplicated list of error messages, and an always-visible native copy field. Keep timestamps and source details in the copyable report. Show identical draft, preview and widget errors only once per list/report, retaining each runtime source, channel, latest timestamp and session count in the report.
+- Add a Diagnostics tab to widget settings with a manual refresh and a native copyable report. Opening settings checks the current XML/initial data merged with live channel data.
+- Capture runtime render errors by widget/session with timestamps and channel information. Successful rendering clears that session's error; closed-session failures remain labeled as last observed. Reports are bounded and kept only in memory.
+- Clipboard access is initiated only by the user in the settings UI. Widget touch gestures and actions are unchanged. Draft checks do not download images or validate client rendering; action execution logs remain in Macro Deck.
+
 ## 0.40.1 — property default placeholders
 
 - Show safe literal defaults as property placeholders without writing them into XML. Leave inherited conditional-style values, theme colors, automatic sizing and attribute-presence switches blank.

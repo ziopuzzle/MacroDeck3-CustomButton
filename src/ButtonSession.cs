@@ -57,6 +57,7 @@ public sealed class ButtonSession : IUiSession
     private readonly string? continuityKey;
     private readonly DisplayActivation.Lease? activation;
     private readonly Action<string>? diagnostic;
+    private readonly Action<string?>? reportError;
     private readonly string diagnosticId = Guid.NewGuid().ToString("N")[..8];
     private long lastAnimationFrame;
     private string? lastRenderFailure;
@@ -68,9 +69,9 @@ public sealed class ButtonSession : IUiSession
         Func<SharedScriptUpdates.Lease>? startSharedUpdates = null,
         Action<string>? onWidgetEvent = null, bool sampleHistory = false,
         Func<SharedScriptUpdates.Lease>? startDisplayTicks = null, Action<ControlInput>? onControlInput = null, Action<string>? diagnostic = null,
-        AnimationContinuity? continuity = null, DisplayActivation.Lease? activation = null, SessionImages? images = null)
+        AnimationContinuity? continuity = null, DisplayActivation.Lease? activation = null, SessionImages? images = null, Action<string?>? reportError = null)
     {
-        this.diagnostic = diagnostic; this.images = images;
+        this.diagnostic = diagnostic; this.images = images; this.reportError = reportError;
         this.activation = activation;
         this.previewSelection = previewSelection;
         this.onWidgetEvent = onWidgetEvent; this.sampleHistory = sampleHistory;
@@ -160,12 +161,14 @@ public sealed class ButtonSession : IUiSession
                 animation, images == null ? null : ResolveImage, id => imageRatios.GetValueOrDefault(id, 1)) : settings.Design!.Render(values);
             var result = Build(content, renderer?.HasRootBackground(values) ?? true);
             lastRenderFailure = null;
+            reportError?.Invoke(null);
             return result;
         }
         catch (Exception e) when (e is FormatException or ArgumentException or UiViewException or JsonException)
         {
             if (lastRenderFailure != e.Message) Trace("render error; animation reset: " + e.Message);
             lastRenderFailure = e.Message;
+            reportError?.Invoke(e.Message);
             animation.Reset();
             return Build(new UiStack { Key = "error", Fill = true, Padding = .06, Background = "#401f28", Children =
             [ new UiTextRun { Key = "errorTitle", Text = "Custom Button", Size = .12, Color = "#ffb8c3" },

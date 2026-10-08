@@ -22,13 +22,38 @@ public sealed class ConfigurationSession : IUiSession
     private readonly bool publishInitialCorrection;
     private Timer? initialCorrectionTimer;
     private int initialCorrectionStarted, initialCorrectionReady;
-    public ConfigurationSession(UiSurface surface, ButtonSettings settings)
+    public ConfigurationSession(UiSurface surface, ButtonSettings settings, DisplayDiagnostics? diagnostics = null, DataHub? hub = null)
     {
         var channel = new UiState<string>(settings.Channel);
         var layout = new UiState<string>(settings.Layout);
         var values = new UiState<string>(settings.InitialValues);
         var wholeButtonInteraction = new UiState<bool>(settings.WholeButtonInteraction);
         var widgetId = surface.Attributes.TryGetValue("widgetId", out var owner) && owner.ValueKind == JsonValueKind.String ? owner.GetString() : null;
+        var draftHasError = new UiState<bool>(false);
+        var diagnosticErrors = new UiState<IReadOnlyList<string>>([]);
+        string ReadDiagnostics()
+        {
+            var report = $"Custom Button diagnostics\nWidget: {widgetId ?? "unsaved"}\nChannel: {channel.Value}\nChecked: {DateTimeOffset.UtcNow:O}\n\n";
+            draftHasError.Value = false;
+            string? draftError = null;
+            try
+            {
+                DataHub.ValidateName(channel.Value);
+                var data = DataHub.ParseValues(values.Value);
+                var snapshot = hub?.Snapshot(channel.Value) ?? DataSnapshot.Empty;
+                foreach (var pair in snapshot.Values) data[pair.Key] = pair.Value;
+                _ = new LayoutRenderer(layout.Value).Render(data, snapshot.ReadHistory);
+                report += "Current draft: XML and data rendering check passed. Image downloads and host rendering are not checked here.";
+            }
+            catch (Exception e) when (e is FormatException or System.Xml.XmlException or JsonException or ArgumentException)
+            { draftHasError.Value = true; draftError = e.Message; report += "Current draft: rendering check failed."; }
+            var snapshotReport = (diagnostics ?? new DisplayDiagnostics()).ReadSnapshot(widgetId, draftError);
+            diagnosticErrors.Value = snapshotReport.Errors;
+            var observed = snapshotReport.Report;
+            return report + "\n\n" + (string.IsNullOrEmpty(observed) ? "No runtime rendering errors recorded for this widget in this plugin process." : observed)
+                + "\n\nClosed-session errors are retained as last-observed reports. Action execution logs remain available in Macro Deck.";
+        }
+        var errorReport = new UiState<string>(ReadDiagnostics());
         publishInitialCorrection = !string.IsNullOrWhiteSpace(widgetId) && settings.ConfigurationWidgetId != widgetId;
         var flows = new UiState<JsonElement>(settings.Flows);
         currentFlows = () => flows.Value;
@@ -187,8 +212,21 @@ public sealed class ConfigurationSession : IUiSession
                     new UiCodeInput { Key = "layout", Label = TextCatalog.Reference("Drawing XML"), HideLabel = true, Language = "xml", LiteralOnly = true, MaxLength = LayoutLimits.XmlCharacters, Binding = Bind.Custom(() => layout.Value, SetXml) },
                         new UiProse { Key = "nativeStatusText", Text = UiText.Optional(() => TextCatalog.Reference(editorStatus.Value)) },
                         new UiProse { Key = "historyHelp", Text = TextCatalog.Reference("While displayed, the current value is sampled every second. To fetch new variable values, add a data update action to the display update event under Actions.") }
+                    ] },
+                    new UiTab { Key = "diagnosticsTab", Label = "Diagnostics", Children =
+                    [
+                        new UiProse { Key = "diagnosticsHelp", Text = "Refresh after reproducing an error or editing the layout. Use the copy button below to copy the report from this settings screen." },
+                        new UiConfigButton { Key = "refreshDiagnostics", Label = "Refresh diagnostics", Events = [UiEventHandler.On(UiConfigEvents.Activate, () => errorReport.Value = ReadDiagnostics())] },
+                        new UiProse { Key = "diagnosticsStatus",
+                            Severity = UiValue.From(() => draftHasError.Value ? "error" : "success"),
+                            Text = UiText.Optional(() => draftHasError.Value ? "Current draft: rendering check failed." : "Current draft: XML and data rendering check passed.") },
+                        new UiRepeat<string> {
+                            Key = "diagnosticErrors", Items = UiValue.From(() => diagnosticErrors.Value),
+                            KeySelector = message => "error" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(message))),
+                            Template = (message, key) => new UiProse { Key = key, Text = message }
+                        },
+                        new UiCopyValue { Key = "errorReport", Label = "Diagnostic report", Value = UiValue.From(() => errorReport.Value) }
                     ] }
-
                     ] }
                 ]
             }

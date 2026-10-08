@@ -22,6 +22,7 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
     private readonly Uri? imageHostUrl;
     private readonly SharedScriptUpdates updates = new();
     private AnimationContinuity continuity = new();
+    private readonly DisplayDiagnostics diagnostics = new();
     private DisplayActivation? activation;
     private readonly ILogger<CustomButtonIntegration>? logger;
     public IReadOnlyList<IActionDefinition> Actions { get; }
@@ -62,7 +63,7 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
         if (surface.Kind == UiSurfaceKinds.Config)
         {
             if (!attributes.TryGetValue("entryPoint", out var entry) || entry.ValueKind != JsonValueKind.String || entry.GetString() != "widget-config") return Task.FromResult<IUiSession?>(null);
-            return Task.FromResult<IUiSession?>(new ConfigurationSession(surface, ButtonSettings.Read(attributes.GetValueOrDefault("widgetData"))));
+            return Task.FromResult<IUiSession?>(new ConfigurationSession(surface, ButtonSettings.Read(attributes.GetValueOrDefault("widgetData")), diagnostics, Hub));
         }
         if (surface.Kind is not (UiSurfaceKinds.Widget or UiSurfaceKinds.Preview)) return Task.FromResult<IUiSession?>(null);
         var sample = attributes.TryGetValue("sample", out var sampleValue) && sampleValue.ValueKind == JsonValueKind.True;
@@ -86,7 +87,9 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
             }
             events?.Publish(ButtonEvents.ControlEventId(input.EventName), payload);
         }
+        var diagnosticSession = Guid.NewGuid().ToString("N");
         return Task.FromResult<IUiSession?>(new ButtonSession(surface, settings, sample ? null : Hub,
+            reportError: canUpdate && ownerWidgetId != null ? error => diagnostics.Report(diagnosticSession, ownerWidgetId, settings.Channel, surface.Kind, error) : null,
             continuity: continuity,
             images: canUpdate && context != null ? new SessionImages(context.UiResources, ImageHttp, message => logger?.LogWarning("{ImageDiagnostic}", message), imageHostUrl) : null,
             activation: canPress && !sample && !string.IsNullOrWhiteSpace(ownerWidgetId) ? activation?.Acquire(ownerWidgetId) : null,

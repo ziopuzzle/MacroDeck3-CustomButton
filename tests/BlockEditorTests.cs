@@ -69,7 +69,7 @@ public class BlockEditorTests
         Assert.That(ButtonTests.Nodes(sidebar).Any(n => n.Id == "initialValues"), Is.True);
         Assert.That(ButtonTests.Nodes(tabs).Any(n => n.Id == "initialValues"), Is.False);
         Assert.That(nodes.Any(n => n.Id.EndsWith("editorLanguage")), Is.False);
-        Assert.That(tabs.Children.Select(n => LocalizationTests.Resolve(n.Properties["label"])), Is.EqualTo(new[] { "Actions", "Drawing" }));
+        Assert.That(tabs.Children.Select(n => LocalizationTests.Resolve(n.Properties["label"])), Is.EqualTo(new[] { "Actions", "Drawing", "Diagnostics" }));
         var toolbar = nodes.Single(n => n.Id.EndsWith(".templateToolbar"));
         Assert.That(toolbar.Children.Select(n => n.Id.Split('.').Last()), Is.EqualTo(new[] { "layoutHeading", "openNativeEditor", "templatePicker" }));
         var mode = nodes.Single(n => n.Id == "designPreset");
