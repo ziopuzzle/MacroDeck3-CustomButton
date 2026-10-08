@@ -3,6 +3,6 @@
     <style when="value >= 80" color="#ff6655" />
   </gauge>
   <stack id="stack1" direction="vertical" justify="center">
-    <text id="label" size="22%" align="center">{{value:0}}%</text>
+    <text id="label" size="22%" align="center">{{value:0}}</text>
   </stack>
 </layer>

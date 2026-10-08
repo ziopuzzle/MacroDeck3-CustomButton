@@ -198,14 +198,14 @@ public class EditorTests
             var add = w.GetVisualDescendants().OfType<Button>().First(b => b.Content?.ToString() == "＋ Add component");
             add.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(w);
             var groups = add.ContextMenu!.Items.Cast<MenuItem>().ToArray();
-            Assert.That(groups.Select(g => g.Header), Is.EqualTo(new[] { "Layout", "Text and images", "Data and controls", "Shapes" }));
+            Assert.That(groups.Select(g => g.Header), Is.EqualTo(new[] { "Layout", "Text and time", "Images", "Shapes", "Data display", "Controls" }));
             var entries = groups.SelectMany(g => g.Items.Cast<MenuItem>()).ToArray();
             Assert.That(entries.Length, Is.EqualTo(28));
             Assert.That(entries.Select(e => e.Header).Distinct().Count(), Is.EqualTo(28));
-            Assert.That(groups[1].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("▧ SVG"));
+            Assert.That(groups[2].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("▧ SVG"));
             Assert.That(groups[0].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("↻ Transform"));
-            Assert.That(groups[1].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("☆ Icon"));
-            Assert.That(groups[2].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("◴ Gauge"));
+            Assert.That(groups[2].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("☆ Icon"));
+            Assert.That(groups[4].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("◴ Gauge"));
             entries.Single(e => e.Header?.ToString() == "╱ Line").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Flush(w);
             var line = XElement.Parse(w.LayoutXml).Element("line")!;
             Assert.That(line.Attribute("x1")!.Value, Is.EqualTo("10%"));

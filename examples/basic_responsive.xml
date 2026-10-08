@@ -3,6 +3,7 @@
     <variant id="variant_compact">
       <stack id="compactIconWrapper" direction="vertical" mainSize="1" justify="center" align="center">
         <icon id="compactIcon" name="check" size="40%" />
+        <text id="compactLabel" size="12%" fill="false" align="center">Resize me</text>
       </stack>
     </variant>
     <variant id="variant_wide" minAspect="1.5">

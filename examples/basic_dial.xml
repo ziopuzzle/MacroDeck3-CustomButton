@@ -1,4 +1,8 @@
-<stack id="container" padding="5%" gap="3%">
-  <dial id="volumeDial" key="volume" min="0" max="100" step="1" startAngle="-135" endAngle="135" color="#54dfcc" thickness="5%" interactive="true" />
-  <text id="valueLabel" size="12%" align="center">Volume {{volume:0}}%</text>
+<stack id="stack1" padding="5%">
+  <layer id="layer1">
+    <dial id="volumeDial" key="value" min="0" max="100" step="1" startAngle="-135" endAngle="135" color="#54dfcc" thickness="12%" interactive="true" />
+    <stack id="stack2" justify="center" align="center">
+      <text id="label" size="12%" align="center">{{value:0}}</text>
+    </stack>
+  </layer>
 </stack>

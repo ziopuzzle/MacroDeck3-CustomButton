@@ -6,7 +6,6 @@
     </layer>
   </stack>
   <stack id="label" justify="center" align="stretch">
-    <text id="description" size="16%" color="#ffffff" align="center">Calculation</text>
     <text id="value" size="22%" color="#ffffff" align="center">{{value}}%</text>
   </stack>
 </layer>

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.41.1 — organized templates and component menu
+
+- Order templates from basic drawing examples to more involved drawing, input and complete widgets. Order Shapes and Controls from simple to complex components. Separate text/time, images, data displays and controls; rename the SVG template to SVG and refresh the edited examples.
+
 ## 0.41.0 — copyable drawing diagnostics
 
 - Show a compact draft status, a deduplicated list of error messages, and an always-visible native copy field. Keep timestamps and source details in the copyable report. Show identical draft, preview and widget errors only once per list/report, retaining each runtime source, channel, latest timestamp and session count in the report.

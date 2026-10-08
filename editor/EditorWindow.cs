@@ -155,10 +155,12 @@ public sealed partial class EditorWindow : Window
         {
             var menu = new ContextMenu();
             foreach (var (label, types) in new[] {
-                ("Layout", new[] { "stack", "layer", "transform", "modifier", "responsive", "variant" }),
-                ("Text and images", new[] { "text", "image", "svg", "icon", "dynamic-text" }),
-                ("Data and controls", new[] { "bar", "chart", "clock", "progress-bar", "slider", "trackpad", "dial", "toggle", "segmented", "gauge" }),
-                ("Shapes", new[] { "rect", "circle", "capsule", "line", "polygon", "sector", "path" }) })
+                ("Layout", new[] { "stack", "layer", "modifier", "transform", "responsive", "variant" }),
+                ("Text and time", new[] { "text", "dynamic-text", "clock" }),
+                ("Images", new[] { "icon", "image", "svg" }),
+                ("Shapes", new[] { "line", "rect", "circle", "sector", "capsule", "polygon", "path" }),
+                ("Data display", new[] { "bar", "gauge", "chart", "progress-bar" }),
+                ("Controls", new[] { "toggle", "slider", "dial", "segmented", "trackpad" }) })
             {
                 var category = new MenuItem { Header = T(label) };
                 foreach (var type in types)
