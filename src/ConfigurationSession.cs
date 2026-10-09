@@ -29,6 +29,8 @@ public sealed class ConfigurationSession : IUiSession
         var values = new UiState<string>(settings.InitialValues);
         var wholeButtonInteraction = new UiState<bool>(settings.WholeButtonInteraction);
         var widgetId = surface.Attributes.TryGetValue("widgetId", out var owner) && owner.ValueKind == JsonValueKind.String ? owner.GetString() : null;
+        if (!string.IsNullOrWhiteSpace(widgetId) && (settings.Channel.Length == 0
+            || settings.Channel == settings.ConfigurationWidgetId)) channel.Value = widgetId;
         var draftHasError = new UiState<bool>(false);
         var diagnosticErrors = new UiState<IReadOnlyList<string>>([]);
         string ReadDiagnostics()
@@ -54,7 +56,7 @@ public sealed class ConfigurationSession : IUiSession
                 + "\n\nClosed-session errors are retained as last-observed reports. Action execution logs remain available in Macro Deck.";
         }
         var errorReport = new UiState<string>(ReadDiagnostics());
-        publishInitialCorrection = !string.IsNullOrWhiteSpace(widgetId) && settings.ConfigurationWidgetId != widgetId;
+        publishInitialCorrection = !string.IsNullOrWhiteSpace(widgetId) && (settings.ConfigurationWidgetId != widgetId || settings.Channel != channel.Value);
         var flows = new UiState<JsonElement>(settings.Flows);
         currentFlows = () => flows.Value;
         var orderTarget = new UiState<string>("");
@@ -64,11 +66,14 @@ public sealed class ConfigurationSession : IUiSession
         try
         {
             flows.Value = ButtonEvents.Normalize(flows.Value, widgetId);
+            flows.Value = ActionEditorDefaults.ChangeChannel(flows.Value, settings.Channel, channel.Value);
             if (!string.IsNullOrWhiteSpace(widgetId) && !string.IsNullOrWhiteSpace(settings.ConfigurationWidgetId)
                 && settings.ConfigurationWidgetId != widgetId)
             {
                 flows.Value = ActionEditorDefaults.RetargetEvents(flows.Value, widgetId, settings.ConfigurationWidgetId);
                 copiedWidgetMessage = "Copied/imported widget detected. Event targets matching the source widget have been updated. Save to apply.";
+                if (channel.Value != settings.Channel)
+                    copiedWidgetMessage = "Copied/imported widget detected. Event targets, the automatic channel and matching display-data actions have been updated. Save to apply.";
             }
         }
         catch (FormatException e) { flowMessage.Value = e.Message; }
@@ -255,20 +260,29 @@ public sealed class ConfigurationSession : IUiSession
     }
     public IReadOnlyList<UiPatch> DrainPatches()
     {
-        if (Interlocked.Exchange(ref initialCorrectionReady, 0) != 0) echoFlows = true;
+        var initialCorrection = Interlocked.Exchange(ref initialCorrectionReady, 0) != 0;
+        if (initialCorrection) echoFlows = true;
         var patches = view.DrainPatches().Select(p => p with {
             FromRevision = checked(p.FromRevision + revisionOffset), ToRevision = checked(p.ToRevision + revisionOffset) }).ToList();
         if (!echoFlows) return patches;
         echoFlows = false;
         var operation = new UiPatchOperation { Op = UiPatchOperations.SetProperties, NodeId = "flows",
             Properties = new Dictionary<string, JsonElement> { ["value"] = currentFlows() } };
+        var operations = new List<UiPatchOperation> { operation };
+        if (initialCorrection)
+        {
+            foreach (var field in view.Tree.Root.Children.SelectMany(n => n.Children)
+                .Where(n => n.Id is "channel" or "configurationWidgetId"))
+                operations.Add(new UiPatchOperation { Op = UiPatchOperations.SetProperties, NodeId = field.Id,
+                    Properties = new Dictionary<string, JsonElement> { ["value"] = field.Properties["value"] } });
+        }
         if (patches.Count > 0)
-            patches[^1] = patches[^1] with { Operations = patches[^1].Operations.Append(operation).ToArray() };
+            patches[^1] = patches[^1] with { Operations = patches[^1].Operations.Concat(operations).ToArray() };
         else
         {
             var from = checked(view.Tree.Revision + revisionOffset);
             revisionOffset = checked(revisionOffset + 1);
-            patches.Add(new UiPatch { FromRevision = from, ToRevision = checked(from + 1), Operations = [operation] });
+            patches.Add(new UiPatch { FromRevision = from, ToRevision = checked(from + 1), Operations = operations });
         }
         return patches;
     }

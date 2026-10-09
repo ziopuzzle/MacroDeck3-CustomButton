@@ -7,6 +7,34 @@ namespace Ziopuzzle.CustomButton.Tests;
 
 public class CopiedWidgetTests
 {
+    [TestCase("source", "test-widget")]
+    [TestCase("demo", "demo")]
+    [TestCase("music", "music")]
+    public async Task AutomaticChannelsFollowCopiesAndMatchingNestedActions(string channel, string expected)
+    {
+        var flows = ActionEditorDefaults.ChangeChannel(Flows(), "music", channel);
+        await using var session = new ConfigurationSession(ButtonTests.Surface("config"), TestLayouts.Sample with
+            { Channel = channel, ConfigurationWidgetId = "source", Flows = flows });
+        Assert.That(Value(session, "channel").GetString(), Is.EqualTo(expected));
+        var loop = Value(session, "flows")[0].GetProperty("children")[0];
+        Assert.That(loop.GetProperty("children")[0].GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo(expected));
+        var branches = loop.GetProperty("branches")[0].GetProperty("children");
+        Assert.That(branches[0].GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo(expected));
+        Assert.That(branches[1].GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("other"));
+        Assert.That(branches[2].GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("music"));
+    }
+
+    [Test] public async Task NewWidgetChannelIsPersistedByInitialCorrection()
+    {
+        await using var session = new ConfigurationSession(ButtonTests.Surface("config"), ButtonSettings.Read(JsonSerializer.Deserialize<JsonElement>(ButtonSettings.DefaultData)));
+        var changed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.Changed += (_, _) => changed.TrySetResult();
+        Assert.That(Value(session, "channel").GetString(), Is.EqualTo("test-widget"));
+        await changed.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        var operations = session.DrainPatches().SelectMany(p => p.Operations).ToArray();
+        Assert.That(operations.Single(p => p.NodeId == "channel").Properties!["value"].GetString(), Is.EqualTo("test-widget"));
+        Assert.That(operations.Single(p => p.NodeId == "configurationWidgetId").Properties!["value"].GetString(), Is.EqualTo("test-widget"));
+    }
     private static JsonElement Flows() => JsonSerializer.SerializeToElement(JsonNode.Parse("""
     [{"triggerType":"onEvent","event":{"providerId":"net.ziopuzzle.custombutton","eventId":"element-press","parameters":[{"name":"widgetId","value":"source"},{"name":"elementId","value":"play"}]},"children":[{"id":"loop","children":[{"id":"a","integrationId":"net.ziopuzzle.custombutton","actionId":"set-value","parameters":[{"name":"channel","value":"music"}]}],"branches":[{"children":[{"id":"b","integrationId":"net.ziopuzzle.custombutton","actionId":"set-data","parameters":[{"name":"channel","value":"music"}]},{"id":"c","integrationId":"net.ziopuzzle.custombutton","actionId":"set-value","parameters":[{"name":"channel","value":"other"}]},{"id":"d","integrationId":"other","actionId":"set-value","parameters":[{"name":"channel","value":"music"}]}]}]}]},
     {"triggerType":"onEvent","event":{"providerId":"net.ziopuzzle.custombutton","eventId":"short-press","parameters":[{"name":"widgetId","value":"other-widget"}]},"children":[]},

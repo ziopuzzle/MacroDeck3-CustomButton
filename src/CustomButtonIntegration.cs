@@ -70,6 +70,8 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
         var settings = sample ? ButtonSettings.Default : ButtonSettings.Read(attributes.GetValueOrDefault("data"));
         var canPress = surface.Kind == UiSurfaceKinds.Widget && !(attributes.TryGetValue("ghost", out var ghost) && ghost.ValueKind == JsonValueKind.True);
         var ownerWidgetId = widgetId ?? (attributes.TryGetValue("variableScopeWidgetId", out var scope) && scope.ValueKind == JsonValueKind.String ? scope.GetString() : null);
+        if (settings.Channel.Length == 0 && !string.IsNullOrWhiteSpace(ownerWidgetId))
+            settings = settings with { Channel = ownerWidgetId };
         var canUpdate = !sample && (canPress || surface.Kind == UiSurfaceKinds.Preview);
         var events = context?.Events;
         void Publish(string eventId) => events?.Publish(eventId, new Dictionary<string, object?> { ["widgetId"] = ownerWidgetId });

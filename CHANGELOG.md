@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.41.2 — automatic widget channels
+
+- Assign new widgets their own widget ID as the channel. On opening copied/imported widget settings, replace a channel matching the stored source widget ID with the new widget ID, including matching Set display value/data actions in nested event flows. Save applies the correction using the existing configuration transaction.
+- Preserve manually named channels, including existing demo channels, and actions targeting other channels or integrations. No additional ownership metadata is stored.
+
 ## 0.41.1 — organized templates and component menu
 
 - Order templates from basic drawing examples to more involved drawing, input and complete widgets. Order Shapes and Controls from simple to complex components. Separate text/time, images, data displays and controls; rename the SVG template to SVG and refresh the edited examples.

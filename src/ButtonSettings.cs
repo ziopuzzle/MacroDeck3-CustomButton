@@ -13,7 +13,8 @@ public sealed record ButtonSettings(string Channel, string Layout, string Initia
     public static ButtonSettings Default { get; } = new("demo", DefaultLayout, "{}");
     // XML is the saved design. Old templateId values remain accepted by the schema but do not
     // describe hand-edited XML reliably, so new buttons no longer write this redundant field.
-    public static string DefaultData => JsonSerializer.Serialize(new { channel = Default.Channel,
+    // Empty only until the host assigns a widget ID; configuration persists the resolved ID.
+    public static string DefaultData => JsonSerializer.Serialize(new { channel = "",
         layout = Default.Layout, initialValues = Default.InitialValues, designPreset = "xml", flows = Array.Empty<object>() });
     public static string Schema
     {
@@ -28,7 +29,7 @@ public sealed record ButtonSettings(string Channel, string Layout, string Initia
     // Accept obsolete script keys in existing saved data, but never read or execute them.
     private const string BaseSchema = """
         {"type":"object","properties":{
-          "channel":{"type":"string","minLength":1,"maxLength":64,"pattern":"^[A-Za-z0-9_.-]+$"},
+          "channel":{"type":"string","minLength":0,"maxLength":64,"pattern":"^[A-Za-z0-9_.-]*$"},
           "layout":{"type":"string","maxLength":16000},
           "initialValues":{"type":"string","maxLength":16000},
           "wholeButtonInteraction":{"type":"boolean"},

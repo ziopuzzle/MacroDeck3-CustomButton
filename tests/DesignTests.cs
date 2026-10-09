@@ -11,6 +11,8 @@ public class DesignTests
     private static JsonObject Data(string preset = "gauge")
     {
         var data = JsonNode.Parse(ButtonSettings.DefaultData)!.AsObject();
+        // Legacy saved widgets used demo; new-widget defaults now resolve from the host ID.
+        data["channel"] = "demo";
         data["designPreset"] = preset;
         return data;
     }
