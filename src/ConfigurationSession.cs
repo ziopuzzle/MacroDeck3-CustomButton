@@ -90,8 +90,23 @@ public sealed class ConfigurationSession : IUiSession
             }
             catch (FormatException e) { flowMessage.Value = e.Message; }
         }
+        LayoutDocument? lastValidLayout = null;
+        try { lastValidLayout = new LayoutDocument(layout.Value); }
+        catch (Exception e) when (e is FormatException or System.Xml.XmlException or ArgumentException) { }
         void SetXml(string xml)
         {
+            try
+            {
+                var next = new LayoutDocument(xml);
+                if (lastValidLayout != null)
+                {
+                    var renames = ElementEventReferences.Renames(lastValidLayout, next);
+                    flows.Value = ElementEventReferences.Retarget(flows.Value, widgetId, renames);
+                    if (renames.TryGetValue(inputTarget.Value, out var renamedTarget)) inputTarget.Value = renamedTarget;
+                }
+                lastValidLayout = next;
+            }
+            catch (Exception e) when (e is FormatException or System.Xml.XmlException or ArgumentException) { }
             layout.Value = xml; mode.Value = "xml";
             if (inputTarget.Value != "$other" && !ButtonEvents.InputTargets(xml).Any(t => t.Id == inputTarget.Value)) inputTarget.Value = "";
         }
@@ -212,9 +227,11 @@ public sealed class ConfigurationSession : IUiSession
                         new UiChoiceInput { Key = "templatePicker", Label = "Templates", HideLabel = true, Transient = true, LiteralOnly = true,
                             Options = UiValue.Of<IReadOnlyList<UiOption>>(new[] { new UiOption { Value = "", Label = "Choose a template" } }
                                 .Concat(LayoutTemplates.All.Select(t => new UiOption { Value = t.Id, Label = TextCatalog.Reference(t.Name), Badge = t.Category })).ToArray()),
-                            Binding = Bind.Custom(() => "", id => { if (LayoutTemplates.All.Any(t => t.Id == id)) { var selected = LayoutTemplates.Get(id); SetXml(selected.Xml); values.Value = selected.InitialValues; } }) }
+                            Binding = Bind.Custom(() => "", id => { if (LayoutTemplates.All.Any(t => t.Id == id)) { var selected = LayoutTemplates.Get(id); lastValidLayout = null; SetXml(selected.Xml); values.Value = selected.InitialValues; } }) }
                     ] },
                     new UiCodeInput { Key = "layout", Label = TextCatalog.Reference("Drawing XML"), HideLabel = true, Language = "xml", LiteralOnly = true, MaxLength = LayoutLimits.XmlCharacters, Binding = Bind.Custom(() => layout.Value, SetXml) },
+                        new UiProse { Key = "elementReferenceWarnings", Text = UiText.Optional(() => string.Join("\n",
+                            ButtonEvents.ElementTargetHelp(flows.Value, layout.Value, widgetId).Split('\n').Where(line => line.StartsWith("'", StringComparison.Ordinal)))) },
                         new UiProse { Key = "nativeStatusText", Text = UiText.Optional(() => TextCatalog.Reference(editorStatus.Value)) },
                         new UiProse { Key = "historyHelp", Text = TextCatalog.Reference("While displayed, the current value is sampled every second. To fetch new variable values, add a data update action to the display update event under Actions.") }
                     ] },

@@ -7,9 +7,12 @@ Last reviewed: 2026-10-03, Custom Button 0.34.0 with Macro Deck 3.0.0-beta.15.
 Custom Button currently saves concrete widget IDs in its custom-event conditions
 and disables the self-target option for those conditions. An explicit `$self` value
 is converted to the current widget ID when the plugin normalizes the configuration.
-After copying a button, check its custom-event targets and retarget or recreate them
-if they still reference the original button. Renaming an interactive element also
-requires updating matching element-ID filters separately.
+Opening copied/imported widget settings remaps targets matching the stored source
+widget ID; save to apply. Other-widget targets remain unchanged.
+Since 0.41.3, ID-only edits through the GUI or XML also update this widget's matching
+element-ID filters. Structural edits, simultaneous content/property changes, reused
+IDs and template replacement are not treated as renames. Review the reference
+warnings in Drawing/Actions and update unresolved filters manually in those cases.
 
 This implementation was introduced because beta.13 treated `$self` as a literal
 string in custom-event matching. That historical finding is not a verification of

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.41.3 — follow element ID edits
+
+- Follow unambiguous ID-only changes from both the GUI editor and direct XML edits in this widget's Custom Button event filters. Preserve other-widget filters and action data. Keep the last valid XML while typing incomplete XML.
+- Do not infer renames from structural changes, reused IDs or template replacement. Show unresolved element-event references beneath the XML as well as in Actions. Save applies event changes together with the layout.
+
 ## 0.41.2 — automatic widget channels
 
 - Assign new widgets their own widget ID as the channel. On opening copied/imported widget settings, replace a channel matching the stored source widget ID with the new widget ID, including matching Set display value/data actions in nested event flows. Save applies the correction using the existing configuration transaction.
