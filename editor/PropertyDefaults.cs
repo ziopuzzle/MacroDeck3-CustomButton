@@ -8,7 +8,7 @@ internal static class PropertyDefaults
     {
         "opacity" => "1",
         "visible" => "true",
-        "interactive" or "disabled" or "showCursorWhileTouching" or "wrap" => "false",
+        "interactive" or "disabled" or "showCursorWhileTouching" or "wrap" or "shadow" => "false",
         "transitionMs" => "0",
         "transitionProperties" => "opacity",
         "easing" => "ease-out",

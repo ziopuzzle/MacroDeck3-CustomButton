@@ -4,7 +4,7 @@
 
 Use `weight="bold"` for bold text; `regular`, `medium` and `semibold` are also available in the editor. Bindings and conditional styles work for weight. Actual glyph weight depends on the host's selected font.
 
-Since 0.41.7 (host beta.16), Text supports `shadow`, `strokeColor` and `strokeWidth` in XML and the GUI Appearance section. Leave shadow blank for the host default, or use `false` to disable it. An outline requires both a colour and a positive width; width defaults to zero and accepts fractions or percentages of the widget basis, up to 10%. Fill and outline colours have independent alpha. Use `opacity` to fade both.
+Since 0.41.7 (host beta.16), Text supports `shadow`, `strokeColor` and `strokeWidth` in XML and the GUI Appearance section. Since 0.41.8, shadow defaults to false (also for blank or unavailable data). Set `shadow="true"` to enable the host shadow, including inside nested transparent stacks: every widget now has a native button root. Shadow colour, offset and blur are fixed by the host. The root clips to the tile, while internal layout containers are unchanged. An outline requires both a colour and a positive width; width defaults to zero and accepts fractions or percentages of the widget basis, up to 10%. Fill and outline colours have independent alpha. Use `opacity` to fade both.
 
 ```xml
 <text id="title" size="20%" shadow="false" strokeColor="#000000c0" strokeWidth="0.6%">

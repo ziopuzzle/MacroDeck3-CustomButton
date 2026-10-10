@@ -278,7 +278,7 @@ public sealed class LayoutRenderer
                     }
                     return new UiResponsive { Key = key, Fill = fill, MainSize = mainSize,
                         Default = new UiLayer { Key = "default", Children = children.Take(1).ToArray() }, Variants = variants,
-                        Fallback = new UiTextRun { Key = "unsupported", Text = "Responsive layout requires a compatible client." } };
+                        Fallback = new UiTextRun { Key = "unsupported", Shadow = false, Text = "Responsive layout requires a compatible client." } };
                 case "variant":
                     return AlphaPaint.Layer(new UiLayer { Key = key, Fill = fill, MainSize = mainSize, Children = children });
                 case "modifier":
@@ -636,7 +636,7 @@ public sealed class LayoutRenderer
                     Weight = Choice("weight", "regular"), Color = attributes.ContainsKey("role") && !attributes.ContainsKey("color") ? UiValue.None<string>() : UiValue.Of(Color("color", "#ffffff")), Align = Choice("align", node.Parent?.Name == "segmented" ? "center" : "start"),
                     Role = Choice("role", "primary"), FontFace = A("fontFace") is var face && face is not ("" or "—") ? UiValue.Of(face) : UiValue.None<string>(),
                     Digits = attributes.ContainsKey("digits") ? UiValue.Of(N("digits", 0, 0, 32)) : UiValue.None<double>(),
-                    Shadow = A("shadow") is "" or "—" ? default : UiValue.Of(B("shadow", true)),
+                    Shadow = B("shadow", false),
                     StrokeColor = A("strokeColor") is "" or "—" ? default : UiValue.Of(Color("strokeColor", "#ffffff")),
                     StrokeWidth = Length("strokeWidth", 0, .1),
                     Wrap = B("wrap", false), MaxLines = Integer("maxLines", 1, 1, 8), Fill = fill, MainSize = mainSize };

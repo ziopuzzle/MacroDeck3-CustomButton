@@ -22,7 +22,7 @@ public class NativePaintTests
         hub.Update("demo", DataHub.ParseValues("""{"reset":1}""")); session.Refresh();
         text = ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Type == "ui.text");
         Assert.That(text.Properties.ContainsKey("strokeColor"), Is.False);
-        Assert.That(text.Properties.ContainsKey("shadow"), Is.False);
+        Assert.That(text.Properties["shadow"].GetBoolean(), Is.False);
     }
 
     [Test]

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.41.8 — consistent text-shadow context
+
+- Use a stable native UiButton at the widget root so Text shadow=true works through nested transparent stacks, without requiring a border. Keep the existing whole-widget interaction switch and child events.
+- Default Text shadow to false, including blank or unavailable bindings. Preserve explicit root transparency instead of falling back to the host accent. The native root applies tile clipping and corners; internal layout containers remain unchanged.
+
 ## 0.41.7 — text outlines and gauge track colours
 
 - Add Text shadow, strokeColor and strokeWidth, and Gauge trackColor to XML and the GUI editor, including display-data bindings and conditional styles.

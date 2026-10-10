@@ -132,10 +132,10 @@ public sealed class ButtonSession : IUiSession
     {
         (UiTree Tree, string Json) Build(UiElement content, bool hasRootBackground = false)
         {
-            // Stack supports gestures without the mandatory opaque face of a native button.
-            // Keep this root stable so background changes do not reset interaction identity.
-            currentView = new UiView(surface, new UiStack { Key = "root", Fill = true, Padding = 0, Gap = 0,
-                Background = hasRootBackground ? default : UiValue.Of("#1a1a1a"), Children = [content],
+            // A stable native button supplies the tile clip and text-shadow context.
+            // Explicit transparency prevents the host's default accent background.
+            currentView = new UiView(surface, new UiButton { Key = "root", Fill = true, Padding = 0, Gap = 0,
+                Background = hasRootBackground ? "transparent" : "#1a1a1a", Children = [content],
                 Events = !settings.WholeButtonInteraction ? [] : onWidgetEvent != null
                     ? new[] { UiComponentEvents.Press, UiComponentEvents.LongPress, UiComponentEvents.PressStart, UiComponentEvents.PressEnd }
                         .Select(name => UiEventHandler.On(name, () => { })).ToArray()
@@ -171,8 +171,8 @@ public sealed class ButtonSession : IUiSession
             reportError?.Invoke(e.Message);
             animation.Reset();
             return Build(new UiStack { Key = "error", Fill = true, Padding = .06, Background = "#401f28", Children =
-            [ new UiTextRun { Key = "errorTitle", Text = "Custom Button", Size = .12, Color = "#ffb8c3" },
-              new UiTextRun { Key = "message", Text = TextCatalog.Reference(e.Message), Size = .12, MinSize = .06, Wrap = true, MaxLines = 8, Color = "#ffb8c3" } ] });
+            [ new UiTextRun { Key = "errorTitle", Shadow = false, Text = "Custom Button", Size = .12, Color = "#ffb8c3" },
+              new UiTextRun { Key = "message", Shadow = false, Text = TextCatalog.Reference(e.Message), Size = .12, MinSize = .06, Wrap = true, MaxLines = 8, Color = "#ffb8c3" } ] });
         }
     }
     private void RequestRefresh(string channel)
