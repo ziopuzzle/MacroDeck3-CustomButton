@@ -64,7 +64,7 @@ internal static class PropertyDefaults
         "data" => "M0 0 L1 0.5 L0 1 Z",
         "corner" => "square",
         "cornerRadius" => "6%",
-        "strokeWidth" => "1%",
+        "strokeWidth" => type == "text" ? "0" : "1%",
         "gradient" => "none",
         "gradientAngle" => "90",
         "gradientX" or "gradientY" => "50%",

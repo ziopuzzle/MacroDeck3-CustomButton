@@ -1,0 +1,5 @@
+<stack id="container" justify="center" padding="8%" gap="8%" background="#404080" borderStyle="static" borderColor="#404080">
+  <text id="regular" size="14%" align="center" shadow="false">Regular</text>
+  <text id="bold" size="14%" align="center" shadow="true" color="#ffff60" weight="bold">Bold with shadow</text>
+  <text id="outlined" size="18%" align="center" weight="bold" shadow="false" color="#ffffff" strokeColor="#ff0000c0" strokeWidth="2%">Outlined text</text>
+</stack>

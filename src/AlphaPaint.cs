@@ -35,6 +35,14 @@ public static class AlphaPaint
         if (element is UiModifier { Child: UiTextRun or UiIcon } textFrame)
             return textFrame with { Child = Apply(textFrame.Child, colors) };
         double A(string name) => colors.TryGetValue(name, out var c) ? c.Opacity : 1;
+        // beta.16 supports independent native text and gauge paint alpha. Do not
+        // fade the outline or track together with the foreground colour.
+        if (element is UiTextRun text) return text with {
+            Color = colors.TryGetValue("color", out var textColor) ? textColor.Hex : text.Color,
+            StrokeColor = colors.TryGetValue("strokeColor", out var textStroke) ? textStroke.Hex : text.StrokeColor };
+        if (element is UiGauge gauge) return gauge with {
+            LevelColor = colors.TryGetValue("color", out var levelColor) ? levelColor.Hex : gauge.LevelColor,
+            TrackColor = colors.TryGetValue("trackColor", out var trackColor) ? trackColor.Hex : gauge.TrackColor };
         if (element is UiShape shape)
         {
             if (!colors.ContainsKey("strokeColor")) return Fade(shape, A("color"));
@@ -48,7 +56,7 @@ public static class AlphaPaint
             if (A("color") != A("endColor")) throw new FormatException("Use the same alpha for both ends of a bar.");
             return Fade(element, A("color"));
         }
-        if (element is UiTextRun or UiDynamicText or UiChart or UiClockDial or UiSlider or UiDial or UiToggle or UiSegmented or UiGauge or UiIcon) return Fade(element, A("color"));
+        if (element is UiDynamicText or UiChart or UiClockDial or UiSlider or UiDial or UiToggle or UiSegmented or UiIcon) return Fade(element, A("color"));
         if (element is UiStack stack && A("background") != 1)
         {
             if (A("background") == 0) return stack with { Background = default };

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.41.7 — text outlines and gauge track colours
+
+- Add Text shadow, strokeColor and strokeWidth, and Gauge trackColor to XML and the GUI editor, including display-data bindings and conditional styles.
+- Split Text and bar into separate Text and Bar templates. Demonstrate shadow and outline settings in Text and an explicit track colour in Arc gauge.
+- Support RGB transitions for strokeColor/trackColor and length transitions for strokeWidth. Text fill/outline and gauge level/track now use independent native colour alpha; use opacity to fade the whole element.
+
 ## 0.41.6 — Macro Deck beta.16 toolchain
 
 - Update the plugin, editor and test SDK dependencies, local CLI and release workflow to Macro Deck 3.0.0-beta.16. Require host beta.16 or later.

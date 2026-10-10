@@ -7,7 +7,8 @@ The gallery is built directly from `examples/*.xml`. A same-stem `.json` provide
 | Category | Template | File stem |
 | --- | --- | --- |
 | BASIC | Animation | basic_animation |
-| BASIC | Text and bar | basic_bar |
+| BASIC | Text | basic_text |
+| BASIC | Bar | basic_bar |
 | BASIC | Border | basic_border |
 | BASIC | Calculated sector | basic_calculation |
 | BASIC | Conditional styles | basic_conditional |

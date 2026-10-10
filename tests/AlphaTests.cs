@@ -58,8 +58,8 @@ public class AlphaTests
         Assert.That(Opacity(background), Is.EqualTo(128 / 255d));
         Assert.That(background.Children.Single().Properties["background"].GetString(), Is.EqualTo("#123456"));
         var label = nodes.Single(n => n.Id.EndsWith(".label"));
-        Assert.That(Opacity(label), Is.EqualTo(64 / 255d));
-        Assert.That(label.Children.Single().Properties["text"].GetString(), Is.EqualTo("CPU"));
+        Assert.That(label.Properties["color"].GetString(), Is.EqualTo("#ffffff40"));
+        Assert.That(label.Properties["text"].GetString(), Is.EqualTo("CPU"));
         Assert.That(nodes.Single(n => n.Id.EndsWith(".content")).Properties["padding"].GetProperty("basis").GetDouble(), Is.EqualTo(.1));
     }
     [Test] public async Task ShapeFillAndStrokeUseIndependentAlpha()

@@ -4,7 +4,16 @@
 
 Use `weight="bold"` for bold text; `regular`, `medium` and `semibold` are also available in the editor. Bindings and conditional styles work for weight. Actual glyph weight depends on the host's selected font.
 
-The inspected **3.0.0-beta.13** `UiTextRun` exposes weight and font catalogue selection, but no italic or text-outline property. Version 0.26.0 does not add unsupported XML attributes or emulate these decorations with offset copies. Native support or a separate text rendering backend would be needed for explicit outline/italic styling. Selecting another font catalogue face remains possible.
+Since 0.41.7 (host beta.16), Text supports `shadow`, `strokeColor` and `strokeWidth` in XML and the GUI Appearance section. Leave shadow blank for the host default, or use `false` to disable it. An outline requires both a colour and a positive width; width defaults to zero and accepts fractions or percentages of the widget basis, up to 10%. Fill and outline colours have independent alpha. Use `opacity` to fade both.
+
+```xml
+<text id="title" size="20%" shadow="false" strokeColor="#000000c0" strokeWidth="0.6%">
+  {{title}}
+  <style when="warning == 1" strokeColor="#ff0000" />
+</text>
+```
+
+All three settings support bindings and conditional styles. Empty strokeColor removes the outline. Stroke width and RGB stroke colour can be animated through transitionProperties; alpha changes are immediate. Outlines do not enlarge the text's layout box: leave padding around text, especially multiline clipped text. Rendering depends on client SVG-filter support. Italic remains unavailable as a dedicated property; select an appropriate font face instead.
 
 ## Font selection
 

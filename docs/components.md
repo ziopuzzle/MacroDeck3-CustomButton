@@ -14,9 +14,11 @@ Every component requires a unique `id`. Common attributes include `fill`, `mainS
 and clamped; `max` must exceed `min`. It fills the available space by default.
 Angles are degrees: zero is up and positive is clockwise. The host limits the
 end-minus-start sweep to one turn. For a ring use `startAngle="0" endAngle="360"`.
-Defaults are 0..100, -135..135 degrees and 4% thickness. `color` supports alpha,
-which fades the entire gauge including its native background track. Track color
-is host-controlled. This is a display component, not an input control.
+Defaults are 0..100, -135..135 degrees and 4% thickness. `trackColor` sets the
+unfilled track colour; leave it blank for the host theme. `color` and `trackColor`
+support independent alpha, bindings and conditional styles. Since 0.41.7, colour
+alpha affects only its own paint; use `opacity` to fade the entire gauge.
+This is a display component, not an input control.
 
 ## Built-in icon
 

@@ -8,9 +8,9 @@ public static class LayoutTemplates
     // Keep unlisted embedded examples discoverable.
     private static readonly string[] DisplayOrder =
     [
-        "basic_border", "basic_bar", "basic_dynamic-text",
+        "basic_border", "basic_text", "basic_dynamic-text",
         "basic_icon", "basic_image", "basic_shape", "basic_gradation", "basic_svg",
-        "basic_range", "basic_gauge", "basic_progress",
+        "basic_bar", "basic_range", "basic_gauge", "basic_progress",
         "basic_conditional", "basic_calculation", "basic_animation",
         "basic_modifier", "basic_transform", "basic_responsive",
         "basic_toggle", "basic_slider", "basic_dial", "basic_segmented", "basic_trackpad",
@@ -26,7 +26,7 @@ public static class LayoutTemplates
     }
     private static string Title(string id) => id switch
     {
-        "basic_animation" => "Animation", "basic_bar" => "Text and bar", "basic_border" => "Border",
+        "basic_animation" => "Animation", "basic_text" => "Text", "basic_bar" => "Bar", "basic_border" => "Border",
         "basic_calculation" => "Calculated sector", "basic_conditional" => "Conditional styles",
         "basic_gradation" => "Gradients", "basic_progress" => "Playback progress", "basic_shape" => "Shapes",
         "basic_slider" => "Slider", "widget_clock" => "Clock", "widget_history-chart" => "History Graph",

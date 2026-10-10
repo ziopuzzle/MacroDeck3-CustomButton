@@ -23,10 +23,10 @@ public sealed class LayoutRenderer
         "variant" => "minWidth maxWidth minHeight maxHeight minAspect maxAspect",
         "dynamic-text" => "zone format seconds size sizeCap minSize weight color role align",
         "icon" => "name size color role",
-        "gauge" => "value min max startAngle endAngle color thickness",
+        "gauge" => "value min max startAngle endAngle color trackColor thickness",
         "image" => "source size fit zoom offsetX offsetY transition brightness saturation color",
         "svg" => "rasterSize size fit zoom offsetX offsetY transition brightness saturation color",
-        "text" => "size sizeCap minSize weight fontFace color role digits align wrap maxLines",
+        "text" => "size sizeCap minSize weight fontFace color role digits align wrap maxLines shadow strokeColor strokeWidth",
         "bar" => "value start marker min max color endColor thickness",
         "chart" => "key min max points color plotTop thickness",
         "clock" => "zone seconds color",
@@ -318,7 +318,9 @@ public sealed class LayoutRenderer
                     return new UiGauge { Key = key, Fill = fill, MainSize = mainSize,
                         Level = Math.Clamp((N("value", gaugeMin, -1e12, 1e12) - gaugeMin) / (gaugeMax - gaugeMin), 0, 1),
                         StartAngle = N("startAngle", -135, -3600, 3600), EndAngle = N("endAngle", 135, -3600, 3600),
-                        LevelColor = Color("color", "#54dfcc"), Thickness = Length("thickness", .04, 1) };
+                        LevelColor = Color("color", "#54dfcc"),
+                        TrackColor = A("trackColor") is "" or "—" ? default : UiValue.Of(Color("trackColor", "#ffffff")),
+                        Thickness = Length("thickness", .04, 1) };
                 case "image":
                 case "svg":
                     var source = node.Name.LocalName == "svg"
@@ -634,6 +636,9 @@ public sealed class LayoutRenderer
                     Weight = Choice("weight", "regular"), Color = attributes.ContainsKey("role") && !attributes.ContainsKey("color") ? UiValue.None<string>() : UiValue.Of(Color("color", "#ffffff")), Align = Choice("align", node.Parent?.Name == "segmented" ? "center" : "start"),
                     Role = Choice("role", "primary"), FontFace = A("fontFace") is var face && face is not ("" or "—") ? UiValue.Of(face) : UiValue.None<string>(),
                     Digits = attributes.ContainsKey("digits") ? UiValue.Of(N("digits", 0, 0, 32)) : UiValue.None<double>(),
+                    Shadow = A("shadow") is "" or "—" ? default : UiValue.Of(B("shadow", true)),
+                    StrokeColor = A("strokeColor") is "" or "—" ? default : UiValue.Of(Color("strokeColor", "#ffffff")),
+                    StrokeWidth = Length("strokeWidth", 0, .1),
                     Wrap = B("wrap", false), MaxLines = Integer("maxLines", 1, 1, 8), Fill = fill, MainSize = mainSize };
                 case "chart":
                     var dataKey = A("key"); DataHub.ValidateName(dataKey);

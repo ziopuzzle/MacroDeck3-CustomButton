@@ -60,7 +60,7 @@ public class ColorTransitionTests
         var root = new UiView(ButtonTests.Surface(), renderer.Render(DataHub.ParseValues("{}"))).Tree.Root;
         Assert.That(root.Properties["clip"].GetString(), Is.EqualTo("bounds"));
         Assert.That(root.Properties["frame"].GetProperty("maxHeight").GetProperty("basis").GetDouble(), Is.EqualTo(.288));
-        Assert.That(ButtonTests.Nodes(root).Any(n => n.Properties.ContainsKey("opacity")), Is.True);
+        Assert.That(ButtonTests.Nodes(root).Single(n => n.Type == "ui.text").Properties["color"].GetString(), Is.EqualTo("#ffffff80"));
         Assert.That(ButtonTests.Nodes(root).Single(n => n.Type == "ui.text").Properties["maxLines"].GetInt32(), Is.EqualTo(2));
     }
 }
