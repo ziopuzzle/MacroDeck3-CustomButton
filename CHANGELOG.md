@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.41.5 — clear recovered preview errors
+
+- Successful preview rendering clears retained preview failures for the same widget, including errors from replaced editing sessions and previous channels. Errors from actual widget displays and other widgets remain independent. Refresh Diagnostics to read the updated report.
+
 ## 0.41.4 — inspect data and handle unavailable numbers
 
 - List effective display-data keys, JSON types, values and initial/live sources in Diagnostics. Refresh manually with the diagnostic report; long values are truncated for display.

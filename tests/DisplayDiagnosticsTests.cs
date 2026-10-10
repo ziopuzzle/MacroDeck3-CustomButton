@@ -41,7 +41,21 @@ public class DisplayDiagnosticsTests
         Assert.That(report, Does.Contain("6 session(s)").And.Contain("Different error").And.Contain("Channel: other")
             .And.Contain("Detected in current draft.").And.Contain("Last observed widget:").And.Contain("Last observed preview:"));
         reports.Report("session0", "widget", "music", "preview", null);
-        Assert.That(reports.Read("widget"), Does.Contain("5 session(s)"));
+        Assert.That(reports.Read("widget"), Does.Not.Contain("Last observed preview:").And.Contain("Last observed widget:"));
+    }
+
+    [Test] public void ReplacementPreviewRecoveryClearsTypingErrorsButPreservesOtherWidgetsAndLiveErrors()
+    {
+        var reports = new DisplayDiagnostics();
+        reports.Report("old1", "edited", "old-channel", "preview", "Incomplete expression");
+        reports.Report("old2", "edited", "new-channel", "preview", "Missing parenthesis");
+        reports.Report("live", "edited", "new-channel", "widget", "Live error");
+        reports.Report("other", "another", "new-channel", "preview", "Other error");
+        reports.Report("replacement", "edited", "new-channel", "preview", null);
+        Assert.That(reports.ReadSnapshot("edited").Errors, Is.EqualTo(new[] { "Live error" }));
+        Assert.That(reports.Read("another"), Does.Contain("Other error"));
+        reports.Report("new-failure", "edited", "new-channel", "preview", "New error");
+        Assert.That(reports.Read("edited"), Does.Contain("New error"));
     }
 
     [Test] public async Task RuntimeErrorsAreIsolatedAndClearedOnRecovery()

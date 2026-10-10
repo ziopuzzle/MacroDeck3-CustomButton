@@ -61,7 +61,7 @@ public sealed class ConfigurationSession : IUiSession
             diagnosticErrors.Value = snapshotReport.Errors;
             var observed = snapshotReport.Report;
             return report + "\n\n" + (string.IsNullOrEmpty(observed) ? "No runtime rendering errors recorded for this widget in this plugin process." : observed)
-                + "\n\nClosed-session errors are retained as last-observed reports. Action execution logs remain available in Macro Deck.";
+                + "\n\nOlder preview errors are cleared when this widget's preview renders successfully. Other closed-session errors remain as last-observed reports. Action execution logs remain available in Macro Deck.";
         }
         var errorReport = new UiState<string>(ReadDiagnostics());
         publishInitialCorrection = !string.IsNullOrWhiteSpace(widgetId) && (settings.ConfigurationWidgetId != widgetId || settings.Channel != channel.Value);

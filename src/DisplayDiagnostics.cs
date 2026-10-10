@@ -10,7 +10,17 @@ public sealed class DisplayDiagnostics
     {
         lock (gate)
         {
-            if (error == null) { entries.Remove(session); return; }
+            if (error == null)
+            {
+                entries.Remove(session);
+                // Editing replaces preview sessions. A recovered preview supersedes their
+                // retained failures, even when an earlier draft used another channel.
+                // Never let preview success erase errors from actual widget displays.
+                if (surface == "preview")
+                    foreach (var key in entries.Where(e => e.Value.Widget == widget && e.Value.Surface == "preview").Select(e => e.Key).ToArray())
+                        entries.Remove(key);
+                return;
+            }
             if (entries.TryGetValue(session, out var prior) && prior.Error == error) return;
             if (entries.Count >= 128 && !entries.ContainsKey(session)) entries.Remove(entries.MinBy(e => e.Value.Time).Key);
             entries[session] = new(widget, channel, surface, DateTimeOffset.UtcNow, error.Length > 8000 ? error[..8000] + "…" : error);
