@@ -31,8 +31,8 @@ public sealed class LayoutRenderer
         "chart" => "key min max points color plotTop thickness",
         "clock" => "zone seconds color",
         "progress-bar" => "positionMs durationMs anchor rate color endColor thickness",
-        "slider" => "value key min max step direction color thickness interactive",
-        "dial" => "value key min max step startAngle endAngle color thickness interactive",
+        "slider" => "value key fallback min max step direction color thickness interactive",
+        "dial" => "value key fallback min max step startAngle endAngle color thickness interactive",
         "toggle" => "value key size color interactive",
         "segmented" => "value key color interactive",
         "trackpad" => "keyX keyY leftValue rightValue topValue bottomValue stepX stepY color background interactive showCursorWhileTouching",
@@ -576,8 +576,14 @@ public sealed class LayoutRenderer
                     if (sliderKey.Length > 0) DataHub.ValidateName(sliderKey);
                     if (B("interactive", false) && sliderKey.Length == 0) throw new FormatException("An interactive slider needs a key to store its value.");
                     if (sliderKey.Length > 0 && attributes.ContainsKey("value")) throw new FormatException("Use either key or value on a slider, not both.");
-                    var sliderValue = sliderKey.Length == 0 ? N("value", sliderMin, -1e12, 1e12)
-                        : values.TryGetValue(sliderKey, out var bound) && double.TryParse(bound.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var numeric) && double.IsFinite(numeric) ? numeric : sliderMin;
+                    var sliderFallback = N("fallback", sliderMin, -1e12, 1e12);
+                    double sliderValue;
+                    if (sliderKey.Length > 0)
+                        sliderValue = values.TryGetValue(sliderKey, out var bound) && DisplayData.TryNumber(bound, out var numeric) ? numeric : sliderFallback;
+                    else if (attributes.GetValueOrDefault("value", "").Trim() is var binding
+                        && Slot.Match(binding) is { Success: true, Index: 0 } match && match.Length == binding.Length)
+                        sliderValue = Animate("value", double.TryParse(A("value"), NumberStyles.Float, CultureInfo.InvariantCulture, out var direct) && double.IsFinite(direct) ? direct : sliderFallback);
+                    else sliderValue = N("value", sliderFallback, -1e12, 1e12);
                     var step = N("step", 0, 0, sliderMax - sliderMin);
                     double Snap(double value) => step == 0 ? value : Math.Clamp(sliderMin + Math.Round((value - sliderMin) / step, MidpointRounding.AwayFromZero) * step, sliderMin, sliderMax);
                     UiEventHandler Handler(string name) => UiEventHandler.On(name, e =>

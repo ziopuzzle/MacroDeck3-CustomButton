@@ -50,6 +50,24 @@ public sealed class DisplayMath
             var name = text[start..position];
             if (Take('('))
             {
+                if (name is "number" or "isNumber" or "isNumeric")
+                {
+                    Space(); var keyStart = position;
+                    while (position < text.Length && (char.IsAsciiLetterOrDigit(text[position]) || text[position] is '_' or '.')) position++;
+                    if (keyStart == position) throw new FormatException("The first argument must be a data name.");
+                    values.TryGetValue(text[keyStart..position], out var raw);
+                    var valid = DisplayData.TryNumber(raw, out var numeric);
+                    if (name == "number")
+                    {
+                        Require(',');
+                        var previousMissing = missing; missing = false;
+                        var fallback = Sum(); var fallbackMissing = missing;
+                        missing = previousMissing || (!valid && fallbackMissing);
+                        Require(')'); return valid ? numeric : fallback;
+                    }
+                    Require(')');
+                    return (name == "isNumber" ? raw.ValueKind == JsonValueKind.Number : valid) ? 1 : 0;
+                }
                 var args = new List<double>();
                 if (!Take(')'))
                 {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.41.4 — inspect data and handle unavailable numbers
+
+- List effective display-data keys, JSON types, values and initial/live sources in Diagnostics. Refresh manually with the diagnostic report; long values are truncated for display.
+- Add number(key, fallback), isNumber(key) and isNumeric(key) to calculations and conditions, and type(key) to conditions. Numeric strings can be converted; N/A, missing/null and other nonnumeric values use the explicit fallback.
+- Add fallback to Slider and Dial for key-based and direct value bindings, defaulting to the minimum. Rendering a fallback never overwrites source data. Literal configuration and calculation errors remain errors.
+
 ## 0.41.3 — follow element ID edits
 
 - Follow unambiguous ID-only changes from both the GUI editor and direct XML edits in this widget's Custom Button event filters. Preserve other-widget filters and action data. Keep the last valid XML while typing incomplete XML.

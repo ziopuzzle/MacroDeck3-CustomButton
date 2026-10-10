@@ -7,7 +7,7 @@ namespace Ziopuzzle.CustomButton;
 // A bounded expression grammar: data lookup, comparisons and Boolean composition only.
 public static class DisplayCondition
 {
-    private static readonly Regex Token = new("\\G\\s*(?:(?<number>-?(?:[0-9]+(?:\\.[0-9]+)?)(?:[eE][+-]?[0-9]+)?)|(?<text>'[^']*'|\"[^\"]*\")|(?<id>[A-Za-z_][A-Za-z0-9_.-]*)|(?<op>>=|<=|==|!=|&&|\\|\\||[><!()]))", RegexOptions.CultureInvariant);
+    private static readonly Regex Token = new("\\G\\s*(?:(?<number>-?(?:[0-9]+(?:\\.[0-9]+)?)(?:[eE][+-]?[0-9]+)?)|(?<text>'[^']*'|\"[^\"]*\")|(?<id>[A-Za-z_][A-Za-z0-9_.-]*)|(?<op>>=|<=|==|!=|&&|\\|\\||[><!(),]))", RegexOptions.CultureInvariant);
     public static bool Evaluate(string expression, IReadOnlyDictionary<string, JsonElement> values)
     {
         if (expression.Length > 1024) throw new FormatException("Conditions must not exceed 1024 characters.");
@@ -42,6 +42,24 @@ public static class DisplayCondition
                 }
                 if (t.Kind == "text") return t.Text[1..^1];
                 if (t.Kind != "id") throw new FormatException("Invalid condition value.");
+                if (t.Text is "type" or "isNumber" or "isNumeric" or "number" && Take("("))
+                {
+                    if (at == tokens.Count || tokens[at].Kind is not ("id" or "text")) throw new FormatException("Expected a data name.");
+                    var key = tokens[at++];
+                    values.TryGetValue(key.Kind == "text" ? key.Text[1..^1] : key.Text, out var raw);
+                    if (t.Text == "number")
+                    {
+                        if (!Take(",")) throw new FormatException("number requires a fallback value.");
+                        var fallback = Atom();
+                        if (!Take(")")) throw new FormatException("Expected ')' after the fallback.");
+                        if (DisplayData.TryNumber(raw, out var numeric)) return numeric;
+                        if (!Numeric(fallback, out var substitute)) throw new FormatException("The fallback must be a finite number.");
+                        return substitute;
+                    }
+                    if (!Take(")")) throw new FormatException("Expected ')' after the data name.");
+                    return t.Text == "type" ? DisplayData.TypeOf(raw)
+                        : t.Text == "isNumber" ? raw.ValueKind == JsonValueKind.Number : DisplayData.TryNumber(raw, out _);
+                }
                 if (t.Text == "true") return true;
                 if (t.Text == "false") return false;
                 if (t.Text == "null") return null;

@@ -33,10 +33,12 @@ public sealed class ConfigurationSession : IUiSession
             || settings.Channel == settings.ConfigurationWidgetId)) channel.Value = widgetId;
         var draftHasError = new UiState<bool>(false);
         var diagnosticErrors = new UiState<IReadOnlyList<string>>([]);
+        var dataRows = new UiState<IReadOnlyList<KeyValuePair<string, string>>>([]);
         string ReadDiagnostics()
         {
             var report = $"Custom Button diagnostics\nWidget: {widgetId ?? "unsaved"}\nChannel: {channel.Value}\nChecked: {DateTimeOffset.UtcNow:O}\n\n";
             draftHasError.Value = false;
+            dataRows.Value = [];
             string? draftError = null;
             try
             {
@@ -44,6 +46,12 @@ public sealed class ConfigurationSession : IUiSession
                 var data = DataHub.ParseValues(values.Value);
                 var snapshot = hub?.Snapshot(channel.Value) ?? DataSnapshot.Empty;
                 foreach (var pair in snapshot.Values) data[pair.Key] = pair.Value;
+                dataRows.Value = data.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p =>
+                {
+                    var raw = p.Value.GetRawText();
+                    var origin = snapshot.Values.ContainsKey(p.Key) ? "live" : "initial";
+                    return new KeyValuePair<string, string>(p.Key, $"{p.Key} [{DisplayData.TypeOf(p.Value)}, {origin}] = " + (raw.Length > 500 ? raw[..500] + "…" : raw));
+                }).ToArray();
                 _ = new LayoutRenderer(layout.Value).Render(data, snapshot.ReadHistory);
                 report += "Current draft: XML and data rendering check passed. Image downloads and host rendering are not checked here.";
             }
@@ -247,7 +255,14 @@ public sealed class ConfigurationSession : IUiSession
                             KeySelector = message => "error" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(message))),
                             Template = (message, key) => new UiProse { Key = key, Text = message }
                         },
-                        new UiCopyValue { Key = "errorReport", Label = "Diagnostic report", Value = UiValue.From(() => errorReport.Value) }
+                        new UiCopyValue { Key = "errorReport", Label = "Diagnostic report", Value = UiValue.From(() => errorReport.Value) },
+                        new UiHeading { Key = "displayDataHeading", Text = "Current display data" },
+                        new UiProse { Key = "displayDataHelp", Text = "Snapshot at the last refresh: live channel values override initial JSON. Missing keys are not listed. Values are truncated after 500 characters." },
+                        new UiRepeat<KeyValuePair<string, string>> {
+                            Key = "displayDataRows", Items = UiValue.From(() => dataRows.Value),
+                            KeySelector = row => "data" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(row.Key))),
+                            Template = (row, key) => new UiProse { Key = key, Text = row.Value }
+                        }
                     ] }
                     ] }
                 ]

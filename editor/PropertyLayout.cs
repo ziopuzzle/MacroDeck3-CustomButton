@@ -7,6 +7,7 @@ internal static class PropertyLayout
     internal static string Group(string type, string name)
     {
         if (name == "id") return "Identity";
+        if (name == "fallback") return "Content and data";
         if (name is "visible" or "visibleWhen") return "Visibility";
         if (name is "transitionMs" or "transitionProperties" or "easing" or "colorSpace" or "transition") return "Animation";
         if (name is "interactive" or "disabled" or "showCursorWhileTouching") return "Interaction";
@@ -22,7 +23,7 @@ internal static class PropertyLayout
         if (name is "fontFace" or "weight" or "digits" or "sizeCap" or "minSize" || name == "size" && type is "text" or "dynamic-text") return "Appearance";
         return "Layout and geometry";
     }
-    private static readonly string[] Order = ("id source name key value min max step start marker format zone seconds positionMs durationMs anchor rate points data " +
+    private static readonly string[] Order = ("id source name key value fallback min max step start marker format zone seconds positionMs durationMs anchor rate points data " +
         "keyX leftValue rightValue stepX keyY topValue bottomValue stepY " +
         "coordinates direction x y x1 y1 x2 y2 cx cy length angle radius startAngle endAngle sweepAngle width height size " +
         "minWidth maxWidth minHeight maxHeight minAspect maxAspect fill mainSize justify align gap padding fit zoom offsetX offsetY rotation originX originY clip corner cornerRadius wrap maxLines " +

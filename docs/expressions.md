@@ -23,6 +23,32 @@ The first field is not zero-padded; following fields have two digits. Durations 
 
 ## Arithmetic
 
+### Types and unavailable data
+
+`number(key, fallback)` converts a finite number or numeric string, otherwise using the fallback.
+`isNumber(key)` tests the JSON number type; `isNumeric(key)` tests whether a finite number can be obtained.
+These predicates return 1/0 in calculations and true/false in conditions.
+In conditions, `type(key)` returns `number`, `string`, `boolean`, `null`, or `missing`.
+The key is a data name, not an expression. Conditions also accept quoted keys such as `type('my-key')`.
+Calculation keys follow the existing identifier grammar (letters, digits, underscores and dots).
+Calculation fallbacks can be arithmetic expressions; condition fallbacks are values or nested function calls.
+This does not add array/object support to display data.
+
+```xml
+<text id="time">{{= floor(number(position, 0) / 1000):duration}}</text>
+<text id="unavailable" visibleWhen="not isNumeric(position)">Unavailable</text>
+<text id="textValue" visibleWhen="type(position) == 'string'">{{position}}</text>
+<text id="ready" visibleWhen="number(duration, 0) &gt; 0">Ready</text>
+<slider id="volume" key="volume" min="0" max="100" fallback="25" interactive="true" />
+```
+
+For Slider and Dial, `fallback` defaults to `min`. It applies to unavailable key data and direct
+bindings such as `value="{{volume}}"`; the displayed value is clamped/snapped normally.
+Source data is unchanged until an actual user interaction writes it. Other numeric attributes
+such as `max` can explicitly use `{{= number(duration, 100)}}`.
+Fallbacks do not suppress malformed expressions or invalid literal configuration.
+
+
 Use `{{= expression}}` in text or numeric attributes. `* / %` take precedence over `+ -`; use parentheses to group operations. `%` is remainder (the sign follows the left operand). A percent character outside the braces remains a unit suffix. Decimal and scientific literals such as `0.25`, `.5`, `1e3` and `2.5e-2` are supported.
 
 | Function | Meaning |
