@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "net.ziopuzzle.custombutton",
   "name": "Custom Button",
-  "version": "0.41.5",
+  "version": "0.41.6",
   "description": "Declarative custom buttons with live data bindings.",
   "icon": "Assets/icon.svg",
   "publisher": {
@@ -24,7 +24,7 @@
     "en"
   ],
   "compatibility": {
-    "macroDeck": ">=3.0.0-beta.15"
+    "macroDeck": ">=3.0.0-beta.16"
   },
   "entrypoints": {
     "win-x64": {

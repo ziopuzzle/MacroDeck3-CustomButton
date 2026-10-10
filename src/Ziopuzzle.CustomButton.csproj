@@ -10,16 +10,16 @@
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="MacroDeck.Plugin.Hosting" Version="3.0.0-beta.15" />
-    <PackageReference Include="MacroDeck.Plugin.Serilog" Version="3.0.0-beta.15" />
-    <PackageReference Include="MacroDeck.Ui" Version="3.0.0-beta.15" />
+    <PackageReference Include="MacroDeck.Plugin.Hosting" Version="3.0.0-beta.16" />
+    <PackageReference Include="MacroDeck.Plugin.Serilog" Version="3.0.0-beta.16" />
+    <PackageReference Include="MacroDeck.Ui" Version="3.0.0-beta.16" />
     <PackageReference Include="Svg.Skia" Version="2.0.0" />
     <PackageReference Include="SkiaSharp" Version="2.88.9" />
     <PackageReference Include="SkiaSharp.HarfBuzz" Version="2.88.9" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.9" />
     <PackageReference Include="HarfBuzzSharp" Version="8.3.1.1" />
     <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.1" />
-    <PackageReference Include="MacroDeck.Plugin.Analyzers" Version="3.0.0-beta.15" PrivateAssets="all" />
+    <PackageReference Include="MacroDeck.Plugin.Analyzers" Version="3.0.0-beta.16" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="../examples/*.xml;../examples/*.json" LogicalName="Templates.%(Filename)%(Extension)" />

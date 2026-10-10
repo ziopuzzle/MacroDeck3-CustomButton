@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.41.6 — Macro Deck beta.16 toolchain
+
+- Update the plugin, editor and test SDK dependencies, local CLI and release workflow to Macro Deck 3.0.0-beta.16. Require host beta.16 or later.
+- Preserve existing XML, drawing behavior and event handling; new beta.16 drawing options are not enabled by this dependency update.
+
 ## 0.41.5 — clear recovered preview errors
 
 - Successful preview rendering clears retained preview failures for the same widget, including errors from replaced editing sessions and previous channels. Errors from actual widget displays and other widgets remain independent. Refresh Diagnostics to read the updated report.

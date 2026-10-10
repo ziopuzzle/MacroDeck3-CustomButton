@@ -18,7 +18,7 @@
     <PackageReference Include="Avalonia.Desktop" Version="11.3.21" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.21" />
     <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.3.21" />
-    <PackageReference Include="MacroDeck.Ui" Version="3.0.0-beta.15" />
+    <PackageReference Include="MacroDeck.Ui" Version="3.0.0-beta.16" />
     <Compile Include="../src/ShapePaths.cs;../src/DisplayColor.cs;../src/AlphaPaint.cs;../src/DisplayMath.cs;../src/DisplayData.cs;../src/LayoutDropPlacement.cs;../src/LayoutOptions.cs;../src/LayoutDocument.cs;../src/LayoutEditHistory.cs;../src/LayoutRenderer.cs;../src/DataHub.cs;../src/DisplayCondition.cs;../src/PreviewSelection.cs" Link="Shared/%(Filename)%(Extension)" />
     <Compile Include="../src/LocalShapePath.cs" Link="Shared/LocalShapePath.cs" />
     <Compile Include="../src/LayoutLimits.cs" Link="Shared/LayoutLimits.cs" />
