@@ -134,7 +134,9 @@ public sealed class ButtonSession : IUiSession
         {
             // A stable native button supplies the tile clip and text-shadow context.
             // Explicit transparency prevents the host's default accent background.
-            currentView = new UiView(surface, new UiButton { Key = "root", Fill = true, Padding = 0, Gap = 0,
+            currentView = new UiView(surface, surface.Kind == UiSurfaceKinds.Dialog
+                ? new UiStack { Key = "root", Fill = true, Padding = 0, Gap = 0, Background = "transparent", Children = [content] }
+                : new UiButton { Key = "root", Fill = true, Padding = 0, Gap = 0,
                 Background = hasRootBackground ? "transparent" : "#1a1a1a", Children = [content],
                 Events = !settings.WholeButtonInteraction ? [] : onWidgetEvent != null
                     ? new[] { UiComponentEvents.Press, UiComponentEvents.LongPress, UiComponentEvents.PressStart, UiComponentEvents.PressEnd }

@@ -54,6 +54,7 @@ XML accepts up to 65,536 characters, 512 elements (including styles), and 32 lev
 ## Guides
 
 - [Actions and updates](docs/actions.md)
+- [Modal views](docs/modal.md)
 - [Event-driven display updates](docs/realtime.md)
 - [Calculations and duration formats](docs/expressions.md)
 - [Value-change animation](docs/animation.md)

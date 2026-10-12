@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.42.0 — modal views
+
+- Add Show modal, an action that opens literal XML with initial JSON and live Channel data in a native dialog on the originating or explicitly selected client.
+- Reuse the existing renderer and image resources, with a transparent stack root instead of tile rounding. Include IDs in the sample XML.
+- Route interactive dialog elements through existing element events, using Event target widget (the opening button by default).
+- Add Destination device, resolving the selected device to its current client via the public Deck API. This permits opening dialogs from Custom Button events without an originating client. Offline explicit targets fail without falling back to another device. See docs/modal.md for setup and limitations.
+
 ## 0.41.8 — consistent text-shadow context
 
 - Use a stable native UiButton at the widget root so Text shadow=true works through nested transparent stacks, without requiring a border. Keep the existing whole-widget interaction switch and child events.

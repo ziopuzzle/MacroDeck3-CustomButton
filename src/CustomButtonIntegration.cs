@@ -32,7 +32,7 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
     {
         this.logger = logger;
         imageHostUrl = Uri.TryCreate(options?.Value.HostUrl, UriKind.Absolute, out var host) ? host : null;
-        Actions = [new UpdateValueAction(Hub), new UpdateValuesAction(Hub)];
+        Actions = [new UpdateValueAction(Hub), new UpdateValuesAction(Hub), new ShowModalAction(() => context?.Deck)];
     }
     private static readonly WidgetTypeDescriptor Descriptor = new("custom-button", "Custom Button", TextCatalog.Reference("A button rendered from templates and variable data"), DefaultData: ButtonSettings.DefaultData, DataSchema: ButtonSettings.Schema, HasConfiguration: true);
     public string ProviderName => "Custom Button";
@@ -50,13 +50,31 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
     [
         new() { Kind = UiSurfaceKinds.Widget, SessionMode = UiSessionModes.Shared },
         new() { Kind = UiSurfaceKinds.Preview, SessionMode = UiSessionModes.Shared },
-        new() { Kind = UiSurfaceKinds.Config, SessionMode = UiSessionModes.Exclusive }
+        new() { Kind = UiSurfaceKinds.Config, SessionMode = UiSessionModes.Exclusive },
+        new() { Kind = UiSurfaceKinds.Dialog, SessionMode = UiSessionModes.Exclusive }
     ];
     public Task<IUiSession?> CreateSessionAsync(UiSessionRequest request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var surface = request.Surface;
         var attributes = surface.Attributes;
+        if (surface.Kind == UiSurfaceKinds.Dialog)
+        {
+            if (!attributes.TryGetValue(UiDialogSurfaceAttributes.ViewId, out var viewId)
+                || viewId.ValueKind != JsonValueKind.String || viewId.GetString() != ShowModalAction.ViewId)
+                return Task.FromResult<IUiSession?>(null);
+            var modalData = attributes.GetValueOrDefault(UiDialogSurfaceAttributes.Data);
+            var eventWidgetId = modalData.ValueKind == JsonValueKind.Object
+                && modalData.TryGetProperty("eventWidgetId", out var eventTarget) && eventTarget.ValueKind == JsonValueKind.String
+                ? eventTarget.GetString() : null;
+            var modalSettings = ButtonSettings.Read(modalData)
+                with { WholeButtonInteraction = false };
+            return Task.FromResult<IUiSession?>(new ButtonSession(surface, modalSettings, Hub,
+                onControlInput: context?.Events is { } modalEvents && !string.IsNullOrWhiteSpace(eventWidgetId)
+                    ? input => PublishControlEvent(modalEvents, eventWidgetId, input) : null,
+                images: context != null ? new SessionImages(context.UiResources, ImageHttp,
+                    message => logger?.LogWarning("{ImageDiagnostic}", message), imageHostUrl) : null));
+        }
         var widgetId = attributes.TryGetValue("widgetId", out var id) && id.ValueKind == JsonValueKind.String ? id.GetString() : null;
         if (!attributes.TryGetValue("widgetType", out var type) || type.ValueKind != JsonValueKind.String || type.GetString() != TypeId)
             return Task.FromResult<IUiSession?>(null);
@@ -75,20 +93,7 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
         var canUpdate = !sample && (canPress || surface.Kind == UiSurfaceKinds.Preview);
         var events = context?.Events;
         void Publish(string eventId) => events?.Publish(eventId, new Dictionary<string, object?> { ["widgetId"] = ownerWidgetId });
-        void PublishControl(ControlInput input)
-        {
-            var payload = new Dictionary<string, object?> { ["widgetId"] = ownerWidgetId, ["elementId"] = input.ElementId };
-            if (input.Value is { } value) { payload["value"] = value; payload["previousValue"] = input.PreviousValue; payload["level"] = input.Level; payload["key"] = input.DataKey; }
-            if (input.Position is { } position)
-            {
-                payload["x"] = position.X; payload["y"] = position.Y;
-                payload["levelX"] = position.LevelX; payload["levelY"] = position.LevelY;
-                payload["startX"] = position.StartX; payload["startY"] = position.StartY;
-                payload["previousX"] = position.PreviousX; payload["previousY"] = position.PreviousY;
-                payload["keyX"] = position.KeyX; payload["keyY"] = position.KeyY;
-            }
-            events?.Publish(ButtonEvents.ControlEventId(input.EventName), payload);
-        }
+        void PublishControl(ControlInput input) => PublishControlEvent(events!, ownerWidgetId!, input);
         var diagnosticSession = Guid.NewGuid().ToString("N");
         return Task.FromResult<IUiSession?>(new ButtonSession(surface, settings, sample ? null : Hub,
             reportError: canUpdate && ownerWidgetId != null ? error => diagnostics.Report(diagnosticSession, ownerWidgetId, settings.Channel, surface.Kind, error) : null,
@@ -104,6 +109,20 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
                 {
                     Publish(ButtonEvents.Tick); return Task.FromResult(ActionResult.Success());
                 }) : null));
+    }
+    private static void PublishControlEvent(IEventPublisher events, string ownerWidgetId, ControlInput input)
+    {
+        var payload = new Dictionary<string, object?> { ["widgetId"] = ownerWidgetId, ["elementId"] = input.ElementId };
+        if (input.Value is { } value) { payload["value"] = value; payload["previousValue"] = input.PreviousValue; payload["level"] = input.Level; payload["key"] = input.DataKey; }
+        if (input.Position is { } position)
+        {
+            payload["x"] = position.X; payload["y"] = position.Y;
+            payload["levelX"] = position.LevelX; payload["levelY"] = position.LevelY;
+            payload["startX"] = position.StartX; payload["startY"] = position.StartY;
+            payload["previousX"] = position.PreviousX; payload["previousY"] = position.PreviousY;
+            payload["keyX"] = position.KeyX; payload["keyY"] = position.KeyY;
+        }
+        events.Publish(ButtonEvents.ControlEventId(input.EventName), payload);
     }
 }
 
