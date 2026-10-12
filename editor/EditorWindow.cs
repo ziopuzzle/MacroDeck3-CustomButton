@@ -48,7 +48,7 @@ public sealed partial class EditorWindow : Window
     private sealed record Row(string Id, Border Card, bool Container, bool Root, bool Footer);
     private static readonly Dictionary<string, string> Types = new()
     {
-        ["stack"] = "▤ Stack", ["layer"] = "▧ Layer", ["text"] = "T Text", ["bar"] = "━ Range bar",
+        ["scroll"] = "↕ Scroll", ["stack"] = "▤ Stack", ["layer"] = "▧ Layer", ["text"] = "T Text", ["bar"] = "━ Range bar",
         ["modifier"] = "▣ Modifier", ["responsive"] = "▦ Responsive", ["variant"] = "▥ Layout variant", ["dynamic-text"] = "◷ Dynamic text",
         ["transform"] = "↻ Transform", ["icon"] = "☆ Icon", ["gauge"] = "◴ Gauge",
         ["chart"] = "⌁ History graph", ["clock"] = "◷ Clock", ["progress-bar"] = "▷ Playback progress", ["slider"] = "● Slider", ["dial"] = "◉ Dial", ["trackpad"] = "⊕ Trackpad", ["toggle"] = "◐ Toggle", ["segmented"] = "▥ Segmented",
@@ -57,7 +57,7 @@ public sealed partial class EditorWindow : Window
     };
     private static IBrush B(string text) => Brush.Parse(text);
     private static string Id(XElement node) => (string)node.Attribute("id")!;
-    private static string Colour(string type) => type switch { "stack" or "layer" or "transform" or "modifier" or "responsive" or "variant" or "segmented" => "#9874cf", "text" => "#50adf2", _ => "#48b5a1" };
+    private static string Colour(string type) => type switch { "scroll" or "stack" or "layer" or "transform" or "modifier" or "responsive" or "variant" or "segmented" => "#9874cf", "text" => "#50adf2", _ => "#48b5a1" };
 
     public EditorWindow(string layout, string values, bool testing = false, Action<string>? sendDraft = null)
     {
@@ -155,7 +155,7 @@ public sealed partial class EditorWindow : Window
         {
             var menu = new ContextMenu();
             foreach (var (label, types) in new[] {
-                ("Layout", new[] { "stack", "layer", "modifier", "transform", "responsive", "variant" }),
+                ("Layout", new[] { "stack", "layer", "scroll", "modifier", "transform", "responsive", "variant" }),
                 ("Text and time", new[] { "text", "dynamic-text", "clock" }),
                 ("Images", new[] { "icon", "image", "svg" }),
                 ("Shapes", new[] { "line", "rect", "circle", "sector", "capsule", "polygon", "path" }),

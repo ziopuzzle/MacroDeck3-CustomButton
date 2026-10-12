@@ -16,7 +16,7 @@ public sealed class LayoutDocument
     public IEnumerable<XElement> Components => Root.DescendantsAndSelf().Where(e => e.Name != "style");
     public XElement Find(string id) => Components.SingleOrDefault(e => (string?)e.Attribute("id") == id)
         ?? throw new FormatException("The selected component was not found.");
-    public static bool IsContainer(XElement element) => element.Name.LocalName is "stack" or "layer" or "transform" or "modifier" or "responsive" or "variant" or "segmented";
+    public static bool IsContainer(XElement element) => element.Name.LocalName is "scroll" or "stack" or "layer" or "transform" or "modifier" or "responsive" or "variant" or "segmented";
     public string Serialize()
     {
         // All non-text components can contain styles with insignificant indentation.
@@ -67,7 +67,7 @@ public sealed class LayoutDocument
             case "text": child.Value = "Text"; child.SetAttributeValue("size", "18%"); break;
             case "polygon": child.SetAttributeValue("points", "10%,90%;50%,10%;90%,90%"); child.SetAttributeValue("color", "#54dfcc"); break;
             case "sector": child.SetAttributeValue("radius", "40%"); child.SetAttributeValue("startAngle", "-90"); child.SetAttributeValue("sweepAngle", "120"); child.SetAttributeValue("color", "#54dfcc"); break;
-            case "stack": child.SetAttributeValue("direction", "vertical"); break;
+            case "scroll": case "stack": child.SetAttributeValue("direction", "vertical"); break;
             case "bar": child.SetAttributeValue("value", "{{value}}"); break;
             case "trackpad": child.SetAttributeValue("keyX", "x"); child.SetAttributeValue("keyY", "y"); break;
             case "dial": case "toggle": case "slider": child.SetAttributeValue("key", "value"); break;

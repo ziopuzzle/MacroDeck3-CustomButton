@@ -14,7 +14,7 @@ internal static class PropertyDefaults
         "easing" => "ease-out",
         "colorSpace" => "linear-rgb",
         "transition" => "none",
-        "direction" when type == "stack" => "vertical",
+        "direction" when type is "stack" or "scroll" => "vertical",
         "direction" when type == "slider" => "horizontal",
         "justify" when type == "stack" => "start",
         "align" when type == "stack" => "stretch",

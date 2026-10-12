@@ -15,6 +15,7 @@ public sealed class LayoutRenderer
     private static readonly Regex Slot = new(@"\{\{\s*([A-Za-z0-9_.-]+)\s*(?::([^{}]{1,32}))?\s*\}\}", RegexOptions.CultureInvariant);
     internal static string Allowed(string type) => "id fill mainSize visible visibleWhen opacity transitionMs transitionProperties easing colorSpace " + (type switch
     {
+        "scroll" => "direction gap padding background",
         "stack" => "direction justify align gap padding background borderStyle borderColor interactive",
         "layer" => "interactive background",
         "transform" => "rotation originX originY zoom offsetX offsetY",
@@ -218,7 +219,7 @@ public sealed class LayoutRenderer
         }
         string EndColor() => Color("endColor", colors["color"].Hex);
         var key = (string)node.Attribute("id")!;
-        var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "layer" or "chart" or "clock" or "trackpad" or "slider" or "dial" or "toggle" or "segmented" or "gauge" or "transform" or "modifier" or "responsive");
+        var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "scroll" or "layer" or "chart" or "clock" or "trackpad" or "slider" or "dial" or "toggle" or "segmented" or "gauge" or "transform" or "modifier" or "responsive");
         // Keep omitted sizes unset; a numeric ternary would turn default into an explicit zero.
         UiSize mainSize = default;
         if (attributes.ContainsKey("mainSize") && A("mainSize") != "auto") mainSize = Length("mainSize", 0);
@@ -620,6 +621,7 @@ public sealed class LayoutRenderer
                         Background = Color("background", "#1a1a1a"),
                         BorderStyle = border == "none" ? default : UiValue.Of(border), BorderColor = Color("borderColor", "#54dfcc"),
                         Corner = node.Parent == null ? UiValue.Of("tile") : default };
+                case "scroll": return new UiList { Key = key, Fill = fill, MainSize = mainSize, Children = children, Direction = Choice("direction", "vertical"), Gap = Length("gap", 0), Padding = Length("padding", 0), Background = !attributes.ContainsKey("background") ? default : UiValue.Of(Color("background", "#1a1a1a")) };
                 case "stack": return new UiStack { Key = key, Children = children, Fill = fill, MainSize = mainSize,
                     Direction = Choice("direction", "vertical"), Justify = Choice("justify", "start"),
                     Align = Choice("align", "stretch"), Gap = Length("gap", 0), Padding = Length("padding", 0),

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.43.0 — scroll containers
+
+- Add the scroll XML container for widgets and modals, using the host's native UiList. Support vertical (default) and horizontal directions, nested content, live bindings and child input events.
+- Add Scroll to the GUI Layout category in purple, with child editing and a Basic Scroll template.
+- Define scrolling entirely in XML; Show modal has no scrolling checkbox. See docs/modal.md for sizing and interaction guidance.
+
 ## 0.42.0 — modal views
 
 - Add Show modal, an action that opens literal XML with initial JSON and live Channel data in a native dialog on the originating or explicitly selected client.

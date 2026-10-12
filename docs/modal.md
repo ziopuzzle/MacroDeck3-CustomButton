@@ -17,7 +17,64 @@ Interactive elements publish the existing Custom Button element events. **Event 
 Use distinct element IDs if the target widget itself has interactive elements and you want to distinguish them from dialog elements. Events deliberately share the same event types and target identity.
 Whole-dialog presses and display-activated/tick events are not emitted. If you tested the unreleased Show details action, remove it and add Show modal again: its action ID changed from `show-details` to `show-modal`, and its view ID is now `custom-button-modal`. Existing dialogs should be closed and reopened.
 Lengths use the dialog's available area; a layout designed for a square tile may need different proportions.
-The dialog has a transparent stack root, without tile rounding or tile clipping. Set a background in XML if needed. Text shadow outside an explicit native button context remains subject to the host's text-shadow limitation. Scrolling and dedicated modal-layout editing are not part of this proof of concept.
+The dialog has a transparent root, without tile rounding or tile clipping. Set a background in XML if needed. Text shadow outside an explicit native button context remains subject to the host's text-shadow limitation. Dedicated modal-layout editing is not yet available.
+
+## Vertical scrolling
+
+Since 0.43.0, use `<scroll id="page" direction="vertical">` in XML to let content grow beyond a bounded area. Scroll works in both Custom Button widgets and modals and appears under Layout in the GUI editor. The Basic Scroll template provides an example. Show modal has no scrolling checkbox. This uses the host's native vertical `UiList`, also used by the weather modal; the host handles the scrollbar, mouse wheel and touch gestures. Use direction="horizontal" for horizontal scrolling; see the example below.
+
+Use a vertical stack for a page of sections. Text and ordinary vertical stacks have natural heights. `fill="true"` alone cannot give a chart, layer or control a height on an unbounded vertical axis: give a section inside the stack `mainSize`, or wrap it in a modifier with `height`. Percentages still use the modal's fixed drawing basis (its smaller dimension), not the entire page height. A `mainSize` on the single root directly inside the list is not used by the host list; put sized sections inside the root stack instead. Clipping modifiers or bordered button containers can still clip their own contents.
+
+For a scroll check, paste the following XML (initial JSON can remain `{}`). The four sections total more than a landscape modal's height. Scroll to the last section and test its button using element ID `bottomButton`.
+
+```xml
+<scroll id="page" padding="4%">
+<stack id="content" gap="3%">
+  <stack id="first" mainSize="60%" background="#243447" padding="4%">
+    <text id="firstTitle" size="8%">Top of the page</text>
+    <text id="firstText" size="5%">Scroll down to see the other sections.</text>
+  </stack>
+  <stack id="second" mainSize="60%" background="#344724" padding="4%">
+    <text id="secondTitle" size="8%">Section 2</text>
+  </stack>
+  <stack id="third" mainSize="60%" background="#473424" padding="4%">
+    <text id="thirdTitle" size="8%">Section 3</text>
+  </stack>
+  <stack id="last" mainSize="60%" background="#382447" padding="4%">
+    <text id="lastTitle" size="8%">End of the page</text>
+    <stack id="bottomButton" interactive="true" background="#335577" padding="3%">
+      <text id="buttonLabel" size="6%">Tap here</text>
+    </stack>
+  </stack>
+</stack>
+</scroll>
+```
+
+Ordinary value patches keep the list root mounted so the host retains the scroll position. Closing/reopening the modal creates a new view; scroll position is not saved across sessions. Mouse/touch behaviour must be verified on the actual client.
+
+To scroll only part of a widget, put a scroll next to other elements in a stack and give the scroll `mainSize="60%"`, or let it fill the remaining height. A scroll needs a bounded height; a scroll nested inside another scroll needs a modifier with an explicit height or a bounded parent stack. Children directly in a scroll use natural height; put `mainSize`-sized sections inside a stack as in the example. To avoid whole-widget press effects during scrolling, disable Whole button interaction when only child controls should be actionable. Touch drags over sliders or trackpads may be captured by those controls; leave non-interactive space for scrolling.
+
+## Horizontal scrolling
+
+Select Horizontal in the GUI Direction field, or set `direction="horizontal"`. Scrolling then uses natural widths instead of natural heights. For sized cards, put a horizontal stack inside the scroll and assign `mainSize` to that stack's children (their width). Alternatively, give a direct child a modifier with an explicit `width`. Changing only the scroll direction does not change the layout direction of nested stacks.
+
+```xml
+<scroll id="carousel" direction="horizontal" padding="4%">
+  <stack id="cards" direction="horizontal" gap="3%">
+    <stack id="firstCard" mainSize="75%" background="#243447" padding="4%">
+      <text id="firstCaption" size="12%">First</text>
+    </stack>
+    <stack id="secondCard" mainSize="75%" background="#344724" padding="4%">
+      <text id="secondCaption" size="12%">Second</text>
+    </stack>
+    <stack id="lastCard" mainSize="75%" background="#382447" padding="4%" interactive="true">
+      <text id="lastCaption" size="12%">Tap here</text>
+    </stack>
+  </stack>
+</scroll>
+```
+
+The three cards exceed a square widget's width. A very wide modal may fit all three; add more cards to check scrolling there. Use a horizontal touch swipe, trackpad gesture or the horizontal scrollbar. The plugin does not convert a vertical mouse-wheel gesture into horizontal movement; that behaviour depends on the client/browser. Controls that capture horizontal dragging may compete with scrolling.
 
 ## Checking interaction
 

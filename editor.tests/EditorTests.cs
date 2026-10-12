@@ -200,8 +200,9 @@ public class EditorTests
             var groups = add.ContextMenu!.Items.Cast<MenuItem>().ToArray();
             Assert.That(groups.Select(g => g.Header), Is.EqualTo(new[] { "Layout", "Text and time", "Images", "Shapes", "Data display", "Controls" }));
             var entries = groups.SelectMany(g => g.Items.Cast<MenuItem>()).ToArray();
-            Assert.That(entries.Length, Is.EqualTo(28));
-            Assert.That(entries.Select(e => e.Header).Distinct().Count(), Is.EqualTo(28));
+            Assert.That(entries.Length, Is.EqualTo(29));
+            Assert.That(entries.Select(e => e.Header).Distinct().Count(), Is.EqualTo(29));
+            Assert.That(groups[0].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("↕ Scroll"));
             Assert.That(groups[2].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("▧ SVG"));
             Assert.That(groups[0].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("↻ Transform"));
             Assert.That(groups[2].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("☆ Icon"));
@@ -210,6 +211,8 @@ public class EditorTests
             var line = XElement.Parse(w.LayoutXml).Element("line")!;
             Assert.That(line.Attribute("x1")!.Value, Is.EqualTo("10%"));
             Assert.That(line.Attribute("x2")!.Value, Is.EqualTo("90%"));
+            entries.Single(e => e.Header?.ToString() == "↕ Scroll").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Flush(w);
+            Assert.That(XElement.Parse(w.LayoutXml).Descendants("scroll").Single().Attribute("direction")!.Value, Is.EqualTo("vertical"));
         }
         finally { w.HostClosed = true; w.Close(); }
     }

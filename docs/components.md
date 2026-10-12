@@ -2,6 +2,12 @@
 
 Every component requires a unique `id`. Common attributes include `fill`, `mainSize`, `visible`, `visibleWhen`, and conditional styles. `{{name}}` reads initial or received display data. Evaluate Macro Deck expressions such as `{{ vars.name }}` in an update action first.
 
+## Scroll
+
+`scroll` is a scrolling container, available in widgets and modals since 0.43.0. Add it under Layout in the GUI editor or start with the Basic Scroll template. It accepts child components, `direction="vertical"` (default) or `direction="horizontal"`, `gap`, `padding`, `background`, and common layout/visibility attributes. Its default `fill` is true. Give it a bounded viewport using a parent stack and `mainSize`, or a modifier with `width`/`height`.
+
+Direct children use natural size along the scroll axis; a direct child's `mainSize` is ignored by the native list. Wrap sized sections in a stack pointing in the same direction. See [vertical scrolling](modal.md#vertical-scrolling) and [horizontal scrolling](modal.md#horizontal-scrolling) for examples and input-gesture considerations.
+
 ## Arc gauge
 
 ```xml

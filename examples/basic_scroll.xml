@@ -1,0 +1,16 @@
+<scroll id="page" direction="vertical" padding="4%" gap="3%">
+  <stack id="content" gap="3%">
+    <stack id="first" mainSize="70%" background="#243447" padding="4%">
+      <text id="heading" size="12%">First</text>
+      <stack id="bottomButton" interactive="true" background="#335577" padding="3%">
+        <text id="buttonLabel" size="8%">Tap here</text>
+      </stack>
+    </stack>
+    <stack id="second" mainSize="70%" background="#344724" padding="4%">
+      <text id="middle" size="12%">Second</text>
+    </stack>
+    <stack id="last" mainSize="70%" background="#382447" padding="4%">
+      <text id="end" size="12%">Third</text>
+    </stack>
+  </stack>
+</scroll>

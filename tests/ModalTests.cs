@@ -45,8 +45,9 @@ public class ModalTests
         await using var session = new ButtonSession(ButtonTests.Surface(), new("demo", ShowModalAction.SampleLayout, "{\"title\":\"Example\",\"value\":42}"), null);
         Assert.That(ButtonTests.Text(session.BuildTree(), ".valueLabel"), Is.EqualTo("42%"));
     }
-    [Test]
-    public async Task DialogPublishesPressAndSliderEventsUsingItsTarget()
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task DialogPublishesPressAndSliderEventsUsingItsTarget(bool scrolling)
     {
         var integration = new CustomButtonIntegration();
         var context = new FakeIntegrationContext();
@@ -60,13 +61,14 @@ public class ModalTests
                 [UiDialogSurfaceAttributes.Data] = JsonSerializer.SerializeToElement(new
                 {
                     channel = "details", eventWidgetId = "target-widget", initialValues = "{\"value\":42}",
-                    layout = "<stack id='details'><stack id='tap' interactive='true'><text id='label'>Tap</text></stack><slider id='slider' key='value' interactive='true'/></stack>"
+                    layout = (scrolling ? "<scroll id='viewport'>" : "") + "<stack id='details'><stack id='tap' interactive='true'><text id='label'>Tap</text></stack><slider id='slider' key='value' mainSize='20%' interactive='true'/></stack>" + (scrolling ? "</scroll>" : "")
                 })
             }
         };
         await using var session = await integration.CreateSessionAsync(new() { Surface = surface, UiModelVersion = 1 }, default);
         var tree = session!.BuildTree();
         Assert.That(tree.Root.Type, Is.EqualTo("ui.stack"));
+        Assert.That(ButtonTests.Nodes(tree.Root).Any(n => n.Type == "ui.list"), Is.EqualTo(scrolling));
         var tap = ButtonTests.Nodes(tree.Root).Single(n => n.Id.EndsWith(".tap"));
         var slider = ButtonTests.Nodes(tree.Root).Single(n => n.Type == "ui.slider");
         session.Dispatch(new() { NodeId = tap.Id, Name = "press" });
@@ -75,6 +77,9 @@ public class ModalTests
         foreach (var item in context.Events.Published)
             Assert.That(item.Parameters!.Value.GetProperty("widgetId").GetString(), Is.EqualTo("target-widget"));
         Assert.That(context.Events.Published.Last().Parameters!.Value.GetProperty("value").GetDouble(), Is.EqualTo(75));
+        ((ButtonSession)session).Refresh();
+        Assert.That(session.DrainPatches().SelectMany(p => p.Operations).Any(op => op.Op == "replace-node" && op.NodeId == tree.Root.Id), Is.False,
+            "Value changes must not replace the scrolling root and reset its client-side scroll position.");
     }
     private sealed class DialogUi : IUiInteractions
     {
@@ -101,6 +106,7 @@ public class ModalTests
         });
         Assert.That(result.Status, Is.EqualTo(ActionResultStatus.Succeeded));
         Assert.That(ui.Client, Is.EqualTo("client"));
+        Assert.That(action.Parameters.Any(p => p.Name == "verticalScrolling"), Is.False);
         Assert.That(ui.Modal!.Data!["eventWidgetId"].GetString(), Is.EqualTo("source-widget"));
         Assert.That(action.Parameters.Where(p => p.Name is "layout" or "initialValues").All(p => p.LiteralOnly), Is.True);
         var integration = new CustomButtonIntegration();
