@@ -168,7 +168,7 @@ public sealed class ConfigurationSession : IUiSession
                             catch (FormatException e) { flowMessage.Value = e.Message; }
                         })] },
                         new UiProse { Key = "flowHelp", Text = TextCatalog.Reference("Configure actions for each event and save before testing. Check event targets after duplicating a button.") },
-                        new UiProse { Key = "controlHelp", Text = TextCatalog.Reference("Select a target, then choose + Add event. Display activated, Display update and Variable changed are under Other (updates and variables). Use Display activated to read current values when the saved button becomes visible. Select the watched variable after adding Variable changed.") },
+                        new UiProse { Key = "controlHelp", Text = TextCatalog.Reference("Select a target, then choose + Add event. Modal opened, Display activated, Display update and Variable changed are under Other (updates and variables). Use Display activated to read current values when the saved button becomes visible. Select the watched variable after adding Variable changed.") },
                         new UiConfigStack { Key = "eventShortcuts", Direction = "horizontal", Wrap = true, Children =
                         [
                             new UiChoiceInput { Key = "inputTarget", Label = TextCatalog.Reference("Input target"), HideLabel = true, Transient = true, LiteralOnly = true,
@@ -179,7 +179,7 @@ public sealed class ConfigurationSession : IUiSession
                             new UiChoiceInput { Key = "addInputEvent", Label = TextCatalog.Reference("Add event"), HideLabel = true, Transient = true, LiteralOnly = true,
                                 Options = UiValue.From<IReadOnlyList<UiOption>>(() => new[] { new UiOption { Value = "", Label = TextCatalog.Reference("+ Add event") } }
                                     .Concat(inputTarget.Value == "$other"
-                                        ? new[] { new UiOption { Value = ButtonEvents.Activated, Label = TextCatalog.Reference("Display activated") }, new UiOption { Value = ButtonEvents.Tick, Label = TextCatalog.Reference("Display update (1 second)") }, new UiOption { Value = "variable-changed", Label = TextCatalog.Reference("Variable changed") } }
+                                        ? new[] { new UiOption { Value = ButtonEvents.ModalOpened, Label = TextCatalog.Reference("Modal opened") }, new UiOption { Value = ButtonEvents.Activated, Label = TextCatalog.Reference("Display activated") }, new UiOption { Value = ButtonEvents.Tick, Label = TextCatalog.Reference("Display update (1 second)") }, new UiOption { Value = "variable-changed", Label = TextCatalog.Reference("Variable changed") } }
                                         : ButtonEvents.InputEvents(layout.Value, inputTarget.Value).Select(d => new UiOption { Value = d.Id, Label = d.Name })).ToArray()),
                                 Binding = Bind.Custom(() => "", id =>
                                 {
@@ -187,7 +187,7 @@ public sealed class ConfigurationSession : IUiSession
                                     if (inputTarget.Value == "$other")
                                     {
                                         if (id == ButtonEvents.Tick) AddEvent(() => ButtonEvents.AddDisplayTick(flows.Value, widgetId));
-                                        else if (id == ButtonEvents.Activated) AddEvent(() => ButtonEvents.AddElementEvent(flows.Value, widgetId, id, null, ""));
+                                        else if (id is ButtonEvents.Activated or ButtonEvents.ModalOpened) AddEvent(() => ButtonEvents.AddElementEvent(flows.Value, widgetId, id, null, ""));
                                         else if (id == "variable-changed") AddEvent(() => ButtonEvents.AddVariableChanged(flows.Value, widgetId));
                                     }
                                     else AddEvent(() => ButtonEvents.AddElementEvent(flows.Value, widgetId, id, inputTarget.Value, layout.Value));
@@ -213,7 +213,7 @@ public sealed class ConfigurationSession : IUiSession
                             {
                                 try
                                 {
-                                    var normalized = ActionEditorDefaults.ApplyChannel(flows.Value, ButtonEvents.Normalize(value, widgetId), channel.Value);
+                                    var normalized = ActionEditorDefaults.ApplyChannel(flows.Value, ButtonEvents.Normalize(value, widgetId), channel.Value, widgetId);
                                     // The editor updates optimistically. Even if our canonical value
                                     // is unchanged, it must receive the corrected value again.
                                     echoFlows |= normalized.GetRawText() != value.GetRawText();

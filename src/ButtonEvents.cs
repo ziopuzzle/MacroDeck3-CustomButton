@@ -10,6 +10,7 @@ public static class ButtonEvents
 {
     public const string Tick = "display-tick";
     public const string Activated = "display-activated";
+    public const string ModalOpened = "modal-opened";
     public static readonly IReadOnlyDictionary<string, string> TriggerEvents = new Dictionary<string, string>
     {
         ["onShortPress"] = "short-press", ["onLongPress"] = "long-press",
@@ -17,7 +18,7 @@ public static class ButtonEvents
     };
     private static readonly IReadOnlyDictionary<string, string> Names = new Dictionary<string, string>
     {
-        ["short-press"] = "Short press", ["long-press"] = "Long press", ["touch-start"] = "Touch start", ["touch-end"] = "Touch end", [Tick] = "Display update (1 second)", [Activated] = "Display activated"
+        ["short-press"] = "Short press", ["long-press"] = "Long press", ["touch-start"] = "Touch start", ["touch-end"] = "Touch end", [Tick] = "Display update (1 second)", [Activated] = "Display activated", [ModalOpened] = "Modal opened"
     };
     private static readonly IReadOnlyDictionary<string, string> ControlNames = new Dictionary<string, string>
     {
@@ -27,11 +28,14 @@ public static class ButtonEvents
     };
     public static IReadOnlyList<EventDefinition> Definitions { get; } = Names.Select(p => new EventDefinition
     {
-        Id = p.Key, Name = TextCatalog.Reference(p.Value), Description = TextCatalog.Reference(p.Key == Activated
+        Id = p.Key, Name = TextCatalog.Reference(p.Value), Description = TextCatalog.Reference(p.Key == ModalOpened
+            ? "Initialize channel data when a modal session opens. Uses the modal's Event target widget and includes its Channel."
+            : p.Key == Activated
             ? "Read current values when the saved button becomes visible. Shared across clients; reopening within 2 seconds counts as the same activation. Does not run for editor previews."
             : "Runs while the target button is displayed or interacted with. Check the target after duplicating a button."),
         ConfigurationParameters = [ActionParameter.WidgetTarget("widgetId", new WidgetTargetOptions { Label = TextCatalog.Reference("Target widget"), Required = true, AllowSelf = false })],
-        PayloadParameters = [ActionParameter.Text("widgetId", label: TextCatalog.Reference("Target widget ID"), required: true)]
+        PayloadParameters = new[] { ActionParameter.Text("widgetId", label: TextCatalog.Reference("Target widget ID"), required: true) }
+            .Concat(p.Key == ModalOpened ? new[] { ActionParameter.Text("channel", label: TextCatalog.Reference("Channel"), required: true) } : []).ToArray()
     }).Concat(ControlNames.Select(p => new EventDefinition
     {
         Id = ControlEventId(p.Key), Name = TextCatalog.Reference(p.Value),
@@ -132,7 +136,7 @@ public static class ButtonEvents
 
     public static IReadOnlyList<EventDefinition> InputEvents(string layout, string? elementId)
     {
-        if (string.IsNullOrEmpty(elementId)) return Definitions.Where(d => Names.ContainsKey(d.Id) && d.Id is not (Tick or Activated)).ToArray();
+        if (string.IsNullOrEmpty(elementId)) return Definitions.Where(d => Names.ContainsKey(d.Id) && d.Id is not (Tick or Activated or ModalOpened)).ToArray();
         var target = InputTargets(layout).FirstOrDefault(t => t.Id == elementId);
         return target == null ? [] : Definitions.Where(d => target.Kind == "trackpad" ? d.Id is "trackpad-start" or "trackpad-changing" or "trackpad-end" : target.Kind is "slider" or "dial"
             ? d.Id is "element-adjust" or "element-change" : target.Kind is "toggle" or "segmented" ? d.Id == "element-change" : d.Id is "element-press" or "element-long-press" or "element-press-start" or "element-press-end").ToArray();

@@ -22,7 +22,7 @@ public static class ActionEditorDefaults
         return JsonSerializer.SerializeToElement(flows);
     }
 
-    public static JsonElement ApplyChannel(JsonElement previous, JsonElement next, string channel)
+    public static JsonElement ApplyChannel(JsonElement previous, JsonElement next, string channel, string? widgetId = null)
     {
         var existing = Blocks(JsonNode.Parse(previous.GetRawText())!.AsArray())
             .Select(b => b["id"]?.ToString()).Where(id => !string.IsNullOrEmpty(id)).ToHashSet(StringComparer.Ordinal);
@@ -31,13 +31,15 @@ public static class ActionEditorDefaults
         {
             if (block["id"]?.ToString() is not { Length: > 0 } id || existing.Contains(id)
                 || block["integrationId"]?.ToString() != CustomButtonIntegration.PluginId
-                || block["actionId"]?.ToString() is not ("set-value" or "set-data")) continue;
+                || block["actionId"]?.ToString() is not ("set-value" or "set-data" or "show-modal")) continue;
+            var defaultChannel = block["actionId"]?.ToString() == "show-modal" ? widgetId : channel;
+            if (string.IsNullOrWhiteSpace(defaultChannel)) continue;
             if (block["parameters"] is not JsonArray parameters) continue;
             foreach (var parameter in parameters.OfType<JsonObject>().Where(p => p["name"]?.ToString() == "channel"))
             {
                 // Preserve explicitly configured channels on pasted or duplicated actions.
                 if (parameter["value"]?.ToString() is not (null or "" or "demo")) continue;
-                parameter["value"] = channel;
+                parameter["value"] = defaultChannel;
             }
         }
         return JsonSerializer.SerializeToElement(flows);

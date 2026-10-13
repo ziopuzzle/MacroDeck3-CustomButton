@@ -67,15 +67,17 @@ public class DisplayActivationTests
         Assert.That(context.Events.Published.Count(e => e.EventId == ButtonEvents.Activated), Is.EqualTo(count));
         await integration.ShutdownAsync();
     }
-    [Test] public async Task ShortcutAddsOneEditableFlowWithConcreteTarget()
+    [TestCase(ButtonEvents.Activated)]
+    [TestCase(ButtonEvents.ModalOpened)]
+    public async Task ShortcutAddsOneEditableFlowWithConcreteTarget(string eventId)
     {
         await using var session = new ConfigurationSession(ButtonTests.Surface("config"), TestLayouts.Sample);
         session.Dispatch(new UiEvent { NodeId = "inputTarget", Name = "change", Data = JsonSerializer.SerializeToElement("$other") });
-        for (var i = 0; i < 2; i++) session.Dispatch(new UiEvent { NodeId = "addInputEvent", Name = "change", Data = JsonSerializer.SerializeToElement(ButtonEvents.Activated) });
+        for (var i = 0; i < 2; i++) session.Dispatch(new UiEvent { NodeId = "addInputEvent", Name = "change", Data = JsonSerializer.SerializeToElement(eventId) });
         var flows = ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Id == "flows").Properties["value"];
         Assert.That(flows.GetArrayLength(), Is.EqualTo(1));
         var binding = flows[0].GetProperty("event");
-        Assert.That(binding.GetProperty("eventId").GetString(), Is.EqualTo(ButtonEvents.Activated));
+        Assert.That(binding.GetProperty("eventId").GetString(), Is.EqualTo(eventId));
         Assert.That(binding.GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("test-widget"));
     }
 }

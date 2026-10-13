@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.43.1 — modal initialization
+
+- Simplify the default modal XML to a vertical scroll containing static text. New Show modal actions inside Custom Button use the widget ID as their Channel; other widget types keep demo.
+
+- Add Modal opened with target widget and Channel payloads, including an event shortcut under Other. Initialize data even if missing values prevent the first render; publish once per modal session.
+- Default new Show modal actions to empty initial JSON and explain fallback precedence. Shared Channel values are preserved. Existing actions retain their configured initial JSON.
+- Document initialization from host variables, live recovery and the option to prepare data before opening a modal.
+
 ## 0.43.0 — scroll containers
 
 - Add the scroll XML container for widgets and modals, using the host's native UiList. Support vertical (default) and horizontal directions, nested content, live bindings and child input events.

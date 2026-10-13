@@ -63,14 +63,16 @@ public sealed class ButtonSession : IUiSession
     private string? lastRenderFailure;
     private Dictionary<string, JsonElement> initial = new();
     private string? configurationError;
+    private Action? onOpened;
 
     public ButtonSession(UiSurface surface, ButtonSettings settings, DataHub? hub, Func<CancellationToken, Task<ActionResult>>? press = null,
         Func<CancellationToken, Task<ActionResult>>? update = null, Func<string?>? previewSelection = null,
         Func<SharedScriptUpdates.Lease>? startSharedUpdates = null,
         Action<string>? onWidgetEvent = null, bool sampleHistory = false,
         Func<SharedScriptUpdates.Lease>? startDisplayTicks = null, Action<ControlInput>? onControlInput = null, Action<string>? diagnostic = null,
-        AnimationContinuity? continuity = null, DisplayActivation.Lease? activation = null, SessionImages? images = null, Action<string?>? reportError = null)
+        AnimationContinuity? continuity = null, DisplayActivation.Lease? activation = null, SessionImages? images = null, Action<string?>? reportError = null, Action? onOpened = null)
     {
+        this.onOpened = onOpened;
         this.diagnostic = diagnostic; this.images = images; this.reportError = reportError;
         this.activation = activation;
         this.previewSelection = previewSelection;
@@ -113,6 +115,8 @@ public sealed class ButtonSession : IUiSession
     private void Trace(string message) => diagnostic?.Invoke($"Custom Button view {diagnosticId} ({settings.Channel}, {surface.Kind}): {message}");
     public UiTree BuildTree()
     {
+        Action? opened;
+        UiTree result;
         lock (gate)
         {
             // A snapshot becomes the transport baseline. Do not subsequently emit a patch
@@ -121,8 +125,14 @@ public sealed class ButtonSession : IUiSession
             pending = null;
             pendingRoot = null;
             if (!disposed && configurationError == null && lastRenderFailure == null) activation?.Ready();
-            return tree;
+            result = tree;
+            opened = disposed ? null : onOpened;
+            onOpened = null;
         }
+        // Initialization must also run when missing channel values caused a render error.
+        // Publish outside the session lock; actions may immediately update the channel.
+        opened?.Invoke();
+        return result;
     }
     public IReadOnlyList<UiPatch> DrainPatches()
     {

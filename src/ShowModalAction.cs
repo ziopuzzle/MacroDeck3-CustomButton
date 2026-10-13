@@ -11,7 +11,7 @@ namespace Ziopuzzle.CustomButton;
 public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null) : IActionDefinition
 {
     public const string ViewId = "custom-button-modal";
-    public const string SampleLayout = "<stack id=\"details\" padding=\"4%\" gap=\"3%\"><text id=\"heading\" size=\"8%\">{{title}}</text><text id=\"valueLabel\" size=\"12%\">{{value}}%</text><bar id=\"level\" value=\"{{value}}\" thickness=\"4%\" /></stack>";
+    public const string SampleLayout = "<scroll id=\"content\" direction=\"vertical\" padding=\"4%\">\n  <text id=\"text\" size=\"8%\">Example</text>\n</scroll>";
     public string Id => "show-modal";
     public LocalizedText Name => TextCatalog.Reference("Show modal");
     public LocalizedText Description => TextCatalog.Reference("Display XML and channel data in a client dialog. Select a destination device when running from an event.");
@@ -23,11 +23,12 @@ public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null) : I
         ActionParameter.Text("channel", label: TextCatalog.Reference("Channel"), defaultValue: "demo", required: true),
         ActionParameter.WidgetTarget("eventWidgetId", new WidgetTargetOptions { Label = TextCatalog.Reference("Event target widget"), Description = TextCatalog.Reference("Dialog element events use this widget ID. Defaults to the button running this action."), AllowSelf = true }),
         LiteralCode("layout", "xml", "Drawing XML", SampleLayout),
-        LiteralCode("initialValues", "json", "Initial data JSON", "{\"title\":\"Example\",\"value\":42}")
+        LiteralCode("initialValues", "json", "Initial data JSON", "{}")
     ];
     private static ActionParameter LiteralCode(string name, string language, string label, string value) => new()
     {
         Name = name, Type = ActionParameterType.Code, Language = language,
+        Description = name == "initialValues" ? TextCatalog.Reference("Fallback values for this modal only. Use {} to disable. Existing Channel values take priority; this does not reset the Channel.") : null,
         Label = TextCatalog.Reference(label), DefaultValue = value, Required = true, LiteralOnly = true
     };
     public IActionExecutor CreateExecutor() => new Executor(navigator);

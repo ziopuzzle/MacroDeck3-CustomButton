@@ -29,6 +29,19 @@ public class ActionEditorDefaultsTests
     }
 
     [Test]
+    public async Task NewModalUsesWidgetIdAndPreservesExplicitOrEditedChannels()
+    {
+        await using var session = new ConfigurationSession(ButtonTests.Surface("config"), TestLayouts.Sample with { Channel = "music", Flows = ButtonEvents.Empty });
+        JsonElement Current() => ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Id == "flows").Properties["value"];
+        session.Dispatch(new UiEvent { NodeId = "flows", Name = "change", Data = Flow(action: "show-modal") });
+        Assert.That(Channel(Current()), Is.EqualTo("test-widget"));
+        session.Dispatch(new UiEvent { NodeId = "flows", Name = "change", Data = Flow(action: "show-modal") });
+        Assert.That(Channel(Current()), Is.EqualTo("demo"));
+        Assert.That(Channel(ActionEditorDefaults.ApplyChannel(ButtonEvents.Empty, Flow("other", action: "show-modal"), "music", "widget")), Is.EqualTo("other"));
+        Assert.That(Channel(ActionEditorDefaults.ApplyChannel(ButtonEvents.Empty, Flow(action: "show-modal"), "music")), Is.EqualTo("demo"));
+    }
+
+    [Test]
     public void PreservesExistingAndExplicitChannelsAndOtherProviders()
     {
         Assert.That(Channel(ActionEditorDefaults.ApplyChannel(Flow(), Flow(), "music")), Is.EqualTo("demo"));

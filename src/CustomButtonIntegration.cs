@@ -70,6 +70,9 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
             var modalSettings = ButtonSettings.Read(modalData)
                 with { WholeButtonInteraction = false };
             return Task.FromResult<IUiSession?>(new ButtonSession(surface, modalSettings, Hub,
+                onOpened: context?.Events is { } openedEvents && !string.IsNullOrWhiteSpace(eventWidgetId)
+                    ? () => openedEvents.Publish(ButtonEvents.ModalOpened, new Dictionary<string, object?>
+                    { ["widgetId"] = eventWidgetId, ["channel"] = modalSettings.Channel }) : null,
                 onControlInput: context?.Events is { } modalEvents && !string.IsNullOrWhiteSpace(eventWidgetId)
                     ? input => PublishControlEvent(modalEvents, eventWidgetId, input) : null,
                 images: context != null ? new SessionImages(context.UiResources, ImageHttp,

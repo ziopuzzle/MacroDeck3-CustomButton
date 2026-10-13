@@ -9,6 +9,61 @@ namespace Ziopuzzle.CustomButton.Tests;
 
 public class ModalTests
 {
+    [Test]
+    public async Task ModalInitializationRunsOncePerSessionEvenWhenRenderingFails()
+    {
+        var integration = new CustomButtonIntegration();
+        var host = new FakeIntegrationContext();
+        await integration.InitializeAsync(host);
+        var surface = ButtonTests.Surface() with
+        {
+            Kind = UiSurfaceKinds.Dialog,
+            Attributes = new Dictionary<string, JsonElement>
+            {
+                [UiDialogSurfaceAttributes.ViewId] = JsonSerializer.SerializeToElement(ShowModalAction.ViewId),
+                [UiDialogSurfaceAttributes.Data] = JsonSerializer.SerializeToElement(new
+                {
+                    channel = "modal-init", eventWidgetId = "owner", initialValues = "{}",
+                    layout = "<stack id='body'><rect id='shape' color='{{color}}'/><text id='result'>{{value}}</text></stack>"
+                })
+            }
+        };
+        for (var opening = 1; opening <= 2; opening++)
+        {
+            await using var session = (ButtonSession)(await integration.CreateSessionAsync(new() { Surface = surface, UiModelVersion = 1 }, default))!;
+            var first = session.BuildTree();
+            if (opening == 1)
+                Assert.That(ButtonTests.Nodes(first.Root).Any(n => n.Id.EndsWith(".errorTitle")), Is.True);
+            session.BuildTree();
+            var events = host.Events.Published.Where(e => e.EventId == ButtonEvents.ModalOpened).ToArray();
+            Assert.That(events.Length, Is.EqualTo(opening));
+            Assert.That(events.Last().Parameters!.Value.GetProperty("channel").GetString(), Is.EqualTo("modal-init"));
+            Assert.That(events.Last().Parameters!.Value.GetProperty("widgetId").GetString(), Is.EqualTo("owner"));
+            integration.Hub.Update("modal-init", DataHub.ParseValues("{\"value\":73,\"color\":\"#ffffff\"}"));
+            session.Refresh();
+            Assert.That(ButtonTests.Text(session.BuildTree(), ".result"), Is.EqualTo("73"));
+            Assert.That(host.Events.Published.Count, Is.EqualTo(opening));
+        }
+        var definition = ButtonEvents.Definitions.Single(e => e.Id == ButtonEvents.ModalOpened);
+        Assert.That(definition.PayloadParameters.Select(p => p.Name), Is.EquivalentTo(new[] { "widgetId", "channel" }));
+        var flows = ButtonEvents.AddElementEvent(ButtonEvents.Empty, "owner", ButtonEvents.ModalOpened, null, "");
+        Assert.That(flows[0].GetProperty("event").GetProperty("eventId").GetString(), Is.EqualTo(ButtonEvents.ModalOpened));
+    }
+
+    [Test]
+    public async Task InitialValuesAreLocalFallbacksAndNeverResetSharedChannel()
+    {
+        var hub = new DataHub();
+        hub.Update("shared", DataHub.ParseValues("{\"value\":73,\"color\":\"#ffffff\"}"));
+        foreach (var initial in new[] { "{}", "{\"value\":42}" })
+        {
+            await using var session = new ButtonSession(ButtonTests.Surface() with { Kind = UiSurfaceKinds.Dialog },
+                new("shared", "<text id='value'>{{value}}</text>", initial), hub);
+            Assert.That(ButtonTests.Text(session.BuildTree(), ".value"), Is.EqualTo("73"));
+            Assert.That(hub.Snapshot("shared").Values["value"].GetInt32(), Is.EqualTo(73));
+        }
+    }
+
     [TestCase(null)]
     [TestCase("other-client")]
     public async Task SelectedDeviceWorksWithoutOriginAndOverridesOrigin(string? origin)
@@ -42,8 +97,9 @@ public class ModalTests
     [Test]
     public async Task SampleRendersWithoutMissingIds()
     {
-        await using var session = new ButtonSession(ButtonTests.Surface(), new("demo", ShowModalAction.SampleLayout, "{\"title\":\"Example\",\"value\":42}"), null);
-        Assert.That(ButtonTests.Text(session.BuildTree(), ".valueLabel"), Is.EqualTo("42%"));
+        await using var session = new ButtonSession(ButtonTests.Surface(), new("demo", ShowModalAction.SampleLayout, "{}"), null);
+        Assert.That(ButtonTests.Text(session.BuildTree(), ".text"), Is.EqualTo("Example"));
+        Assert.That(ButtonTests.Nodes(session.BuildTree().Root).Any(n => n.Type == "ui.list"), Is.True);
     }
     [TestCase(false)]
     [TestCase(true)]
@@ -73,7 +129,7 @@ public class ModalTests
         var slider = ButtonTests.Nodes(tree.Root).Single(n => n.Type == "ui.slider");
         session.Dispatch(new() { NodeId = tap.Id, Name = "press" });
         session.Dispatch(new() { NodeId = slider.Id, Name = "change", Data = JsonSerializer.SerializeToElement(.75) });
-        Assert.That(context.Events.Published.Select(e => e.EventId), Is.EqualTo(new[] { "element-press", "element-change" }));
+        Assert.That(context.Events.Published.Select(e => e.EventId), Is.EqualTo(new[] { ButtonEvents.ModalOpened, "element-press", "element-change" }));
         foreach (var item in context.Events.Published)
             Assert.That(item.Parameters!.Value.GetProperty("widgetId").GetString(), Is.EqualTo("target-widget"));
         Assert.That(context.Events.Published.Last().Parameters!.Value.GetProperty("value").GetDouble(), Is.EqualTo(75));

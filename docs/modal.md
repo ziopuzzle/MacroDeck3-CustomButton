@@ -5,9 +5,9 @@ This proves that the plugin can serve arbitrary XML content in a native Macro De
 It is not yet a dedicated modal-view editor. Custom Button events can open it when a destination device is selected.
 
 1. Create a **standard Macro Deck button** and add Custom Button's **Show modal** to its Short Press actions.
-2. Leave the sample XML and initial JSON in place for the first test.
-3. Save and press the button on a connected graphical client. A native dialog should show Example and 42%.
-4. Replace the XML/JSON with your own content, or set Channel to an existing Custom Button channel.
+2. Leave the sample XML and empty initial JSON (`{}`) in place for the first test.
+3. Save and press the button on a connected graphical client. A native dialog should show Example inside a vertical scroll container.
+4. Replace the XML/JSON with your own content, or set Channel to an existing Custom Button channel. Newly added Show modal actions inside Custom Button default to that widget ID (even if its sidebar Channel is customized); other widget types retain `demo`. Existing or explicitly configured action channels are preserved.
    Values already on that channel override initial JSON; subsequent Set display value/data actions update the open dialog.
 5. To open it from a **Custom Button event**, add the same action there and select **Destination device**. The list uses the host's standard device picker source. A selected device takes precedence over the press origin. Its current connection is resolved on each execution, including after reconnection; an offline target fails without choosing another device.
 
@@ -15,9 +15,19 @@ XML and initial JSON are literal action parameters: `{{value}}` is expanded by C
 No channel data is overwritten when opening the dialog. Close it with the host's close button.
 Interactive elements publish the existing Custom Button element events. **Event target widget** defaults to the button running Show modal; select another widget explicitly if needed. In the receiving event, select the same Target widget and the element's XML ID. Slider/control events include value, previousValue and other normal payload fields. Input also updates the dialog's Channel, just as it does in a widget.
 Use distinct element IDs if the target widget itself has interactive elements and you want to distinguish them from dialog elements. Events deliberately share the same event types and target identity.
-Whole-dialog presses and display-activated/tick events are not emitted. If you tested the unreleased Show details action, remove it and add Show modal again: its action ID changed from `show-details` to `show-modal`, and its view ID is now `custom-button-modal`. Existing dialogs should be closed and reopened.
+Whole-dialog presses and display-activated/tick events are not emitted. Modal opened is a separate initialization event (see below). If you tested the unreleased Show details action, remove it and add Show modal again: its action ID changed from `show-details` to `show-modal`, and its view ID is now `custom-button-modal`. Existing dialogs should be closed and reopened.
 Lengths use the dialog's available area; a layout designed for a square tile may need different proportions.
 The dialog has a transparent root, without tile rounding or tile clipping. Set a background in XML if needed. Text shadow outside an explicit native button context remains subject to the host's text-shadow limitation. Dedicated modal-layout editing is not yet available.
+
+## Initial data and Modal opened
+
+Initial data JSON supplies local fallback values only: values already written to the Channel take priority. Opening a modal never writes its initial JSON into the shared Channel. Use `{}` (the default for new actions) to disable fallback values. A widget's own initial JSON is local to that widget and is not automatically shared with the modal.
+
+Add **Modal opened** under **Other (updates and variables)** in the target Custom Button's event shortcuts, or through the host event menu. Set Target widget to the same widget as the Show modal action's Event target widget. The event exposes `widgetId` and `channel`. Use the action editor's event-value picker to select Channel for Set display value(s), then read host variables through the usual variable picker.
+
+The event runs once when the host requests the first tree for each modal session, including when missing values cause a rendering error. Channel updates then refresh the open modal. Snapshot requests and data refreshes within the same session do not repeat the event; closing and reopening creates a new session. A host session replacement also counts as a new session, so initialization actions should be safe to repeat. No event is emitted without an Event target widget. The target widget's event flow must be active in the host, as with other modal element events.
+
+Initialization is asynchronous: initial fallback values or a missing-data error can briefly appear before the actions finish. To avoid this, update the Channel in the action sequence before Show modal. Do not open the same modal from its Modal opened handler, which would create an opening loop.
 
 ## Vertical scrolling
 
