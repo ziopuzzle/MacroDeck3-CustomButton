@@ -35,6 +35,7 @@ public sealed class LayoutRenderer
         "slider" => "value key fallback min max step direction color thickness interactive",
         "dial" => "value key fallback min max step startAngle endAngle color thickness interactive",
         "toggle" => "value key size color interactive",
+        "text-field" => "value key placeholder size interactive",
         "segmented" => "value key color interactive",
         "trackpad" => "keyX keyY leftValue rightValue topValue bottomValue stepX stepY color background interactive showCursorWhileTouching",
         "rect" => "coordinates x y width height color corner cornerRadius strokeColor strokeWidth gradient endColor gradientAngle gradientX gradientY",
@@ -219,7 +220,7 @@ public sealed class LayoutRenderer
         }
         string EndColor() => Color("endColor", colors["color"].Hex);
         var key = (string)node.Attribute("id")!;
-        var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "scroll" or "layer" or "chart" or "clock" or "trackpad" or "slider" or "dial" or "toggle" or "segmented" or "gauge" or "transform" or "modifier" or "responsive");
+        var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "scroll" or "layer" or "chart" or "clock" or "trackpad" or "slider" or "dial" or "toggle" or "segmented" or "text-field" or "gauge" or "transform" or "modifier" or "responsive");
         // Keep omitted sizes unset; a numeric ternary would turn default into an explicit zero.
         UiSize mainSize = default;
         if (attributes.ContainsKey("mainSize") && A("mainSize") != "auto") mainSize = Length("mainSize", 0);
@@ -535,6 +536,24 @@ public sealed class LayoutRenderer
                         AlphaPaint.Fade(new UiShape { Key = "surface", Fill = true, Shape = "path", Path = "M0 0 H1 V1 H0 Z", Color = padBackground.Rgb }, padBackground.Opacity),
                         AlphaPaint.Fade(new UiShape { Key = "cursor", Fill = true, Shape = "path", Path = FormattableString.Invariant($"M{lx} 0 V1 M0 {ly} H1"), StrokeColor = padColor.Rgb, StrokeWidth = .008 }, B("showCursorWhileTouching", false) && contact.Id == null ? 0 : padColor.Opacity, force: true)
                     ] });
+                case "text-field":
+                    var textKey = A("key");
+                    if (textKey.Length > 0) DataHub.ValidateName(textKey);
+                    if (B("interactive", false) && textKey.Length == 0) throw new FormatException("An interactive text field needs a key to store its value.");
+                    if (textKey.Length > 0 && attributes.ContainsKey("value")) throw new FormatException("Use either key or value, not both.");
+                    var textValue = textKey.Length > 0 ? values.TryGetValue(textKey, out var tv) ? tv.ToString() : "" : Expand(attributes.GetValueOrDefault("value", ""), values);
+                    return new UiTextField { Key = key, Fill = fill, MainSize = mainSize, Text = textValue,
+                        Placeholder = Expand(attributes.GetValueOrDefault("placeholder", ""), values), Size = Length("size", .12, 1),
+                        Events = input != null && B("interactive", false) ? new[] { UiComponentEvents.Adjust, UiComponentEvents.Change }.Select(name =>
+                            UiEventHandler.On(name, e => {
+                                if (!e.TryGetString(out var text)) return UiEventOutcome.Rejected("Expected a string.");
+                                // Match the channel payload limit before attempting a data update.
+                                if (JsonSerializer.Serialize(text).Length > 16000) return UiEventOutcome.Rejected("Text exceeds the display data limit.");
+                                try { input(new(key, name == UiComponentEvents.Adjust ? "text-changing" : "text-changed", DataKey: textKey, TextValue: text, PreviousTextValue: textValue)); }
+                                catch (FormatException error) { return UiEventOutcome.Rejected(error.Message); }
+                                textValue = text;
+                                return UiEventOutcome.Accepted;
+                            })).ToArray() : [] };
                 case "toggle":
                 case "segmented":
                     var controlKey = A("key");

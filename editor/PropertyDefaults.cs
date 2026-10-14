@@ -31,6 +31,7 @@ internal static class PropertyDefaults
         "weight" => "regular",
         "maxLines" => "1",
         "size" when type is "text" or "dynamic-text" => "18%",
+        "size" when type == "text-field" => "12%",
         "size" when type is "icon" or "toggle" => "20%",
         "size" when type is "image" or "svg" => "100%",
         "min" => "0",

@@ -71,6 +71,7 @@ public sealed class LayoutDocument
             case "bar": child.SetAttributeValue("value", "{{value}}"); break;
             case "trackpad": child.SetAttributeValue("keyX", "x"); child.SetAttributeValue("keyY", "y"); break;
             case "dial": case "toggle": case "slider": child.SetAttributeValue("key", "value"); break;
+            case "text-field": child.SetAttributeValue("key", "text"); child.SetAttributeValue("placeholder", "Enter text"); child.SetAttributeValue("interactive", "true"); break;
             case "chart": child.SetAttributeValue("key", "value"); break;
             case "clock": child.SetAttributeValue("seconds", "true"); break;
             case "rect": child.SetAttributeValue("width", "40%"); child.SetAttributeValue("height", "20%"); child.SetAttributeValue("color", "#54dfcc"); break;

@@ -13,7 +13,7 @@ public static class LayoutTemplates
         "basic_bar", "basic_range", "basic_gauge", "basic_progress",
         "basic_conditional", "basic_calculation", "basic_animation",
         "basic_scroll", "basic_modifier", "basic_transform", "basic_responsive",
-        "basic_toggle", "basic_slider", "basic_dial", "basic_segmented", "basic_trackpad",
+        "basic_toggle", "basic_slider", "basic_dial", "basic_segmented", "basic_text-field", "basic_trackpad",
         "widget_clock", "widget_history-chart", "widget_meter", "widget_nowplaying_player"
     ];
     private static int Order(string id) => Array.IndexOf(DisplayOrder, id) is var index && index >= 0 ? index : int.MaxValue;
@@ -31,7 +31,7 @@ public static class LayoutTemplates
         "basic_gradation" => "Gradients", "basic_progress" => "Playback progress", "basic_shape" => "Shapes",
         "basic_slider" => "Slider", "widget_clock" => "Clock", "widget_history-chart" => "History Graph",
         "basic_gauge" => "Arc gauge", "basic_icon" => "Built-in icons", "basic_image" => "Image sources", "basic_transform" => "Transform a group",
-        "basic_trackpad" => "Trackpad", "basic_svg" => "SVG", "basic_dial" => "Dial", "basic_toggle" => "Toggle", "basic_segmented" => "Segmented",
+        "basic_text-field" => "Text field", "basic_trackpad" => "Trackpad", "basic_svg" => "SVG", "basic_dial" => "Dial", "basic_toggle" => "Toggle", "basic_segmented" => "Segmented",
         "basic_range" => "Range and marker", "basic_dynamic-text" => "Client time and date",
         "basic_scroll" => "Scroll", "basic_modifier" => "Modifier", "basic_responsive" => "Responsive layouts",
         "widget_meter" => "Meter", "widget_nowplaying_player" => "Now playing",

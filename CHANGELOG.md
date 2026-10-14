@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.45.0 — text input
+
+- Add text-field, a native single-line text input for widgets and modals, with data-key/value binding, placeholder, size and explicit interactive mode.
+- Add Text changing and Text changed events with string value, previousValue and key payloads. Inputs update Channel data; previousValue reads the latest stored data, including external updates. Existing numeric event IDs and payloads are unchanged.
+- Add Text field to the GUI Controls category, property defaults, event shortcuts and a Basic template. Empty strings, Unicode and whitespace are preserved.
+
 ## 0.44.0 — modal GUI editing
 
 - Add a native GUI editor launcher to Show modal through the SDK action-configuration UI, independent of the owning widget type.

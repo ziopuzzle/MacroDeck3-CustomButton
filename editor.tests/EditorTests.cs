@@ -200,8 +200,8 @@ public class EditorTests
             var groups = add.ContextMenu!.Items.Cast<MenuItem>().ToArray();
             Assert.That(groups.Select(g => g.Header), Is.EqualTo(new[] { "Layout", "Text and time", "Images", "Shapes", "Data display", "Controls" }));
             var entries = groups.SelectMany(g => g.Items.Cast<MenuItem>()).ToArray();
-            Assert.That(entries.Length, Is.EqualTo(29));
-            Assert.That(entries.Select(e => e.Header).Distinct().Count(), Is.EqualTo(29));
+            Assert.That(entries.Length, Is.EqualTo(30));
+            Assert.That(entries.Select(e => e.Header).Distinct().Count(), Is.EqualTo(30));
             Assert.That(groups[0].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("↕ Scroll"));
             Assert.That(groups[2].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("▧ SVG"));
             Assert.That(groups[0].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("↻ Transform"));

@@ -1,0 +1,5 @@
+<stack id="container" padding="5%" gap="4%" justify="center">
+  <text id="heading" size="10%">Text input</text>
+  <text-field id="input" key="message" placeholder="Enter a message" size="10%" interactive="true" />
+  <text id="echo" size="8%" wrap="true" maxLines="3">{{message}}</text>
+</stack>

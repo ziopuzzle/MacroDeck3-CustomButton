@@ -190,12 +190,23 @@ A paused initial value can be `{"positionMs":42000,"durationMs":100000,"rate":0}
 
 The value is normalized and clamped to min/max (defaults 0/100). Direction defaults to horizontal; vertical and row/column aliases are accepted. Native UI draws the thumb and track. Sliders are read-only unless `interactive="true"` is set. Interactive sliders require a data `key` instead of `value`; see [controls](controls.md) for step sizes and events.
 
+## Text field
+
+```xml
+<text-field id="queryInput" key="query" placeholder="Enter a search term" size="12%" interactive="true" />
+```
+
+A native single-line input, supported in widgets and modals. `key` binds to a display-data string (missing/null becomes empty). Read-only fields may instead use `value`, including `{{...}}` bindings; do not specify both. Numeric/boolean data is shown as text and an accepted edit stores a string. `placeholder` supports bindings, and `size` defaults to 12%. Common layout, visibility and opacity properties apply. The host owns field styling; this is not a multiline text area.
+
+Without `interactive="true"`, or in a non-interactive preview, the field is read-only. An interactive field requires `key`. Add Text changing or Text changed for its element ID in the action editor. See [controls](controls.md) for payload and update timing. The Basic Text field template echoes the input without requiring any actions.
+
 ## SDK mapping
 
 | SDK component | XML support |
 | --- | --- |
 | UiStack / UiLayer | stack / layer |
 | UiTextRun | text |
+| UiTextField | text-field |
 | UiRangeBar / UiChart | bar / chart |
 | UiButton | Outer press target and stack borders |
 | UiClockDial / UiProgressBar / UiSlider | clock / progress-bar / slider |

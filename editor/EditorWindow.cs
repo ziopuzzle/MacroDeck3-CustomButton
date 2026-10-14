@@ -51,7 +51,7 @@ public sealed partial class EditorWindow : Window
         ["scroll"] = "↕ Scroll", ["stack"] = "▤ Stack", ["layer"] = "▧ Layer", ["text"] = "T Text", ["bar"] = "━ Range bar",
         ["modifier"] = "▣ Modifier", ["responsive"] = "▦ Responsive", ["variant"] = "▥ Layout variant", ["dynamic-text"] = "◷ Dynamic text",
         ["transform"] = "↻ Transform", ["icon"] = "☆ Icon", ["gauge"] = "◴ Gauge",
-        ["chart"] = "⌁ History graph", ["clock"] = "◷ Clock", ["progress-bar"] = "▷ Playback progress", ["slider"] = "● Slider", ["dial"] = "◉ Dial", ["trackpad"] = "⊕ Trackpad", ["toggle"] = "◐ Toggle", ["segmented"] = "▥ Segmented",
+        ["chart"] = "⌁ History graph", ["clock"] = "◷ Clock", ["progress-bar"] = "▷ Playback progress", ["slider"] = "● Slider", ["dial"] = "◉ Dial", ["trackpad"] = "⊕ Trackpad", ["text-field"] = "✎ Text field", ["toggle"] = "◐ Toggle", ["segmented"] = "▥ Segmented",
         ["rect"] = "▰ Rectangle", ["line"] = "╱ Line", ["polygon"] = "△ Polygon", ["sector"] = "◔ Sector",
         ["svg"] = "▧ SVG", ["image"] = "▧ Image", ["circle"] = "○ Circle", ["capsule"] = "▰ Capsule", ["path"] = "◇ Path"
     };
@@ -160,7 +160,7 @@ public sealed partial class EditorWindow : Window
                 ("Images", new[] { "icon", "image", "svg" }),
                 ("Shapes", new[] { "line", "rect", "circle", "sector", "capsule", "polygon", "path" }),
                 ("Data display", new[] { "bar", "gauge", "chart", "progress-bar" }),
-                ("Controls", new[] { "toggle", "slider", "dial", "segmented", "trackpad" }) })
+                ("Controls", new[] { "toggle", "slider", "dial", "segmented", "text-field", "trackpad" }) })
             {
                 var category = new MenuItem { Header = T(label) };
                 foreach (var type in types)

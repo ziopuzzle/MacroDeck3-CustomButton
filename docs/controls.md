@@ -91,3 +91,11 @@ The BASIC Dial, Toggle and Segmented templates provide working starting points. 
 - **Segmented:** each direct child is one choice. Choice content is centered vertically and horizontally by default; direct text children default to centered text alignment. Explicit text alignment and layouts inside child stacks remain configurable. The data key and Element value changed event use its zero-based index. Missing or out-of-range values show no selection. A hidden child keeps an empty slot so other indices remain stable. Child components are display-only; their interaction handlers are suppressed. Give the control an explicit height with `mainSize` when placing it in a vertical stack.
 
 Choose the component under Input target in Actions, then add its event. Toggle and Segmented support changed events only. Color alpha and component opacity fade the entire control, including its native track and any segment contents.
+
+## Text input
+
+`text-field` uses its own **Text changing** (`text-changing`) and **Text changed** (`text-changed`) events. Select the interactive field ID in the event shortcuts. Both expose `widgetId`, `elementId`, `key`, `value` and `previousValue`; the last two are strings, including empty strings.
+
+The host emits changing while typing, throttled to approximately 10 events per second, and changed on Enter or blur. Each accepted input updates the Channel before publishing its event. `previousValue` is the value immediately before that event, not the value at focus time: after changing has already written the final text, changed may report the same current and previous value. External data updates also participate in this comparison. Search, submission and other effects remain user-defined actions.
+
+The host avoids overwriting a focused field to preserve its caret. External changes become visible when the field is no longer focused and repainted; a user commit can overwrite an external value received while editing. The existing 16000-character serialized Channel-data limit applies; input exceeding it is rejected without publishing a text event. Host keyboard/IME and touch behaviour should be checked on the actual client. Disable whole-button interaction if the tile should only serve as an input surface.

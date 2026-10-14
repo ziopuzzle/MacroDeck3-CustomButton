@@ -280,6 +280,11 @@ public sealed class ButtonSession : IUiSession
     }
     private void HandleControlInput(ControlInput input)
     {
+        if (input.DataKey != null && input.TextValue is { } text)
+        {
+            var previous = hub?.UpdateValue(settings.Channel, input.DataKey, JsonSerializer.SerializeToElement(text));
+            if (previous is { } raw) input = input with { PreviousTextValue = raw.ToString() };
+        }
         if (input.Position is { } position)
             hub?.Update(settings.Channel, new Dictionary<string, JsonElement>
             {
