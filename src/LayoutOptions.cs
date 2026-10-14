@@ -30,7 +30,7 @@ public static class LayoutOptions
         "weight" => ["regular", "medium", "semibold", "bold"],
         "role" => ["primary", "secondary", "muted"],
         "borderStyle" => ["none", "static", "heartbeat", "breathing", "blink", "comet", "ants", "hue-shift", "rgb"],
-        "fill" or "visible" or "wrap" or "seconds" or "interactive" or "showCursorWhileTouching" or "disabled" or "shadow" => ["true", "false"],
+        "fill" or "visible" or "wrap" or "seconds" or "closeModal" or "interactive" or "showCursorWhileTouching" or "disabled" or "shadow" => ["true", "false"],
         "mainSize" => ["auto"],
         _ => []
     };

@@ -16,8 +16,8 @@ public sealed class LayoutRenderer
     internal static string Allowed(string type) => "id fill mainSize visible visibleWhen opacity transitionMs transitionProperties easing colorSpace " + (type switch
     {
         "scroll" => "direction gap padding background",
-        "stack" => "direction justify align gap padding background borderStyle borderColor interactive",
-        "layer" => "interactive background",
+        "stack" => "direction justify align gap padding background borderStyle borderColor interactive closeModal",
+        "layer" => "interactive closeModal background",
         "transform" => "rotation originX originY zoom offsetX offsetY",
         "modifier" => "padding clip radius width height minWidth maxWidth minHeight maxHeight disabled",
         "responsive" => "",
@@ -129,22 +129,22 @@ public sealed class LayoutRenderer
             return raw;
         });
 
-    public UiElement Render(IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history = null, string? selectedId = null, Action<ControlInput>? input = null, DisplayAnimation? animation = null, Func<string, string, UiResource?>? images = null, Func<string, double>? imageAspectRatio = null)
+    public UiElement Render(IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history = null, string? selectedId = null, Action<ControlInput>? input = null, DisplayAnimation? animation = null, Func<string, string, UiResource?>? images = null, Func<string, double>? imageAspectRatio = null, bool modal = false)
     {
         animation?.BeginFrame();
-        try { return Make(root, values, history, false, selectedId, input, animation, images, imageAspectRatio) ?? new UiStack { Key = "hidden", Fill = true, Children = [] }; }
+        try { return Make(root, values, history, false, selectedId, input, animation, images, imageAspectRatio, modal) ?? new UiStack { Key = "hidden", Fill = true, Children = [] }; }
         finally { animation?.EndFrame(); }
     }
-    private UiElement? Make(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio)
+    private UiElement? Make(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio, bool modal)
     {
         try
         {
-            var element = MakeCore(node, values, history, parentHorizontal, selectedId, input, animation, images, imageAspectRatio);
+            var element = MakeCore(node, values, history, parentHorizontal, selectedId, input, animation, images, imageAspectRatio, modal);
             return element != null && (string?)node.Attribute("id") == selectedId ? PreviewSelection.Highlight(element) : element;
         }
         catch (FormatException e) when (!e.Data.Contains("LayoutLine")) { throw LocatedError(node, e); }
     }
-    private UiElement? MakeCore(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio)
+    private UiElement? MakeCore(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio, bool modal)
     {
         var attributes = node.Attributes().ToDictionary(a => a.Name.LocalName, a => a.Value);
         foreach (var style in node.Elements("style"))
@@ -225,7 +225,7 @@ public sealed class LayoutRenderer
         UiSize mainSize = default;
         if (attributes.ContainsKey("mainSize") && A("mainSize") != "auto") mainSize = Length("mainSize", 0);
         var horizontal = node.Name == "stack" && Choice("direction", "vertical") == "horizontal";
-        var children = node.Elements().Where(e => e.Name != "style").Select(n => Make(n, values, history, horizontal, selectedId, node.Name == "segmented" ? null : input, animation, images, imageAspectRatio)
+        var children = node.Elements().Where(e => e.Name != "style").Select(n => Make(n, values, history, horizontal, selectedId, node.Name == "segmented" ? null : input, animation, images, imageAspectRatio, modal && node.Name != "segmented")
             ?? (node.Name.LocalName is "responsive" or "segmented" ? new UiLayer { Key = (string)n.Attribute("id")!, Children = [] } : null)).OfType<UiElement>().ToArray();
         var textSize = Length("size", .18, 1);
         var minTextSize = Math.Min(Length("minSize", Math.Min(.08, textSize), 1), textSize);
@@ -705,7 +705,10 @@ public sealed class LayoutRenderer
         }
         if (node.Name.LocalName is not ("image" or "svg" or "modifier"))
             result = AlphaPaint.Fade(AlphaPaint.Apply(result, colors), N("opacity", 1), animated.Contains("opacity") && duration > 0);
-        if (input != null && (node.Name.LocalName is "stack" or "layer") && B("interactive", false))
+        if (modal && (node.Name.LocalName is "stack" or "layer") && B("closeModal", false) && result is UiComponentContainer closeContainer)
+            // The client consumes this press to settle its own modal; do not publish an action event.
+            result = closeContainer with { Answer = "close", Events = [UiEventHandler.On(UiComponentEvents.Press, () => { })] };
+        else if (input != null && (node.Name.LocalName is "stack" or "layer") && B("interactive", false))
             result = result with { Events = new[] { UiComponentEvents.Press, UiComponentEvents.LongPress, UiComponentEvents.PressStart, UiComponentEvents.PressEnd }
                 .Select(name => UiEventHandler.On(name, () => input(new(key, name)))).ToArray() };
         return result;

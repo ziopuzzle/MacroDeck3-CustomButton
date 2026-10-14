@@ -170,7 +170,7 @@ public sealed class ButtonSession : IUiSession
                 return image.Resource;
             }
             var content = renderer != null ? renderer.Render(values, snapshot.ReadHistory, selectedId, onControlInput != null ? HandleControlInput : null,
-                animation, images == null ? null : ResolveImage, id => imageRatios.GetValueOrDefault(id, 1)) : settings.Design!.Render(values);
+                animation, images == null ? null : ResolveImage, id => imageRatios.GetValueOrDefault(id, 1), modal: surface.Kind == UiSurfaceKinds.Dialog) : settings.Design!.Render(values);
             var result = Build(content, renderer?.HasRootBackground(values) ?? true);
             lastRenderFailure = null;
             reportError?.Invoke(null);

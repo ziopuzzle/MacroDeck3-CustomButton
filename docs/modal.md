@@ -1,5 +1,24 @@
 # Modal views
 
+## Close controls
+
+Set `closeModal="true"` on a stack or layer to close the current modal when pressed. In the GUI, use **Interaction → Close modal on press (no press event)**. The default is false; bindings and conditional styles are supported.
+
+```xml
+<scroll id="content" direction="vertical" padding="4%" gap="3%">
+  <text id="message" size="8%">{{message}}</text>
+  <stack id="close" closeModal="true" background="#335577" padding="3%" align="center">
+    <text id="closeLabel" size="7%">Close</text>
+  </stack>
+</scroll>
+```
+
+No `interactive="true"`, event target widget or action is required. The host client consumes the press to close its own modal. A close control takes precedence over `interactive` and does not publish press, long-press, touch-start or touch-end events. Child input controls retain their own interactions, so use a separate close element rather than making the entire form a close control. This does not return a value to an action or run a save action; control edits already update Channel data normally.
+
+In ordinary widgets and previews, `closeModal` has no effect and `interactive` keeps its usual meaning. Segmented options cannot be close controls. To test the change, save the Show modal action and reopen the modal.
+
+## Opening a modal
+
 Version 0.42.0 adds **Show modal** to Custom Button's actions.
 This proves that the plugin can serve arbitrary XML content in a native Macro Deck dialog.
 Since 0.44.0, Show modal includes an Open editor control through its action-configuration UI. Custom Button events can open the modal when a destination device is selected.
@@ -12,7 +31,7 @@ Since 0.44.0, Show modal includes an Open editor control through its action-conf
 5. To open it from a **Custom Button event**, add the same action there and select **Destination device**. The list uses the host's standard device picker source. A selected device takes precedence over the press origin. Its current connection is resolved on each execution, including after reconnection; an offline target fails without choosing another device.
 
 XML and initial JSON are literal action parameters: `{{value}}` is expanded by Custom Button, not by the host action template renderer.
-No channel data is overwritten when opening the dialog. Close it with the host's close button.
+No channel data is overwritten when opening the dialog. Close it with the host's close button or an [XML close control](#close-controls).
 Interactive elements publish the existing Custom Button element events. **Event target widget** defaults to the button running Show modal; select another widget explicitly if needed. In the receiving event, select the same Target widget and the element's XML ID. Slider/control events include value, previousValue and other normal payload fields. Input also updates the dialog's Channel, just as it does in a widget.
 Use distinct element IDs if the target widget itself has interactive elements and you want to distinguish them from dialog elements. Events deliberately share the same event types and target identity.
 Whole-dialog presses and display-activated/tick events are not emitted. Modal opened is a separate initialization event (see below). If you tested the unreleased Show details action, remove it and add Show modal again: its action ID changed from `show-details` to `show-modal`, and its view ID is now `custom-button-modal`. Existing dialogs should be closed and reopened.

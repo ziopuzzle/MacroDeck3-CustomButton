@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.1 — modal close controls
+
+- Add closeModal to stacks and layers, including GUI suggestions and a false default. In a modal, pressing the element closes that modal without requiring an event target widget or publishing press events. Ordinary widgets ignore the close behavior.
+- Support data bindings and conditional styles for closeModal, including transparent and bordered controls.
+
 ## 0.45.0 — text input
 
 - Add text-field, a native single-line text input for widgets and modals, with data-key/value binding, placeholder, size and explicit interactive mode.
