@@ -8,7 +8,7 @@ using MacroDeck.Sdk.Decks;
 namespace Ziopuzzle.CustomButton;
 
 // A selected device resolves to its current client at execution time.
-public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null) : IActionDefinition
+public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null, Func<MacroDeck.Sdk.Widgets.IWidgetApi?>? widgets = null) : IUiConfigurableActionDefinition
 {
     public const string ViewId = "custom-button-modal";
     public const string SampleLayout = "<scroll id=\"content\" direction=\"vertical\" padding=\"4%\">\n  <text id=\"text\" size=\"8%\">Example</text>\n</scroll>";
@@ -32,6 +32,11 @@ public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null) : I
         Label = TextCatalog.Reference(label), DefaultValue = value, Required = true, LiteralOnly = true
     };
     public IActionExecutor CreateExecutor() => new Executor(navigator);
+    public Task<IUiSession?> CreateConfigurationSessionAsync(ActionConfigurationRequest request, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<IUiSession?>(new ModalConfigurationSession(request, widgets: widgets));
+    }
     private sealed class Executor(Func<IDeckNavigator?>? navigator) : IActionExecutor
     {
         public async Task<ActionResult> ExecuteAsync(ActionExecutionContext context)

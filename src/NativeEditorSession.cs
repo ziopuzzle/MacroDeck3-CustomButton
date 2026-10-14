@@ -3,7 +3,12 @@ using System.Text.Json;
 
 namespace Ziopuzzle.CustomButton;
 
-public sealed class NativeEditorSession : IAsyncDisposable
+public interface ILayoutEditorSession : IAsyncDisposable
+{
+    void Open(string layout, string values, Func<string> currentLayout, Action<string> apply, Action<string> status);
+}
+
+public sealed class NativeEditorSession : ILayoutEditorSession
 {
     private readonly object gate = new();
     private Process? process;

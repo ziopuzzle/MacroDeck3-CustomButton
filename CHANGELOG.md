@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.44.0 — modal GUI editing
+
+- Add a native GUI editor launcher to Show modal through the SDK action-configuration UI, independent of the owning widget type.
+- Keep XML, JSON, destination device, channel, title and event target settings available. Stage external edits and accept them with Apply edited XML so the host stores a client-originated parameter change.
+- Present Apply and Discard as matching buttons, with warnings about pending edits and a reminder to save after applying. Hide empty message components, including their warning indicators. Provide a recovery copy for pending XML. Save the action and reopen the modal to see layout changes; no modal preview is included.
+
 ## 0.43.1 — modal initialization
 
 - Simplify the default modal XML to a vertical scroll containing static text. New Show modal actions inside Custom Button use the widget ID as their Channel; other widget types keep demo.

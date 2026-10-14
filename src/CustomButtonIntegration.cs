@@ -32,7 +32,7 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
     {
         this.logger = logger;
         imageHostUrl = Uri.TryCreate(options?.Value.HostUrl, UriKind.Absolute, out var host) ? host : null;
-        Actions = [new UpdateValueAction(Hub), new UpdateValuesAction(Hub), new ShowModalAction(() => context?.Deck)];
+        Actions = [new UpdateValueAction(Hub), new UpdateValuesAction(Hub), new ShowModalAction(() => context?.Deck, () => context?.Widgets)];
     }
     private static readonly WidgetTypeDescriptor Descriptor = new("custom-button", "Custom Button", TextCatalog.Reference("A button rendered from templates and variable data"), DefaultData: ButtonSettings.DefaultData, DataSchema: ButtonSettings.Schema, HasConfiguration: true);
     public string ProviderName => "Custom Button";
