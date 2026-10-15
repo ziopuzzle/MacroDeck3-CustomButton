@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.5 — searchable configuration choices
+
+- Enable host-native search for templates, input targets and the event reorder picker. Keep short event-type and mode menus unchanged.
+- Include BASIC/ADVANCED in searchable template labels so categories remain visible and can be searched.
+
 ## 0.45.4 — Macro Deck beta.17
 
 - Update SDK, UI, testing helpers, analyzers and local/GitHub Actions CLI to 3.0.0-beta.17; regenerate all NuGet lock files.

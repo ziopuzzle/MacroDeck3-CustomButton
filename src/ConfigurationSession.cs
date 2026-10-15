@@ -171,7 +171,7 @@ public sealed class ConfigurationSession : IUiSession
                         new UiProse { Key = "controlHelp", Text = TextCatalog.Reference("Select a target, then choose + Add event. Modal opened, Display activated, Display update and Variable changed are under Other (updates and variables). Use Display activated to read current values when the saved button becomes visible. Select the watched variable after adding Variable changed.") },
                         new UiConfigStack { Key = "eventShortcuts", Direction = "horizontal", Wrap = true, Children =
                         [
-                            new UiChoiceInput { Key = "inputTarget", Label = TextCatalog.Reference("Input target"), HideLabel = true, Transient = true, LiteralOnly = true,
+                            new UiChoiceInput { Key = "inputTarget", Searchable = true, Label = TextCatalog.Reference("Input target"), HideLabel = true, Transient = true, LiteralOnly = true,
                                 Options = UiValue.From<IReadOnlyList<UiOption>>(() => new[] { new UiOption { Value = "", Label = TextCatalog.Reference("Whole button") } }
                                     .Concat(ButtonEvents.InputTargets(layout.Value).Select(t => new UiOption { Value = t.Id, Label = t.Id + " (" + t.Kind + ")" }))
                                     .Append(new UiOption { Value = "$other", Label = TextCatalog.Reference("Other (updates and variables)") }).ToArray()),
@@ -197,7 +197,7 @@ public sealed class ConfigurationSession : IUiSession
                         new UiProse { Key = "elementTargets", Text = UiText.Optional(() => ButtonEvents.ElementTargetHelp(flows.Value, layout.Value, widgetId)) },
                         new UiConfigStack { Key = "eventOrder", Direction = "vertical", Children =
                         [
-                            new UiChoiceInput { Key = "eventOrderTarget", Label = "Event order", Transient = true, LiteralOnly = true,
+                            new UiChoiceInput { Key = "eventOrderTarget", Searchable = true, Label = "Event order", Transient = true, LiteralOnly = true,
                                 Options = UiValue.From<IReadOnlyList<UiOption>>(() => new[] { new UiOption { Value = "", Label = "Choose an event to reorder" } }
                                     .Concat(flows.Value.EnumerateArray().Select((flow, index) => new UiOption {
                                         Value = flow.TryGetProperty("triggerId", out var id) ? id.GetString() ?? "" : "",
@@ -232,9 +232,9 @@ public sealed class ConfigurationSession : IUiSession
                         new UiProse { Key = "layoutHeading", Text = TextCatalog.Reference("Drawing XML") },
                         new UiConfigButton { Key = "openNativeEditor", Label = "Open editor",
                             Events = [UiEventHandler.On(UiConfigEvents.Activate, OpenEditor)] },
-                        new UiChoiceInput { Key = "templatePicker", Label = "Templates", HideLabel = true, Transient = true, LiteralOnly = true,
+                        new UiChoiceInput { Key = "templatePicker", Searchable = true, Label = "Templates", HideLabel = true, Transient = true, LiteralOnly = true,
                             Options = UiValue.Of<IReadOnlyList<UiOption>>(new[] { new UiOption { Value = "", Label = "Choose a template" } }
-                                .Concat(LayoutTemplates.All.Select(t => new UiOption { Value = t.Id, Label = TextCatalog.Reference(t.Name), Badge = t.Category })).ToArray()),
+                                .Concat(LayoutTemplates.All.Select(t => new UiOption { Value = t.Id, Label = $"[{t.Category}] {t.Name}" })).ToArray()),
                             Binding = Bind.Custom(() => "", id => { if (LayoutTemplates.All.Any(t => t.Id == id)) { var selected = LayoutTemplates.Get(id); lastValidLayout = null; SetXml(selected.Xml); values.Value = selected.InitialValues; } }) }
                     ] },
                     new UiCodeInput { Key = "layout", Label = TextCatalog.Reference("Drawing XML"), HideLabel = true, Language = "xml", LiteralOnly = true, MaxLength = LayoutLimits.XmlCharacters, Binding = Bind.Custom(() => layout.Value, SetXml) },
