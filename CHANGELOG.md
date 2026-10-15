@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.45.2 — modal completion events
+
+- Include a Close control below the text in the default Show modal XML. Existing action layouts are unchanged.
+
+- Clarify that Modal closed requires the waiting option in Show modal, including both option labels and the event description. Order lifecycle shortcuts as Display activated, Modal opened, Modal closed, Display update, then Variable changed.
+
+- Add an optional After opening setting to Show modal: wait for completion and publish Modal closed with widgetId, channel and cancelled. The default continues immediately, as before.
+- Add Modal closed to event definitions and the Other shortcut category. Use the Show modal event target, or the action owner when empty or $self.
+- Suppress completion events when no modal session opened. Cancellation includes dismissal, disconnection and host time limits; waiting holds subsequent actions and a host run slot.
+
 ## 0.45.1 — modal close controls
 
 - Add closeModal to stacks and layers, including GUI suggestions and a false default. In a modal, pressing the element closes that modal without requiring an event target widget or publishing press events. Ordinary widgets ignore the close behavior.

@@ -8,10 +8,13 @@ using MacroDeck.Sdk.Decks;
 namespace Ziopuzzle.CustomButton;
 
 // A selected device resolves to its current client at execution time.
-public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null, Func<MacroDeck.Sdk.Widgets.IWidgetApi?>? widgets = null) : IUiConfigurableActionDefinition
+public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null, Func<MacroDeck.Sdk.Widgets.IWidgetApi?>? widgets = null,
+    Func<MacroDeck.Sdk.Events.IEventPublisher?>? events = null) : IUiConfigurableActionDefinition
 {
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> waiting = new();
+    internal void SessionOpened(string id) => waiting.TryUpdate(id, true, false);
     public const string ViewId = "custom-button-modal";
-    public const string SampleLayout = "<scroll id=\"content\" direction=\"vertical\" padding=\"4%\">\n  <text id=\"text\" size=\"8%\">Example</text>\n</scroll>";
+    public const string SampleLayout = "<scroll id=\"content\" direction=\"vertical\" padding=\"4%\" gap=\"3%\">\n  <text id=\"text\" size=\"8%\">Example</text>\n  <stack id=\"close\" closeModal=\"true\" background=\"#335577\" padding=\"3%\" align=\"center\">\n    <text id=\"closeLabel\" size=\"7%\">Close</text>\n  </stack>\n</scroll>";
     public string Id => "show-modal";
     public LocalizedText Name => TextCatalog.Reference("Show modal");
     public LocalizedText Description => TextCatalog.Reference("Display XML and channel data in a client dialog. Select a destination device when running from an event.");
@@ -21,6 +24,8 @@ public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null, Fun
         ActionParameter.DynamicChoice("deviceId", label: TextCatalog.Reference("Destination device"),
             description: TextCatalog.Reference("Optional for a standard button press. Required for Custom Button events. An offline device fails without falling back to another device."), optionsSourceId: "macrodeck.devices"),
         ActionParameter.Text("channel", label: TextCatalog.Reference("Channel"), defaultValue: "demo", required: true),
+        ActionParameter.Choice("waitForClose", [new() { Value = "false", Label = TextCatalog.Reference("Continue immediately (no close event)") }, new() { Value = "true", Label = TextCatalog.Reference("Wait until closed (emit Modal closed)") }],
+            label: TextCatalog.Reference("After opening"), description: TextCatalog.Reference("To trigger Modal closed, select Wait until closed. This pauses subsequent actions until the modal closes. Adding the event alone does not enable it."), defaultValue: "false"),
         ActionParameter.WidgetTarget("eventWidgetId", new WidgetTargetOptions { Label = TextCatalog.Reference("Event target widget"), Description = TextCatalog.Reference("Dialog element events use this widget ID. Defaults to the button running this action."), AllowSelf = true }),
         LiteralCode("layout", "xml", "Drawing XML", SampleLayout),
         LiteralCode("initialValues", "json", "Initial data JSON", "{}")
@@ -31,13 +36,14 @@ public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null, Fun
         Description = name == "initialValues" ? TextCatalog.Reference("Fallback values for this modal only. Use {} to disable. Existing Channel values take priority; this does not reset the Channel.") : null,
         Label = TextCatalog.Reference(label), DefaultValue = value, Required = true, LiteralOnly = true
     };
-    public IActionExecutor CreateExecutor() => new Executor(navigator);
+    public IActionExecutor CreateExecutor() => new Executor(navigator, events, waiting);
     public Task<IUiSession?> CreateConfigurationSessionAsync(ActionConfigurationRequest request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         return Task.FromResult<IUiSession?>(new ModalConfigurationSession(request, widgets: widgets));
     }
-    private sealed class Executor(Func<IDeckNavigator?>? navigator) : IActionExecutor
+    private sealed class Executor(Func<IDeckNavigator?>? navigator, Func<MacroDeck.Sdk.Events.IEventPublisher?>? events,
+        System.Collections.Concurrent.ConcurrentDictionary<string, bool> waiting) : IActionExecutor
     {
         public async Task<ActionResult> ExecuteAsync(ActionExecutionContext context)
         {
@@ -65,7 +71,12 @@ public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null, Fun
                 DataHub.ValidateName(channel);
                 _ = new LayoutRenderer(layout);
                 _ = DataHub.ParseValues(initial);
-                var opened = await context.Ui.ShowModalAsync(clientId, new ModalDefinition
+                var waitText = UpdateValueAction.Parameter(context, "waitForClose").Trim();
+                if (waitText.Length > 0 && !bool.TryParse(waitText, out _)) return Failure("After opening must be true or false.");
+                var wait = bool.TryParse(waitText, out var flag) && flag;
+                if (wait && string.IsNullOrWhiteSpace(eventWidgetId)) return Failure("Select an Event target widget to publish Modal closed.");
+                var waitId = Guid.NewGuid().ToString("N");
+                var modal = new ModalDefinition
                 {
                     ViewId = ViewId,
                     Title = TextCatalog.Reference(UpdateValueAction.Parameter(context, "title")),
@@ -74,9 +85,30 @@ public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null, Fun
                         ["channel"] = JsonSerializer.SerializeToElement(channel),
                         ["eventWidgetId"] = JsonSerializer.SerializeToElement(eventWidgetId),
                         ["layout"] = JsonSerializer.SerializeToElement(layout),
-                        ["initialValues"] = JsonSerializer.SerializeToElement(initial)
+                        ["initialValues"] = JsonSerializer.SerializeToElement(initial),
+                        ["closeWaitId"] = JsonSerializer.SerializeToElement(waitId)
                     }
-                }, context.CancellationToken);
+                };
+                if (wait)
+                {
+                    waiting[waitId] = false;
+                    var cancelled = true;
+                    try
+                    {
+                        var result = await context.Ui.ShowModalAsync<string>(clientId, modal, context.CancellationToken);
+                        cancelled = result.Cancelled;
+                        context.CancellationToken.ThrowIfCancellationRequested();
+                        return waiting.GetValueOrDefault(waitId) ? ActionResult.Success()
+                            : ActionResult.Failed(ActionErrorCodes.Unavailable, TextCatalog.Reference("The modal session did not open."));
+                    }
+                    finally
+                    {
+                        if (waiting.TryRemove(waitId, out var didOpen) && didOpen)
+                            events?.Invoke()?.Publish(ButtonEvents.ModalClosed, new Dictionary<string, object?> {
+                                ["widgetId"] = eventWidgetId, ["channel"] = channel, ["cancelled"] = cancelled });
+                    }
+                }
+                var opened = await context.Ui.ShowModalAsync(clientId, modal, context.CancellationToken);
                 return opened ? ActionResult.Success() : ActionResult.Failed(ActionErrorCodes.Unavailable, TextCatalog.Reference("The host could not open the modal on the destination client. The device must support graphical dialogs."));
             }
             catch (Exception e) when (e is FormatException or JsonException or ArgumentException or XmlException)

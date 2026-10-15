@@ -2,6 +2,18 @@
 
 ## Close controls
 
+### Completion events (0.45.2)
+
+In **Show modal → After opening**, select **Wait until closed (emit Modal closed)** to enable completion events. The default, **Continue immediately (no close event)**, does not publish them. Add **Other → Modal closed** in the receiving widget's event shortcuts and select the same **Event target widget** as Show modal (defaults to the action owner).
+
+The event carries `widgetId`, `channel` and boolean `cancelled`. XML close controls complete with `cancelled=false`. The host's × button, disconnection, flow cancellation and time limits report `cancelled=true`; the SDK cannot distinguish these causes. No event is emitted if the modal session never opened. This tracks session creation, not confirmation that the client visibly painted it. Events cannot be guaranteed after a plugin/host shutdown.
+
+Waiting holds the Show modal action, its subsequent actions and one host run slot until the modal ends. Host execution limits apply. User dismissal still completes the action normally; flow cancellation retains its cancellation behavior. Event handlers run separately from the original flow, so do not assume they finish before its next action. Configure an explicit event target when invoking from a context without an owning widget.
+
+### XML close controls
+
+New Show modal actions include a Close control below the example text inside the scroll container. Existing action layouts are preserved. The control closes the modal in either After opening mode; only the waiting mode emits Modal closed.
+
 Set `closeModal="true"` on a stack or layer to close the current modal when pressed. In the GUI, use **Interaction → Close modal on press (no press event)**. The default is false; bindings and conditional styles are supported.
 
 ```xml

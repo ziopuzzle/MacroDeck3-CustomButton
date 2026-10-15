@@ -31,6 +31,7 @@ public sealed class ModalConfigurationSession : IUiSession
         var target = State("eventWidgetId");
         var layout = State("layout", ShowModalAction.SampleLayout);
         var initial = State("initialValues", "{}");
+        var waitForClose = State("waitForClose", "false");
         var edited = new UiState<string?>(null);
         var saveReminder = new UiState<bool>(false);
         var status = new UiState<string>("");
@@ -62,10 +63,13 @@ public sealed class ModalConfigurationSession : IUiSession
                 new UiDevicePickerInput { Key = "deviceId", Label = "Destination device",
                     Description = "Optional for a standard button press. Required for Custom Button events. An offline device fails without falling back to another device.", Binding = Bind.To(device) },
                 new UiStringInput { Key = "channel", Label = "Channel", Required = true, Binding = Bind.To(channel) },
+                new UiChoiceInput { Key = "waitForClose", Label = "After opening", Binding = Bind.To(waitForClose),
+                    Options = new UiOption[] { new() { Value = "false", Label = "Continue immediately (no close event)" }, new() { Value = "true", Label = "Wait until closed (emit Modal closed)" } },
+                    Description = "To trigger Modal closed, select Wait until closed. This pauses subsequent actions until the modal closes. Adding the event alone does not enable it. Host time limits apply; cancelled also includes disconnection and timeout." },
                 new UiAutocompleteInput { Key = "eventWidgetId", Label = "Event target widget",
                     Options = UiValue.From(() => targets.Value), AllowsCustomValue = true,
                     Events = [UiEventHandler.On(UiConfigEvents.Open, () => targets.Value = Targets())],
-                    Description = "Defaults to the button running this action. Used for modal input and Modal opened events.", Binding = Bind.To(target) },
+                    Description = "Defaults to the button running this action. Used for modal input, Modal opened and Modal closed events.", Binding = Bind.To(target) },
                 new UiCodeInput { Key = "initialValues", Label = "Initial data JSON", Language = "json", Required = true, LiteralOnly = true,
                     Description = "Local fallback values only. Use {} to disable; existing Channel values take priority.", Binding = Bind.To(initial) },
                 new UiConfigButton { Key = "openModalEditor", Label = "Open editor", Events = [UiEventHandler.On(UiConfigEvents.Activate, OpenEditor)] },

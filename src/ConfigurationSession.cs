@@ -179,7 +179,7 @@ public sealed class ConfigurationSession : IUiSession
                             new UiChoiceInput { Key = "addInputEvent", Label = TextCatalog.Reference("Add event"), HideLabel = true, Transient = true, LiteralOnly = true,
                                 Options = UiValue.From<IReadOnlyList<UiOption>>(() => new[] { new UiOption { Value = "", Label = TextCatalog.Reference("+ Add event") } }
                                     .Concat(inputTarget.Value == "$other"
-                                        ? new[] { new UiOption { Value = ButtonEvents.ModalOpened, Label = TextCatalog.Reference("Modal opened") }, new UiOption { Value = ButtonEvents.Activated, Label = TextCatalog.Reference("Display activated") }, new UiOption { Value = ButtonEvents.Tick, Label = TextCatalog.Reference("Display update (1 second)") }, new UiOption { Value = "variable-changed", Label = TextCatalog.Reference("Variable changed") } }
+                                        ? new[] { new UiOption { Value = ButtonEvents.Activated, Label = TextCatalog.Reference("Display activated") }, new UiOption { Value = ButtonEvents.ModalOpened, Label = TextCatalog.Reference("Modal opened") }, new UiOption { Value = ButtonEvents.ModalClosed, Label = TextCatalog.Reference("Modal closed") }, new UiOption { Value = ButtonEvents.Tick, Label = TextCatalog.Reference("Display update (1 second)") }, new UiOption { Value = "variable-changed", Label = TextCatalog.Reference("Variable changed") } }
                                         : ButtonEvents.InputEvents(layout.Value, inputTarget.Value).Select(d => new UiOption { Value = d.Id, Label = d.Name })).ToArray()),
                                 Binding = Bind.Custom(() => "", id =>
                                 {
@@ -187,7 +187,7 @@ public sealed class ConfigurationSession : IUiSession
                                     if (inputTarget.Value == "$other")
                                     {
                                         if (id == ButtonEvents.Tick) AddEvent(() => ButtonEvents.AddDisplayTick(flows.Value, widgetId));
-                                        else if (id is ButtonEvents.Activated or ButtonEvents.ModalOpened) AddEvent(() => ButtonEvents.AddElementEvent(flows.Value, widgetId, id, null, ""));
+                                        else if (id is ButtonEvents.Activated or ButtonEvents.ModalOpened or ButtonEvents.ModalClosed) AddEvent(() => ButtonEvents.AddElementEvent(flows.Value, widgetId, id, null, ""));
                                         else if (id == "variable-changed") AddEvent(() => ButtonEvents.AddVariableChanged(flows.Value, widgetId));
                                     }
                                     else AddEvent(() => ButtonEvents.AddElementEvent(flows.Value, widgetId, id, inputTarget.Value, layout.Value));

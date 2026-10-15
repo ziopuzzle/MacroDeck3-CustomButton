@@ -69,6 +69,7 @@ public class DisplayActivationTests
     }
     [TestCase(ButtonEvents.Activated)]
     [TestCase(ButtonEvents.ModalOpened)]
+    [TestCase(ButtonEvents.ModalClosed)]
     public async Task ShortcutAddsOneEditableFlowWithConcreteTarget(string eventId)
     {
         await using var session = new ConfigurationSession(ButtonTests.Surface("config"), TestLayouts.Sample);

@@ -25,6 +25,7 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
     private readonly DisplayDiagnostics diagnostics = new();
     private DisplayActivation? activation;
     private readonly ILogger<CustomButtonIntegration>? logger;
+    private readonly ShowModalAction showModal;
     public IReadOnlyList<IActionDefinition> Actions { get; }
     public IReadOnlyList<EventDefinition> EventDefinitions => ButtonEvents.Definitions;
     public CustomButtonIntegration() : this(null) { }
@@ -32,7 +33,8 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
     {
         this.logger = logger;
         imageHostUrl = Uri.TryCreate(options?.Value.HostUrl, UriKind.Absolute, out var host) ? host : null;
-        Actions = [new UpdateValueAction(Hub), new UpdateValuesAction(Hub), new ShowModalAction(() => context?.Deck, () => context?.Widgets)];
+        showModal = new ShowModalAction(() => context?.Deck, () => context?.Widgets, () => context?.Events);
+        Actions = [new UpdateValueAction(Hub), new UpdateValuesAction(Hub), showModal];
     }
     private static readonly WidgetTypeDescriptor Descriptor = new("custom-button", "Custom Button", TextCatalog.Reference("A button rendered from templates and variable data"), DefaultData: ButtonSettings.DefaultData, DataSchema: ButtonSettings.Schema, HasConfiguration: true);
     public string ProviderName => "Custom Button";
@@ -69,14 +71,17 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
                 ? eventTarget.GetString() : null;
             var modalSettings = ButtonSettings.Read(modalData)
                 with { WholeButtonInteraction = false };
-            return Task.FromResult<IUiSession?>(new ButtonSession(surface, modalSettings, Hub,
+            var modalSession = new ButtonSession(surface, modalSettings, Hub,
                 onOpened: context?.Events is { } openedEvents && !string.IsNullOrWhiteSpace(eventWidgetId)
                     ? () => openedEvents.Publish(ButtonEvents.ModalOpened, new Dictionary<string, object?>
                     { ["widgetId"] = eventWidgetId, ["channel"] = modalSettings.Channel }) : null,
                 onControlInput: context?.Events is { } modalEvents && !string.IsNullOrWhiteSpace(eventWidgetId)
                     ? input => PublishControlEvent(modalEvents, eventWidgetId, input) : null,
                 images: context != null ? new SessionImages(context.UiResources, ImageHttp,
-                    message => logger?.LogWarning("{ImageDiagnostic}", message), imageHostUrl) : null));
+                    message => logger?.LogWarning("{ImageDiagnostic}", message), imageHostUrl) : null);
+            if (modalData.ValueKind == JsonValueKind.Object && modalData.TryGetProperty("closeWaitId", out var waitId) && waitId.ValueKind == JsonValueKind.String)
+                showModal.SessionOpened(waitId.GetString()!);
+            return Task.FromResult<IUiSession?>(modalSession);
         }
         var widgetId = attributes.TryGetValue("widgetId", out var id) && id.ValueKind == JsonValueKind.String ? id.GetString() : null;
         if (!attributes.TryGetValue("widgetType", out var type) || type.ValueKind != JsonValueKind.String || type.GetString() != TypeId)

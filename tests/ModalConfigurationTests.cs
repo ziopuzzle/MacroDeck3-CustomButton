@@ -31,6 +31,9 @@ public class ModalConfigurationTests
         foreach (var p in Request().Parameters)
             Assert.That(Node(session, p.Key).Properties["value"].GetString(), Is.EqualTo(p.Value.GetString()));
         Assert.That(Node(session, "deviceId").Type, Is.EqualTo("device-picker"));
+        Assert.That(Node(session, "waitForClose").Properties["value"].GetString(), Is.EqualTo("false"));
+        session.Dispatch(new() { NodeId = "waitForClose", Name = "change", Data = JsonSerializer.SerializeToElement("true") });
+        Assert.That(Node(session, "waitForClose").Properties["value"].GetString(), Is.EqualTo("true"));
         Assert.That(Node(session, "eventWidgetId").Properties["options"][0].GetProperty("value").GetString(), Is.EqualTo("$self"));
         Assert.That(Node(session, "layout").Properties["literalOnly"].GetBoolean(), Is.True);
         Assert.That(Node(session, "initialValues").Properties["literalOnly"].GetBoolean(), Is.True);
