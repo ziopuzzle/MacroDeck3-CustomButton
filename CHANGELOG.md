@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.45.4 — Macro Deck beta.17
+
+- Update SDK, UI, testing helpers, analyzers and local/GitHub Actions CLI to 3.0.0-beta.17; regenerate all NuGet lock files.
+- Require Macro Deck 3.0.0-beta.17 or later. Keep existing widget, image and modal behavior.
+- Document relevant upstream changes and future candidates, including notification dialogs, searchable choices, music-player access and Windows conformance fixes.
+
 ## 0.45.3 — modal result values
 
 - Add result to closing stacks/layers and the GUI Interaction properties. Support literal strings, data bindings and conditional styles, up to 4096 characters.
