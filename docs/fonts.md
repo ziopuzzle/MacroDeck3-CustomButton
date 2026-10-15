@@ -30,5 +30,5 @@ Set `titleFont` and `compactFont` in initial data or through display-data action
 
 Font size, weight, color/alpha, wrapping and multiline clipping remain independent. Font metrics differ: verify long titles and non-Latin text on the actual clients. Text waits for the requested face to load according to the [host text contract](https://docs.macro-deck.app/ui/components/text/).
 
-The underlying `UiTextRun.FontFace` already exists in SDK beta.11, so this release does not change the minimum host version. Automated tests verify serialized font values, live patches, default restoration and editor persistence, not font availability or actual host font rendering.
+FontFace was introduced using SDK beta.11; this historical introduction does not describe the current minimum host version, which is declared in the plugin manifest. Automated tests verify serialized font values, live patches, default restoration and editor persistence, not font availability or actual host font rendering.
 

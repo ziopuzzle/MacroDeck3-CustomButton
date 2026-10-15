@@ -1,6 +1,6 @@
 # Known issues and historical observations
 
-Last reviewed: 2026-10-03, Custom Button 0.34.0 with Macro Deck 3.0.0-beta.15.
+Documentation reviewed: 2026-10-15 for Custom Button 0.45.3 / SDK beta.16. Historical observations below retain their original host versions; this review does not re-test those incidents.
 
 ## Copying event targets
 
@@ -25,7 +25,7 @@ restarting Macro Deck restored it. An earlier WebNowPlaying image-loading observ
 also recovered after restarting. No reliable reproduction procedure or shared cause
 was established.
 
-The current beta.15 image-loading paths have been confirmed working by the user.
+The beta.15 image-loading paths were confirmed working by the user and remain the supported API paths.
 That confirmation does not establish the cause or resolution of every older
 intermittent failure. If the issue recurs, record the image source, host/plugin
 versions, preceding edits or deck switches, and image/session logs before restarting.
@@ -45,7 +45,7 @@ confirmed ongoing crash in the current build.
 
 ## Host artwork and installed Icon Packs — access issue resolved in beta.15
 
-The user confirmed image loading with the current beta.15-based build. Installed
+The user confirmed image loading after the beta.15 upgrade. Installed
 icons use `UiResources.GetIconAsync`; other players' artwork uses
 `UiResources.RegisterMusicPlayerArtworkAsync`. These supported SDK APIs replace
 the unauthenticated HTTP requests responsible for the beta.14 authorization failures.

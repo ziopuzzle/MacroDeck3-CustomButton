@@ -6,7 +6,7 @@
 
 In **Show modal → After opening**, select **Wait until closed (emit Modal closed)** to enable completion events. The default, **Continue immediately (no close event)**, does not publish them. Add **Other → Modal closed** in the receiving widget's event shortcuts and select the same **Event target widget** as Show modal (defaults to the action owner).
 
-The event carries `widgetId`, `channel` and boolean `cancelled`. XML close controls complete with `cancelled=false`. The host's × button, disconnection, flow cancellation and time limits report `cancelled=true`; the SDK cannot distinguish these causes. No event is emitted if the modal session never opened. This tracks session creation, not confirmation that the client visibly painted it. Events cannot be guaranteed after a plugin/host shutdown.
+The event carries `widgetId`, `channel` and boolean `cancelled`. Since 0.45.3 it also includes string `result` and `elementId`. XML close controls complete with `cancelled=false`. The host's × button, disconnection, flow cancellation and time limits report `cancelled=true` with empty result and elementId; the SDK cannot distinguish these causes. No event is emitted if the modal session never opened. This tracks session creation, not confirmation that the client visibly painted it. Events cannot be guaranteed after a plugin/host shutdown.
 
 Waiting holds the Show modal action, its subsequent actions and one host run slot until the modal ends. Host execution limits apply. User dismissal still completes the action normally; flow cancellation retains its cancellation behavior. Event handlers run separately from the original flow, so do not assume they finish before its next action. Configure an explicit event target when invoking from a context without an owning widget.
 
@@ -25,9 +25,29 @@ Set `closeModal="true"` on a stack or layer to close the current modal when pres
 </scroll>
 ```
 
-No `interactive="true"`, event target widget or action is required. The host client consumes the press to close its own modal. A close control takes precedence over `interactive` and does not publish press, long-press, touch-start or touch-end events. Child input controls retain their own interactions, so use a separate close element rather than making the entire form a close control. This does not return a value to an action or run a save action; control edits already update Channel data normally.
+No `interactive="true"`, event target widget or action is required just to close the modal. The host client consumes the press to close its own modal. A close control takes precedence over `interactive` and does not publish press, long-press, touch-start or touch-end events. Child input controls retain their own interactions, so use a separate close element rather than making the entire form a close control. Closing does not run a save action; control edits already update Channel data normally.
 
 In ordinary widgets and previews, `closeModal` has no effect and `interactive` keeps its usual meaning. Segmented options cannot be close controls. To test the change, save the Show modal action and reopen the modal.
+
+### Custom results (0.45.3)
+
+Set `result` on a closing stack or layer. In the GUI it is **Interaction → Modal result (requires Close modal)**. The result is a string, supports data bindings and conditional styles, preserves whitespace and may contain at most 4096 characters. Omission returns an empty string; the default Show modal example explicitly uses `result="close"`. A result has no effect unless `closeModal` is true in a modal.
+
+```xml
+<scroll id="content" direction="vertical" padding="4%" gap="3%">
+  <text-field id="entry" key="message" placeholder="Enter a message" interactive="true" />
+  <stack id="confirm" closeModal="true" result="confirm" padding="3%" background="#335577" align="center">
+    <text id="confirmLabel" size="7%">OK</text>
+  </stack>
+  <stack id="cancel" closeModal="true" result="cancel" padding="3%" background="#444444" align="center">
+    <text id="cancelLabel" size="7%">Cancel</text>
+  </stack>
+</scroll>
+```
+
+Enable **Wait until closed (emit Modal closed)** and add a Modal closed event for the Show modal event target. In its action conditions, use the event-value picker to check `cancelled` and `result`. OK reports `result="confirm"`, `elementId="confirm"`, `cancelled=false`. The XML Cancel control reports `result="cancel"`, `elementId="cancel"`, `cancelled=false`: "cancel" is your label, not a host cancellation. Closing with × reports empty result/elementId and `cancelled=true`.
+
+Use `result="{{choice}}"` to return display data instead of a fixed label. The returned string and element ID come from the registered render snapshot, not a later read of the Channel. The plugin retains up to 1024 distinct recent result/element pairs per waiting modal; an unknown or expired answer fails the action and reports a cancelled close with empty fields. Results are available through the event; they are not automatically copied to Macro Deck variables. Inputs remain immediate Channel updates: neither an XML Cancel control nor × rolls them back.
 
 ## Opening a modal
 

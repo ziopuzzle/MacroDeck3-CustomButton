@@ -228,6 +228,7 @@ public sealed partial class EditorWindow
     {
         "id" => "Element ID",
         "closeModal" => "Close modal on press (no press event)",
+        "result" => "Modal result (requires Close modal)",
         "start" => "Range start (same units as value)", "marker" => "Marker (same units as value)",
         "format" => "Time / date format", "zone" => "Time zone (IANA name)", "clip" => "Clip shape", "disabled" => "Disable child interactions",
         "minWidth" => "Minimum width (variant: cells; modifier: length)", "maxWidth" => "Maximum width (variant: cells; modifier: length)",

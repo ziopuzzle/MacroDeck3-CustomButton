@@ -11,10 +11,10 @@ namespace Ziopuzzle.CustomButton;
 public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null, Func<MacroDeck.Sdk.Widgets.IWidgetApi?>? widgets = null,
     Func<MacroDeck.Sdk.Events.IEventPublisher?>? events = null) : IUiConfigurableActionDefinition
 {
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> waiting = new();
-    internal void SessionOpened(string id) => waiting.TryUpdate(id, true, false);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, ModalCompletion> waiting = new();
+    internal ModalCompletion? Completion(string id) => waiting.GetValueOrDefault(id);
     public const string ViewId = "custom-button-modal";
-    public const string SampleLayout = "<scroll id=\"content\" direction=\"vertical\" padding=\"4%\" gap=\"3%\">\n  <text id=\"text\" size=\"8%\">Example</text>\n  <stack id=\"close\" closeModal=\"true\" background=\"#335577\" padding=\"3%\" align=\"center\">\n    <text id=\"closeLabel\" size=\"7%\">Close</text>\n  </stack>\n</scroll>";
+    public const string SampleLayout = "<scroll id=\"content\" direction=\"vertical\" padding=\"4%\" gap=\"3%\">\n  <text id=\"text\" size=\"8%\">Example</text>\n  <stack id=\"close\" closeModal=\"true\" result=\"close\" background=\"#335577\" padding=\"3%\" align=\"center\">\n    <text id=\"closeLabel\" size=\"7%\">Close</text>\n  </stack>\n</scroll>";
     public string Id => "show-modal";
     public LocalizedText Name => TextCatalog.Reference("Show modal");
     public LocalizedText Description => TextCatalog.Reference("Display XML and channel data in a client dialog. Select a destination device when running from an event.");
@@ -43,7 +43,7 @@ public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null, Fun
         return Task.FromResult<IUiSession?>(new ModalConfigurationSession(request, widgets: widgets));
     }
     private sealed class Executor(Func<IDeckNavigator?>? navigator, Func<MacroDeck.Sdk.Events.IEventPublisher?>? events,
-        System.Collections.Concurrent.ConcurrentDictionary<string, bool> waiting) : IActionExecutor
+        System.Collections.Concurrent.ConcurrentDictionary<string, ModalCompletion> waiting) : IActionExecutor
     {
         public async Task<ActionResult> ExecuteAsync(ActionExecutionContext context)
         {
@@ -91,21 +91,26 @@ public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null, Fun
                 };
                 if (wait)
                 {
-                    waiting[waitId] = false;
+                    var completion = new ModalCompletion();
+                    waiting[waitId] = completion;
+                    ModalCompletion.Answer? answer = null;
                     var cancelled = true;
                     try
                     {
                         var result = await context.Ui.ShowModalAsync<string>(clientId, modal, context.CancellationToken);
-                        cancelled = result.Cancelled;
+                        answer = result.Cancelled ? null : completion.Resolve(result.Value);
+                        cancelled = result.Cancelled || answer == null || context.CancellationToken.IsCancellationRequested;
                         context.CancellationToken.ThrowIfCancellationRequested();
-                        return waiting.GetValueOrDefault(waitId) ? ActionResult.Success()
+                        if (!result.Cancelled && answer == null) return Failure("The modal returned an unknown or expired result.");
+                        return completion.Opened ? ActionResult.Success()
                             : ActionResult.Failed(ActionErrorCodes.Unavailable, TextCatalog.Reference("The modal session did not open."));
                     }
                     finally
                     {
-                        if (waiting.TryRemove(waitId, out var didOpen) && didOpen)
+                        if (waiting.TryRemove(waitId, out var completed) && completed.Opened)
                             events?.Invoke()?.Publish(ButtonEvents.ModalClosed, new Dictionary<string, object?> {
-                                ["widgetId"] = eventWidgetId, ["channel"] = channel, ["cancelled"] = cancelled });
+                                ["widgetId"] = eventWidgetId, ["channel"] = channel, ["cancelled"] = cancelled,
+                                ["result"] = cancelled ? "" : answer!.Result, ["elementId"] = cancelled ? "" : answer!.ElementId });
                     }
                 }
                 var opened = await context.Ui.ShowModalAsync(clientId, modal, context.CancellationToken);

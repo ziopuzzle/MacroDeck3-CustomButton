@@ -15,7 +15,7 @@ The queue holds one wake-up rather than a growing list of readings. Patches reta
 
 The source must supply fresh values. A flow triggered by **Display update (1 second)** still acquires data once per second. Use source events/variable-change events for fast telemetry; this release does not add a game-data collector or a network listener. For related values, prefer one JSON update so one render sees a consistent group.
 
-For sliders, use **Element value adjusting** when actions must run during dragging, and **Element value changed** for the final released value. The host controls native input-event frequency; faster rendering does not override its throttling. Avoid slow actions in frequent event flows.
+For sliders, use **Value changing** when actions must run during dragging, and **Value changed** for the final released value. The host controls native input-event frequency; faster rendering does not override its throttling. Avoid slow actions in frequent event flows.
 
 ## History and input safety
 
@@ -25,5 +25,5 @@ A click or slider event can arrive after a newer data patch. Such input is accep
 
 ## Verification scope
 
-Headless tests cover burst coalescing, shared-channel previews, unrelated channels, history density, shutdown and input during data changes. Timing measurements describe plugin notification latency only. Test responsiveness on your actual Macro Deck client using the variable-change flow above. Arbitrary property interpolation and keyframe animation are separate future work; existing native clock/progress components continue to use the host's client-side timing.
+Headless tests cover burst coalescing, shared-channel previews, unrelated channels, history density, shutdown and input during data changes. Timing measurements describe plugin notification latency only. Test responsiveness on your actual Macro Deck client using the variable-change flow above. [Property transitions](animation.md) are implemented; repeating/keyframe animations remain future work; existing native clock/progress components continue to use the host's client-side timing.
 

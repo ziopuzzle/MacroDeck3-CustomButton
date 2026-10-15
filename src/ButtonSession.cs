@@ -64,15 +64,16 @@ public sealed class ButtonSession : IUiSession
     private Dictionary<string, JsonElement> initial = new();
     private string? configurationError;
     private Action? onOpened;
+    private readonly Func<string, string, string>? modalAnswer;
 
     public ButtonSession(UiSurface surface, ButtonSettings settings, DataHub? hub, Func<CancellationToken, Task<ActionResult>>? press = null,
         Func<CancellationToken, Task<ActionResult>>? update = null, Func<string?>? previewSelection = null,
         Func<SharedScriptUpdates.Lease>? startSharedUpdates = null,
         Action<string>? onWidgetEvent = null, bool sampleHistory = false,
         Func<SharedScriptUpdates.Lease>? startDisplayTicks = null, Action<ControlInput>? onControlInput = null, Action<string>? diagnostic = null,
-        AnimationContinuity? continuity = null, DisplayActivation.Lease? activation = null, SessionImages? images = null, Action<string?>? reportError = null, Action? onOpened = null)
+        AnimationContinuity? continuity = null, DisplayActivation.Lease? activation = null, SessionImages? images = null, Action<string?>? reportError = null, Action? onOpened = null, Func<string, string, string>? modalAnswer = null)
     {
-        this.onOpened = onOpened;
+        this.onOpened = onOpened; this.modalAnswer = modalAnswer;
         this.diagnostic = diagnostic; this.images = images; this.reportError = reportError;
         this.activation = activation;
         this.previewSelection = previewSelection;
@@ -170,7 +171,7 @@ public sealed class ButtonSession : IUiSession
                 return image.Resource;
             }
             var content = renderer != null ? renderer.Render(values, snapshot.ReadHistory, selectedId, onControlInput != null ? HandleControlInput : null,
-                animation, images == null ? null : ResolveImage, id => imageRatios.GetValueOrDefault(id, 1), modal: surface.Kind == UiSurfaceKinds.Dialog) : settings.Design!.Render(values);
+                animation, images == null ? null : ResolveImage, id => imageRatios.GetValueOrDefault(id, 1), modal: surface.Kind == UiSurfaceKinds.Dialog, modalAnswer: modalAnswer) : settings.Design!.Render(values);
             var result = Build(content, renderer?.HasRootBackground(values) ?? true);
             lastRenderFailure = null;
             reportError?.Invoke(null);

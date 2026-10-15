@@ -7,6 +7,20 @@ namespace Ziopuzzle.CustomButton.Tests;
 public class ModalCloseTests
 {
     [Test]
+    public void ResultSupportsConditionalBindingsAndLengthValidation()
+    {
+        var renderer = new LayoutRenderer("<layer id='finish' closeModal='true' result='default'><style when='ready == true' result='{{choice}}'/></layer>");
+        var captured = new List<(string Id, string Value)>();
+        string Register(string id, string value) { captured.Add((id, value)); return "token"; }
+        renderer.Render(DataHub.ParseValues("{\"ready\":false}"), modal: true, modalAnswer: Register);
+        renderer.Render(DataHub.ParseValues("{\"ready\":true,\"choice\":\" 日本語 \"}"), modal: true, modalAnswer: Register);
+        Assert.That(captured, Is.EqualTo(new[] { ("finish", "default"), ("finish", " 日本語 ") }));
+        var error = Assert.Throws<FormatException>(() => renderer.Render(
+            DataHub.ParseValues(JsonSerializer.Serialize(new { ready = true, choice = new string('x', 4097) })), modal: true));
+        Assert.That(error!.Message, Does.Contain("4096").And.Contain("finish"));
+    }
+
+    [Test]
     public async Task BoundCloseModeCanReturnToOrdinaryInteraction()
     {
         var hub = new DataHub();

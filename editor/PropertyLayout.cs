@@ -10,7 +10,7 @@ internal static class PropertyLayout
         if (name == "fallback") return "Content and data";
         if (name is "visible" or "visibleWhen") return "Visibility";
         if (name is "transitionMs" or "transitionProperties" or "easing" or "colorSpace" or "transition") return "Animation";
-        if (name is "closeModal" or "interactive" or "disabled" or "showCursorWhileTouching") return "Interaction";
+        if (name is "result" or "closeModal" or "interactive" or "disabled" or "showCursorWhileTouching") return "Interaction";
         if (name == "rasterSize") return "Advanced";
         if (type == "trackpad")
         {
@@ -28,7 +28,7 @@ internal static class PropertyLayout
         "coordinates direction x y x1 y1 x2 y2 cx cy length angle radius startAngle endAngle sweepAngle width height size " +
         "minWidth maxWidth minHeight maxHeight minAspect maxAspect fill mainSize justify align gap padding fit zoom offsetX offsetY rotation originX originY clip corner cornerRadius wrap maxLines " +
         "fontFace weight sizeCap minSize digits color role shadow trackColor gradient endColor gradientAngle gradientX gradientY background brightness saturation thickness plotTop strokeColor strokeWidth borderStyle borderColor opacity " +
-        "interactive closeModal disabled showCursorWhileTouching visible visibleWhen transition transitionMs transitionProperties easing colorSpace rasterSize").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        "interactive closeModal result disabled showCursorWhileTouching visible visibleWhen transition transitionMs transitionProperties easing colorSpace rasterSize").Split(' ', StringSplitOptions.RemoveEmptyEntries);
     internal static string[] Attributes(string type) => LayoutRenderer.Allowed(type).Split(' ', StringSplitOptions.RemoveEmptyEntries)
         .OrderBy(name => name == "size" && type is "text" or "dynamic-text" or "text-field" ? Array.IndexOf(Order, "weight") + 0.5 : Array.IndexOf(Order, name) is var index && index >= 0 ? index : int.MaxValue).ToArray();
 }

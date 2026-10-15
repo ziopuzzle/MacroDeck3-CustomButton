@@ -37,7 +37,7 @@ public static class ButtonEvents
             : "Runs while the target button is displayed or interacted with. Check the target after duplicating a button."),
         ConfigurationParameters = [ActionParameter.WidgetTarget("widgetId", new WidgetTargetOptions { Label = TextCatalog.Reference("Target widget"), Required = true, AllowSelf = false })],
         PayloadParameters = new[] { ActionParameter.Text("widgetId", label: TextCatalog.Reference("Target widget ID"), required: true) }
-            .Concat(p.Key is ModalOpened or ModalClosed ? new[] { ActionParameter.Text("channel", label: TextCatalog.Reference("Channel"), required: true) } : []).Concat(p.Key == ModalClosed ? new[] { ActionParameter.Toggle("cancelled", label: TextCatalog.Reference("Cancelled")) } : []).ToArray()
+            .Concat(p.Key is ModalOpened or ModalClosed ? new[] { ActionParameter.Text("channel", label: TextCatalog.Reference("Channel"), required: true) } : []).Concat(p.Key == ModalClosed ? new[] { ActionParameter.Toggle("cancelled", label: TextCatalog.Reference("Cancelled")), ActionParameter.Text("result", label: TextCatalog.Reference("Modal result")), ActionParameter.Text("elementId", label: TextCatalog.Reference("Closing element ID")) } : []).ToArray()
     }).Concat(ControlNames.Select(p => new EventDefinition
     {
         Id = ControlEventId(p.Key), Name = TextCatalog.Reference(p.Value),

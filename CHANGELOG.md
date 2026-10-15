@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.45.3 — modal result values
+
+- Add result to closing stacks/layers and the GUI Interaction properties. Support literal strings, data bindings and conditional styles, up to 4096 characters.
+- Include result and elementId in Modal closed. Host cancellation yields empty fields; a result named cancel is a normal explicit completion. Existing wait-mode requirements remain unchanged.
+- Resolve client answer IDs against bounded per-modal render snapshots, preserving the displayed result across data updates and rejecting unknown or expired answers.
+- Update the default Close example and documentation. Correct component coverage, current event labels, implemented animation/input/text features and the historical status of older publication notes.
+
 ## 0.45.2 — modal completion events
 
 - Include a Close control below the text in the default Show modal XML. Existing action layouts are unchanged.

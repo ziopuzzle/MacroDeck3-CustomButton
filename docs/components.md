@@ -67,12 +67,9 @@ outside rotated groups.
 
 ## Component coverage
 
-The XML supports stack/layer, text, images, built-in icons, shapes, range bars,
-charts, sliders, gauges, transforms, modifiers, responsive layouts, dynamic time
-text, clocks and playback progress bars. Pressable stacks/layers provide button
-behavior. Grid, list, toggle, segmented, dial, text-field and progress text are not yet
-exposed as XML components. Internal use of a host component does not imply XML
-or editor support for all of its properties.
+The XML supports stacks, layers, scrolling, text, images, SVG, built-in icons, shapes, range bars, charts, gauges, transforms, modifiers, responsive layouts, dynamic time text, clocks and playback progress bars. Input components include sliders, dials, toggles, segmented controls, text fields and trackpads. Pressable stacks/layers provide button behavior; in modals they can also close the view and return a result.
+
+Grid, data-driven repeated lists and progress text are not exposed as separate XML components. Scroll uses the host list component internally; it does not repeat array data. Internal use of a host component does not imply XML or editor support for all of its properties.
 
 ## Range bar
 

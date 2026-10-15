@@ -71,7 +71,10 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
                 ? eventTarget.GetString() : null;
             var modalSettings = ButtonSettings.Read(modalData)
                 with { WholeButtonInteraction = false };
+            var completion = modalData.ValueKind == JsonValueKind.Object && modalData.TryGetProperty("closeWaitId", out var waitId) && waitId.ValueKind == JsonValueKind.String
+                ? showModal.Completion(waitId.GetString()!) : null;
             var modalSession = new ButtonSession(surface, modalSettings, Hub,
+                modalAnswer: completion == null ? null : completion.Register,
                 onOpened: context?.Events is { } openedEvents && !string.IsNullOrWhiteSpace(eventWidgetId)
                     ? () => openedEvents.Publish(ButtonEvents.ModalOpened, new Dictionary<string, object?>
                     { ["widgetId"] = eventWidgetId, ["channel"] = modalSettings.Channel }) : null,
@@ -79,8 +82,7 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
                     ? input => PublishControlEvent(modalEvents, eventWidgetId, input) : null,
                 images: context != null ? new SessionImages(context.UiResources, ImageHttp,
                     message => logger?.LogWarning("{ImageDiagnostic}", message), imageHostUrl) : null);
-            if (modalData.ValueKind == JsonValueKind.Object && modalData.TryGetProperty("closeWaitId", out var waitId) && waitId.ValueKind == JsonValueKind.String)
-                showModal.SessionOpened(waitId.GetString()!);
+            if (completion != null) completion.Opened = true;
             return Task.FromResult<IUiSession?>(modalSession);
         }
         var widgetId = attributes.TryGetValue("widgetId", out var id) && id.ValueKind == JsonValueKind.String ? id.GetString() : null;

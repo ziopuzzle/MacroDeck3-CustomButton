@@ -9,6 +9,7 @@
     <UserSecretsId>Ziopuzzle.CustomButton.Development</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Ziopuzzle.CustomButton.Tests" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="MacroDeck.Plugin.Hosting" Version="3.0.0-beta.16" />
     <PackageReference Include="MacroDeck.Plugin.Serilog" Version="3.0.0-beta.16" />
