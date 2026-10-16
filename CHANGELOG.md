@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.46.0 — display data transfer
+
+- Clarify local/global variable destination selection and how to verify copied live data independently of the drawing.
+
+- Add Copy display value and Copy display data actions with type-preserving snapshots, optional key renaming, and merge/replace modes.
+- Add Write display value to variable using the host's existing-variable write API, with owner/global scope selection and host error reporting.
+- Automatically initialize source channels inside Custom Button and follow matching transfer references when channels change or widgets are copied/imported.
+- Include saved source-widget initial JSON in all three transfer actions, with current Channel values taking priority. Add an optional source widget selector for reading another Custom Button's defaults.
+- Document source selection, one-time copying, limits and variable conversions.
+
 ## 0.45.5 — searchable configuration choices
 
 - Enable host-native search for templates, input targets and the event reorder picker. Keep short event-type and mode menus unchanged.

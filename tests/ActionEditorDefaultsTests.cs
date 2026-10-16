@@ -16,7 +16,7 @@ public class ActionEditorDefaultsTests
     });
     private static string? Channel(JsonElement flows) => flows[0].GetProperty("children")[0].GetProperty("children")[0].GetProperty("parameters")[0].GetProperty("value").GetString();
 
-    [TestCase("set-value")][TestCase("set-data")]
+    [TestCase("set-value")][TestCase("set-data")][TestCase("copy-value")][TestCase("copy-data")][TestCase("write-variable")]
     public async Task NewNestedActionsUseCurrentChannelButLaterEditsRemainEditable(string action)
     {
         await using var session = new ConfigurationSession(ButtonTests.Surface("config"), TestLayouts.Sample with { Channel = "music", Flows = ButtonEvents.Empty });
@@ -54,6 +54,20 @@ public class ActionEditorDefaultsTests
         container["branches"] = new JsonArray(new JsonObject { ["children"] = children });
         var result = ActionEditorDefaults.ApplyChannel(ButtonEvents.Empty, JsonSerializer.SerializeToElement(branch), "music");
         Assert.That(result[0].GetProperty("children")[0].GetProperty("branches")[0].GetProperty("children")[0].GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("music"));
+    }
+
+    [TestCase("copy-value")][TestCase("copy-data")]
+    public void ChannelRenameFollowsMatchingTransferEndpointsOnly(string action)
+    {
+        var flow = JsonNode.Parse(Flow("old", action: action).GetRawText())!;
+        var parameters = flow[0]!["children"]![0]!["children"]![0]!["parameters"]!.AsArray();
+        parameters.Add(new JsonObject { ["name"] = "destinationChannel", ["value"] = "old" });
+        var changed = ActionEditorDefaults.ChangeChannel(JsonSerializer.SerializeToElement(flow), "old", "new");
+        Assert.That(Channel(changed), Is.EqualTo("new"));
+        Assert.That(changed[0].GetProperty("children")[0].GetProperty("children")[0].GetProperty("parameters")[1].GetProperty("value").GetString(), Is.EqualTo("new"));
+        parameters[1]!["value"] = "external";
+        changed = ActionEditorDefaults.ChangeChannel(JsonSerializer.SerializeToElement(flow), "old", "new");
+        Assert.That(changed[0].GetProperty("children")[0].GetProperty("children")[0].GetProperty("parameters")[1].GetProperty("value").GetString(), Is.EqualTo("external"));
     }
 
     [Test]
