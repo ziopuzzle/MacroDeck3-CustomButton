@@ -19,6 +19,75 @@ public static class TestApp
 }
 public class EditorTests
 {
+    [AvaloniaTest] public void FunctionPickerWorksWithoutDataAndPreservesTheSelection()
+    {
+        var w = new EditorWindow("<text id='label' size='{{= max(0, 1)}}'>Hello</text>", "{}", true); w.Show(); Flush(w);
+        try
+        {
+            var field = Find<TextBox>(w, "field_size");
+            field.Focus(); field.SelectionStart = 8; field.SelectionEnd = 9;
+            Click(w, Find<Button>(w, "insert_size"));
+            var picker = w.OwnedWindows.Single();
+            var list = picker.GetVisualDescendants().OfType<ListBox>().Single();
+            Assert.That(((ExpressionChoice)list.SelectedItem!).Function, Is.EqualTo("floor"));
+            Assert.That(picker.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains("Round down") == true), Is.True);
+            picker.GetVisualDescendants().OfType<Button>().Single(b => b.Content?.ToString() == "Insert")
+                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Flush(w);
+            Assert.That(w.OwnedWindows, Has.Count.EqualTo(1));
+            Assert.That(field.Text, Is.EqualTo("{{= max(floor(0), 1)}}"));
+            var edit = picker.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == "expressionValue");
+            Assert.That(edit.Text, Is.EqualTo("{{= max(floor(0), 1)}}"));
+            Assert.That(picker.GetVisualDescendants().OfType<Button>().Any(b => b.Content?.ToString() == "OK"), Is.False);
+            picker.Close();
+            Flush(w);
+            Assert.That(field.Text, Is.EqualTo("{{= max(floor(0), 1)}}"));
+            Assert.That(field.SelectedText, Is.EqualTo("0"));
+        }
+        finally { foreach (var child in w.OwnedWindows.ToArray()) child.Close(); w.HostClosed = true; w.Close(); }
+    }
+
+    [AvaloniaTest] public async Task ExpressionWindowEditsLiveAndWindowCloseKeepsChanges()
+    {
+        var sent = new List<string>();
+        var w = new EditorWindow("<text id='label'>Original</text>", "{}", true, sent.Add); w.Show(); Flush(w);
+        try
+        {
+            var field = Find<TextBox>(w, "field_text");
+            field.Focus(); field.CaretIndex = 3;
+            Click(w, Find<Button>(w, "insert_text"));
+            var picker = w.OwnedWindows.Single();
+            var edit = picker.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == "expressionValue");
+            Assert.That(edit.CaretIndex, Is.EqualTo(3));
+            Assert.That(picker.GetVisualDescendants().OfType<Button>().Where(b => b.Content is string).Select(b => b.Content),
+                Does.Contain("Insert"));
+            edit.Text = "Value {{= 20 + 3}}"; edit.Focus(); edit.SelectionStart = 10; edit.SelectionEnd = 12;
+            var search = picker.GetVisualDescendants().OfType<TextBox>().Single(t => t.Watermark != null);
+            search.Focus(); search.Text = "floor"; Flush(w);
+            picker.GetVisualDescendants().OfType<Button>().Single(b => b.Content?.ToString() == "Insert").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Flush(w);
+            Assert.That(edit.Text, Is.EqualTo("Value {{= floor(20) + 3}}"));
+            Assert.That(edit.SelectedText, Is.EqualTo("20"));
+            Assert.That(field.Text, Is.EqualTo(edit.Text));
+            Assert.That(w.LayoutXml, Does.Contain("floor(20)"));
+            await Task.Delay(500); Flush(w);
+            Assert.That(sent.Any(message => message.Contains("floor(20)")), Is.True, "Preview updates are sent while the expression window is open.");
+            Assert.That(picker.GetVisualDescendants().OfType<Button>().Any(b => b.Content?.ToString() == "Cancel"), Is.False);
+            picker.Close();
+            Flush(w);
+            Assert.That(field.Text, Is.EqualTo("Value {{= floor(20) + 3}}"));
+            Assert.That(w.LayoutXml, Does.Contain("floor(20)"));
+            Click(w, Find<Button>(w, "insert_text"));
+            picker = w.OwnedWindows.Single();
+            edit = picker.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == "expressionValue");
+            edit.Text = "Manual edit";
+            picker.Close();
+            Flush(w);
+            Assert.That(field.Text, Is.EqualTo("Manual edit"));
+        }
+        finally { foreach (var child in w.OwnedWindows.ToArray()) child.Close(); w.HostClosed = true; w.Close(); }
+    }
+
     [AvaloniaTest] public void UnavailableBindingCanBeAppliedAndThenCorrected()
     {
         var w = new EditorWindow("<rect id='shape'/>", "{\"cover\":\"N/A\"}", true); w.Show(); Flush(w);

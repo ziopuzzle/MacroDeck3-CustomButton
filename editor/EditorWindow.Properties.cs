@@ -206,7 +206,7 @@ public sealed partial class EditorWindow
             box.PropertyChanged += (_, e) => { if (e.Property == TextBox.TextProperty && ParseColor(box.Text, out var c) && colour.Color != c) { synchronizing = true; colour.Color = c; synchronizing = false; } };
             DockPanel.SetDock(colourButton, Dock.Left); row.Children.Add(colourButton);
         }
-        void Menu(string title, string tooltip, IEnumerable<(string Label, string Value)> entries, bool insert)
+        void Menu(string title, string tooltip, IEnumerable<(string Label, string Value)> entries)
         {
             var button = Button(title, () => { }); ToolTip.SetTip(button, T(tooltip)); button.Margin = new Thickness(4, 0, 0, 0);
             button.Click += (_, _) =>
@@ -214,16 +214,24 @@ public sealed partial class EditorWindow
                 var menu = new ContextMenu();
                 foreach (var entry in entries)
                 {
-                    var item = new MenuItem { Header = insert ? entry.Label : T(entry.Label), ToggleType = insert ? MenuItemToggleType.None : MenuItemToggleType.Radio, IsChecked = !insert && box.Text == entry.Value };
-                    item.Click += (_, _) => { if (insert) box.SelectedText = entry.Value; else box.Text = entry.Value; box.Focus(); }; menu.Items.Add(item);
+                    var item = new MenuItem { Header = T(entry.Label), ToggleType = MenuItemToggleType.Radio, IsChecked = box.Text == entry.Value };
+                    item.Click += (_, _) => { box.Text = entry.Value; box.Focus(); }; menu.Items.Add(item);
                 }
                 button.ContextMenu = menu; menu.Open(button);
             };
             DockPanel.SetDock(button, Dock.Right); row.Children.Add(button);
         }
         var options = LayoutOptions.Choices(component, attribute);
-        if (options.Length > 0) Menu("▾", "Suggested values", new[] { ("Use default", "") }.Concat(options.Select(o => (o, o))), false);
-        if (keys.Length > 0 && attribute != "id") Menu("{ }", "Insert display data", keys.Select(k => { var v = attribute is "key" or "keyX" or "keyY" or "when" or "visibleWhen" ? k : "{{" + k + "}}"; return (v, v); }), true);
+        if (options.Length > 0) Menu("▾", "Suggested values", new[] { ("Use default", "") }.Concat(options.Select(o => (o, o))));
+        if (ExpressionInsertion.Available(attribute))
+        {
+            var insert = Button("{ }", () => { }, "insert_" + attribute);
+            insert.Focusable = false; // Keep the text selection until the picker has captured it.
+            ToolTip.SetTip(insert, "Insert display data or function. Search and read descriptions before inserting.");
+            insert.Margin = new Thickness(4, 0, 0, 0);
+            insert.Click += async (_, _) => { try { await InsertExpression(box, attribute); } catch (FormatException e) { Say(e.Message); } };
+            DockPanel.SetDock(insert, Dock.Right); row.Children.Add(insert);
+        }
         var groupKey = Guid.NewGuid().ToString();
         box.PropertyChanged += (_, e) => { if (e.Property == TextBox.TextProperty && !rebuilding) { propertyGroup = groupKey; propertyDirty = true; updateDraftDescription?.Invoke(); } }; row.Children.Add(box); panel.Children.Add(row); return box;
     }

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.47.2 — expression picker
+
+- Replace the editor's data insertion menu with a shared searchable data/function editor and descriptions. Edit values live in the main GUI/preview and insert repeatedly at the last cursor/selection. Close with × while keeping edits; there are no OK or Cancel buttons. Respect existing bindings, selections, format suffixes and condition/key fields without nesting template braces.
+- Preserve the input selection when opening the picker, and select the inserted function's first argument for quick replacement.
+
 ## 0.47.1 — color expressions
 
 - Allow GUI/XML editor changes with unrenderable data bindings to reach the draft, with a preview warning instead of blocking save. Structural errors still block editing.

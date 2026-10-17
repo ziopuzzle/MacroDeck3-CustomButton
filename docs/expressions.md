@@ -2,6 +2,16 @@
 
 Calculations read the button's display data. Macro Deck variables still enter through **Set display value** or **Set display data from JSON**; this syntax does not query host variables directly. The native editor uses the same evaluator as the plugin.
 
+## Inserting data and functions in the GUI
+
+The **{ }** button opens one searchable value editor for display-data names and functions, with categories, descriptions and examples. The value field is directly editable and updates the main GUI as you type. **Insert** inserts the selected item without closing the window. Close the window with **×** to keep edits, just like the main GUI. There are no OK or Cancel buttons. It remains available without initial data. Image average-color output names are also listed. Literal-only ID/output/fallback fields do not offer the picker; key fields offer names only, and condition fields only offer their supported functions.
+
+The value editor starts at the main field's cursor/selection. Clicking or selecting in the value changes the insertion position; using search or the list retains that position. A line/column and selection-count indicator shows where Insert will operate, and selections remain highlighted while choosing an item. Valid edits use the normal throttled preview update pipeline. Incomplete input stays in the main field with a warning, while the last accepted layout is kept. Use the main GUI's Undo or Reset input to revert edits. Saving in Macro Deck is still required afterwards.
+
+Outside a binding, inserting a name adds `{{name}}`; inserting a function adds `{{= function(...)}}`. Inside a calculation, only the name or function is inserted. Inside a direct binding such as `{{value:F1}}`, choosing a name replaces the key; choosing `round` wraps it as `{{= round(value, 0):F1}}`. Selecting an expression before choosing a function uses the selection as its first argument. The first argument is selected after insertion so it can immediately be replaced with a data name.
+
+Insert before a format suffix, not inside it. Cross-binding selections, incomplete delimiters and insertion inside quoted strings are rejected with guidance; select the whole quoted argument to replace it. Hyphenated keys work in direct bindings but cannot be inserted into calculations, where a hyphen means subtraction. Function templates are starting points: adjust their arguments to the intended values. All changes still need to be saved in Macro Deck.
+
 ## Duration formatting uses seconds
 
 `{{seconds:duration}}` formats a number of seconds. Since version 0.20.0, milliseconds must be explicitly divided by 1000. Use `floor` to discard the fractional part for nonnegative playback times:
