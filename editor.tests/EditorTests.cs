@@ -19,6 +19,36 @@ public static class TestApp
 }
 public class EditorTests
 {
+    [AvaloniaTest] public void UnavailableBindingCanBeAppliedAndThenCorrected()
+    {
+        var w = new EditorWindow("<rect id='shape'/>", "{\"cover\":\"N/A\"}", true); w.Show(); Flush(w);
+        try
+        {
+            Find<TextBox>(w, "field_color").Text = "{{= mixColor(cover, '#000000', 0.5)}}"; Flush(w);
+            Assert.That(w.LayoutXml, Does.Contain("mixColor"));
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Contain("cannot preview"));
+            Find<TextBox>(w, "field_color").Text = "#ff0000"; Flush(w);
+            Assert.That(w.LayoutXml, Does.Contain("#ff0000"));
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Not.Contain("cannot preview"));
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
+    [AvaloniaTest] public void XmlWithMissingBindingCanBeApplied()
+    {
+        var w = new EditorWindow("<stack id='root'/>", "{}", true); w.Show(); Flush(w);
+        try
+        {
+            var tab = w.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().Single(b => b.Content?.ToString() == "XML");
+            tab.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(w);
+            Find<TextBox>(w, "xml").Text = "<text id='label' color='{{missingColor}}'>Hello</text>";
+            Click(w, w.GetVisualDescendants().OfType<Button>().Single(b => b.Content?.ToString() == "Apply XML"));
+            Assert.That(w.LayoutXml, Does.Contain("missingColor"));
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Contain("cannot preview"));
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
     [AvaloniaTest] public void PlaceholdersShowSafeDefaultsWithoutWritingThemOrOverridingStyleInheritance()
     {
         const string xml = "<text id='title'>Hello<style when='true' color='#ff0000'/></text>";

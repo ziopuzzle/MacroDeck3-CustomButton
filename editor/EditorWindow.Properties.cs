@@ -110,7 +110,7 @@ public sealed partial class EditorWindow
                 string next;
                 if (current.Parent == null) next = new LayoutDocument(draft.ToString()).Serialize();
                 else { current.ReplaceWith(draft); next = document.Serialize(); }
-                _ = new LayoutRenderer(next).Render(initialValues);
+                previewWarning = EditorValidation.Check(next, initialValues);
                 if (next != history.Xml) history.SetGrouped(next, propertyGroup);
                 UpdateHistoryButtons();
                 var renamed = selected != Id(draft);
@@ -126,6 +126,7 @@ public sealed partial class EditorWindow
                 propertyDirty = false;
                 rebuilding = true; xml.Text = history.Xml; rebuilding = false; xmlDirty = false;
                 Publish();
+                Say(previewWarning ?? "Changes applied to the draft. Save in Macro Deck to finish.");
             }
             catch (Exception e) when (e is FormatException or System.Xml.XmlException or InvalidOperationException)
             { UpdateHistoryButtons(); Say("Input incomplete in '" + selected + "': " + e.Message + " The last valid display is kept."); }

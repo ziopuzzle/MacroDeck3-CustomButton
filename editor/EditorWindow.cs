@@ -193,7 +193,8 @@ public sealed partial class EditorWindow : Window
         foreach (var (label, value) in new[] { ("Apply", "apply"), ("Discard", "discard"), ("Cancel", "cancel") }) choices.Children.Add(Button(label, () => dialog.Close(value)));
         panel.Children.Add(choices); dialog.Content = panel; return await dialog.ShowDialog<string?>(this);
     }
-    private void ApplyXml() { _ = new LayoutRenderer(xml.Text ?? "").Render(initialValues); history.Set(xml.Text ?? ""); xmlDirty = propertyDirty = false; Publish(); Refresh(); }
+    private string? previewWarning;
+    private void ApplyXml() { previewWarning = EditorValidation.Check(xml.Text ?? "", initialValues); history.Set(xml.Text ?? ""); xmlDirty = propertyDirty = false; Publish(); Refresh(); Say(previewWarning ?? "Changes applied to the draft. Save in Macro Deck to finish."); }
     private void Edit(Func<LayoutDocument, string> edit)
     {
         if (!ResolvePending()) return;
@@ -223,7 +224,7 @@ public sealed partial class EditorWindow : Window
         {
             sendDraft(JsonSerializer.Serialize(new { layout = history.Xml, basis }));
             basis = history.Xml;
-            if (!propertyDirty && !xmlDirty) Say("Changes sent to the draft. Save in Macro Deck to finish.");
+            if (!propertyDirty && !xmlDirty) Say(previewWarning ?? "Changes sent to the draft. Save in Macro Deck to finish.");
         }
         catch (IOException) { Disconnect(); }
     }

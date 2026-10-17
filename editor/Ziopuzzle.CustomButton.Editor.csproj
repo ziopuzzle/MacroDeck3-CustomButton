@@ -13,6 +13,7 @@
     <Compile Include="../src/DisplayFormat.cs" Link="Shared/DisplayFormat.cs" />
     <Compile Include="../src/DisplayAnimation.cs" Link="Shared/DisplayAnimation.cs" />
     <Compile Include="../src/ColorInterpolation.cs" Link="Shared/ColorInterpolation.cs" />
+    <Compile Include="../src/ColorFunctions.cs" Link="Shared/ColorFunctions.cs" />
     <Compile Include="../src/TextCatalog.cs" Link="Shared/TextCatalog.cs" />
     <EmbeddedResource Include="../src/Localization/Strings*.resx" Link="Localization/%(Filename)%(Extension)" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.21" />

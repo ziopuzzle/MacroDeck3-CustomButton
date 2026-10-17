@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.47.1 — color expressions
+
+- Allow GUI/XML editor changes with unrenderable data bindings to reach the draft, with a preview warning instead of blocking save. Structural errors still block editing.
+- Add mixColor, shiftHue, setSaturation, scaleSaturation, setBrightness, scaleBrightness and setAlpha to XML calculations, including the GUI preview.
+- Support linear RGB, sRGB and HSV mixing with shortest, increasing or decreasing hue paths. Preserve transparency with alpha-weighted mixing.
+- Allow quoted color literals and nested color/numeric expressions using display data, including extracted image colors.
+
 ## 0.47.0 — image colors
 
 - Add opt-in Image/SVG averageColorKey and averageColorFallback properties, including GUI fields. Analyze local/HTTP images and rendered SVG; use the host's album-color API for artwork. Live widgets and modals publish results to Channel data for variable-write and copy actions; preview results remain local.

@@ -66,6 +66,6 @@ No desktop credentials are copied or added by the plugin.
 
 ## Image color follow-ups
 
-- Extract colors from arbitrary supported image sources (local files, URLs and installed icons), beyond the host's music-player average-color API.
-- Color expressions for mixing with another color, adjusting hue/saturation and alpha. These are proposals, not currently supported functions.
+- Local/HTTP image and SVG color extraction is available since 0.47.0. Installed Icon Pack analysis still requires a supported host pixel or palette API.
+- Color expressions for mixing, hue, saturation, brightness and alpha are available in 0.47.1; see docs/expressions.md.
 - The legacy player named `Artwork probe (no audio)` is no longer registered by Custom Button and is not required for images or average colors. A beta.17 host snapshot was confirmed to retain this player's catalog even though `acceptedKinds` no longer included the music-player capability. The host refreshes accepted capabilities without clearing the old catalog, and its player registry can still enumerate that catalog. The current SDK provides no removal API. With the host fully stopped and the original file backed up, setting only `net.ziopuzzle.custombutton.musicPlayer` to `null` in `config/plugin-capability-snapshots.json` clears this obsolete catalog. Do not delete the entire snapshot file or other plugins' catalogs.

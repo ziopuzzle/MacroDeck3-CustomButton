@@ -72,6 +72,44 @@ Examples:
 
 Data names in expressions use letters, digits, underscores and dots; a hyphen is subtraction. Direct bindings such as `{{my-key}}` can still reference hyphenated names. Unknown/null data displays `—`. Non-numeric operands, invalid arguments and non-finite final results produce an error. Expressions have a 256-character limit and a 32-level nesting limit. These are bounded calculations, not JavaScript.
 
+## Color expressions
+
+The native editor permits saving binding-based elements even when the current data cannot render them. It shows a preview warning; check Diagnostics and live data if it persists. XML structure and duplicate IDs are still validated before applying. This does not replace invalid data with a fallback or suppress runtime diagnostics.
+
+Use these functions inside `{{= ...}}` wherever a color supports data bindings, including SVG content. Color arguments can be display-data names (such as an image's `averageColorKey`) or quoted literals: `'#RGB'`, `'#RGBA'`, `'#RRGGBB'`, `'#RRGGBBAA'`, or `'transparent'`. Alpha is the last hex component. Results are normalized hex colors; functions can be nested with numeric calculations. Function names are case-sensitive.
+
+| Function | Meaning |
+|---|---|
+| `mixColor(a,b,t[,space])` | Mix two colors; `t=0` selects `a`, `t=1` selects `b`. Default space is `linear-rgb`. |
+| `shiftHue(color,degrees)` | Rotate HSV hue in degrees, wrapping at 360. |
+| `setSaturation(color,value)` | Set HSV saturation to a value from 0 to 1. |
+| `scaleSaturation(color,factor)` | Multiply the existing HSV saturation. |
+| `setBrightness(color,value)` | Set HSV value to a value from 0 to 1. |
+| `scaleBrightness(color,factor)` | Multiply the existing HSV value. |
+| `setAlpha(color,alpha)` | Replace alpha with a value from 0 (transparent) to 1 (opaque). |
+
+Mix ratios, resulting saturation/brightness and alpha are clamped to 0–1. Numeric arguments must be finite. HSV brightness means **value**, not perceived luminance. Saturation and hue cannot recover color from black: scaling black's brightness leaves it black; setting its brightness produces gray. An achromatic color uses hue 0 when explicitly adding saturation.
+
+| Mixing space | Hue path / behavior |
+|---|---|
+| `'linear-rgb'` | Linear-light RGB; avoids the dark midpoint of ordinary RGB interpolation. |
+| `'srgb'` | Interpolate encoded RGB components directly. |
+| `'hsv'` | Shortest hue path; a 180-degree tie takes the increasing path. |
+| `'hsv-increasing'` or `'hsv+'` | Increasing hue: red → yellow → green → cyan → blue → magenta → red. |
+| `'hsv-decreasing'` or `'hsv-'` | Decreasing hue: the reverse path. |
+
+Equal hues do not make a full revolution. When mixing with gray, its hue follows the colored endpoint. Mixing accounts for alpha so fading toward transparent black does not darken the visible color. Other transforms preserve alpha unless `setAlpha` is used.
+
+```xml
+<stack id="card" background="{{= mixColor(coverColor, '#000000', 0.4)}}">
+  <text id="accent" color="{{= shiftHue(coverColor, 30)}}">Accent</text>
+  <bar id="level" value="{{value}}" color="{{= mixColor('#ff0000', '#00ff00', clamp(value / 100, 0, 1), 'hsv+')}}" />
+  <text id="muted" color="{{= setAlpha(scaleSaturation(coverColor, 0.5), 0.7)}}">Muted</text>
+</stack>
+```
+
+Define `coverColor` and `value` in display data or obtain `coverColor` through image color extraction. Missing/null inputs produce `—`, which is not a valid color attribute; provide initial data or an image color fallback. Invalid colors, modes and arguments produce diagnostics. These functions evaluate on data updates; they do not themselves animate or write their result back to Channel data. The same 256-character and 32-level expression limits apply. Condition expressions do not support color functions.
+
 ## Numeric formatting
 
 Both direct bindings and calculated results accept `:format`, for example `{{value:F2}}` and `{{= value / 100:F2}}`. Supported formats are `0`, up to eight zero-padding digits (`00`, `000`), optionally followed by 1–6 decimal places (`000.00`), and `F`, `N`, `P` with optional precision 0–6. Formatting uses invariant culture. `P0` multiplies a ratio by 100 and adds a percent sign; do not multiply by 100 again. Non-numeric text with a numeric format remains unchanged.
