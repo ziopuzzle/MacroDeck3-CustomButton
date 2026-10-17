@@ -38,6 +38,22 @@ The host applies the destination variable's type and precision. Strings retain w
 
 Example: after a slider changes `volume` on Channel `player`, use Copy display value with source `player` / `volume` and destination `overlay` / `volume` to update a separate modal. To persist it in a Macro Deck variable, create a numeric variable named `saved_volume`, then use Write display value to variable with source `player` / `volume` and destination `saved_volume`.
 
+## Automatic artwork color updates
+
+To obtain color directly from an Image/SVG element, use [averageColorKey](images.md#average-color-in-xml). To share artwork color through Channel data or other widgets, use the host variable below.
+
+Macro Deck beta.17 already exposes an album-color variable for each player (`music_player_<player key>_album_color`). Select the actual variable from Macro Deck's variable picker; player keys depend on player names and name collisions.
+
+To follow color changes without configuring a periodic Custom Button action:
+
+1. Add **Variable changed** for that album-color variable.
+2. Use **Set display value** to write its value (`{{ vars.SELECTED_VARIABLE_NAME }}`) to your Channel's `artworkColor` data name.
+3. Read the same variable on **Display activated** to initialize the button when it becomes visible.
+
+The host refreshes this variable every two seconds. This reuses the host's refresh mechanism; it is not a push notification from the player. `InstancesChanged` in the SDK only reports changes to the player list.
+
+Both the variable and XML artwork color extraction use the host's artwork-ID cache. If a provider replaces image bytes while retaining the same internal artwork ID, the host can keep returning the old color. Repeated requests do not bypass that cache. Beta.17's built-in WebNowPlaying implementation derives the artwork ID from a hash of the cover bytes; an unchanged external cover URL does not necessarily mean an unchanged internal artwork ID.
+
 ## Display a variable
 
 1. Add a display update or variable-change event.

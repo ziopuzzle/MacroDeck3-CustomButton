@@ -12,6 +12,8 @@ namespace Ziopuzzle.CustomButton;
 
 public sealed class LayoutRenderer
 {
+    public Action<string, string, string>? ConfigureImageColor { get; set; }
+    public Dictionary<string, JsonElement> ImageColorDefaults { get; } = new(StringComparer.Ordinal);
     private static readonly Regex Slot = new(@"\{\{\s*([A-Za-z0-9_.-]+)\s*(?::([^{}]{1,32}))?\s*\}\}", RegexOptions.CultureInvariant);
     internal static string Allowed(string type) => "id fill mainSize visible visibleWhen opacity transitionMs transitionProperties easing colorSpace " + (type switch
     {
@@ -25,8 +27,8 @@ public sealed class LayoutRenderer
         "dynamic-text" => "zone format seconds size sizeCap minSize weight color role align",
         "icon" => "name size color role",
         "gauge" => "value min max startAngle endAngle color trackColor thickness",
-        "image" => "source size fit zoom offsetX offsetY transition brightness saturation color",
-        "svg" => "rasterSize size fit zoom offsetX offsetY transition brightness saturation color",
+        "image" => "source size fit zoom offsetX offsetY transition brightness saturation color averageColorKey averageColorFallback",
+        "svg" => "rasterSize size fit zoom offsetX offsetY transition brightness saturation color averageColorKey averageColorFallback",
         "text" => "size sizeCap minSize weight fontFace color role digits align wrap maxLines shadow strokeColor strokeWidth",
         "bar" => "value start marker min max color endColor thickness",
         "chart" => "key min max points color plotTop thickness",
@@ -80,6 +82,8 @@ public sealed class LayoutRenderer
                 if (node.Name.Namespace != XNamespace.None) throw new FormatException("XML namespaces are not supported.");
                 if (node.Name.LocalName == "style")
                 {
+                    if (node.Attribute("averageColorKey") != null || node.Attribute("averageColorFallback") != null)
+                        throw new FormatException("Set averageColorKey and averageColorFallback on the image/SVG itself, not on a style.");
                     if (node.Parent == null || node.Parent.Name.LocalName == "style" || node.HasElements || !string.IsNullOrWhiteSpace(node.Value)) throw new FormatException("Place style directly inside a component and leave it empty.");
                     var condition = (string?)node.Attribute("when") ?? throw new FormatException("A style needs a when condition.");
                     DisplayCondition.Evaluate(condition, new Dictionary<string, JsonElement>());
@@ -92,6 +96,13 @@ public sealed class LayoutRenderer
                 if (ids.TryGetValue(id, out var first)) throw new FormatException($"Duplicate ID '{id}'. First defined on <{first.Name}> at line {((IXmlLineInfo)first).LineNumber}, column {((IXmlLineInfo)first).LinePosition}.");
                 ids.Add(id, node);
                 var allowed = Allowed(node.Name.LocalName);
+                if (node.Attribute("averageColorKey") is { } output && output.Value.Length > 0)
+                {
+                    DataHub.ValidateName(output.Value);
+                    var fallback = DisplayColor.Parse((string?)node.Attribute("averageColorFallback") ?? "transparent").Hex;
+                    if (!ImageColorDefaults.TryAdd(output.Value, JsonSerializer.SerializeToElement(fallback)))
+                        throw new FormatException("Image average-color output names must be unique within a layout.");
+                }
                 foreach (var attribute in node.Attributes())
                     if (!allowed.Split(' ').Contains(attribute.Name.ToString())) throw new FormatException($"Unsupported attribute on {node.Name}: {attribute.Name}");
                 if (node.Attribute("visibleWhen") is { } conditionAttribute) DisplayCondition.Evaluate(conditionAttribute.Value, new Dictionary<string, JsonElement>());
@@ -131,6 +142,12 @@ public sealed class LayoutRenderer
 
     public UiElement Render(IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history = null, string? selectedId = null, Action<ControlInput>? input = null, DisplayAnimation? animation = null, Func<string, string, UiResource?>? images = null, Func<string, double>? imageAspectRatio = null, bool modal = false, Func<string, string, string>? modalAnswer = null)
     {
+        if (ImageColorDefaults.Keys.Any(key => !values.ContainsKey(key)))
+        {
+            var combined = new Dictionary<string, JsonElement>(ImageColorDefaults, StringComparer.Ordinal);
+            foreach (var pair in values) combined[pair.Key] = pair.Value;
+            values = combined;
+        }
         animation?.BeginFrame();
         try { return Make(root, values, history, false, selectedId, input, animation, images, imageAspectRatio, modal, modalAnswer) ?? new UiStack { Key = "hidden", Fill = true, Children = [] }; }
         finally { animation?.EndFrame(); }
@@ -328,6 +345,11 @@ public sealed class LayoutRenderer
                     var source = node.Name.LocalName == "svg"
                         ? SvgTemplate.Source(string.Concat(node.Nodes().OfType<XText>().Select(t => t.Value)), value => Expand(value, values), Integer("rasterSize", 512, 64, 1024))
                         : A("source");
+                    var colorKey = (string?)node.Attribute("averageColorKey") ?? "";
+                    if (colorKey.Length > 0 && (source.Trim().StartsWith("icon-pack:", StringComparison.OrdinalIgnoreCase)
+                        || source.Trim().StartsWith("/api/icons/", StringComparison.Ordinal)))
+                        throw new FormatException("Average color is not available for Icon Pack resources in SDK beta.17.");
+                    ConfigureImageColor?.Invoke(key, colorKey, (string?)node.Attribute("averageColorFallback") ?? "transparent");
                     var resource = images?.Invoke(key, source);
                     var imageSize = Length("size", 1, 1);
                     var imageFill = B("fill", false);

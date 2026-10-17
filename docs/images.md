@@ -1,5 +1,29 @@
 # Images
 
+## Average color in XML
+
+Set `averageColorKey` on an Image or inline SVG to expose its average color as display data. Live widgets and modals also publish this value to their Channel. The source can use the usual data bindings. Use a unique literal output name per element; output names and fallback colors cannot be bound or overridden by styles.
+
+```xml
+<stack id="container" background="{{coverColor}}" padding="5%">
+  <image id="cover" source="{{imageUrl}}" size="65%"
+         averageColorKey="coverColor" averageColorFallback="#1a1a1a" />
+  <text id="colorLabel" size="10%">{{coverColor}}</text>
+</stack>
+```
+
+Set `imageUrl` in Initial JSON or with a display-data action to an absolute local path, ordinary HTTP/HTTPS image URL, or supported artwork path. Inline SVG uses the same two properties. The GUI exposes them under **Content and data**. Leaving the output name blank disables analysis; fallback defaults to `transparent` and accepts alpha colors.
+
+- Local/HTTP images and inline SVG: a sampled, alpha-weighted RGB mean of the original image, before tint, opacity, crop, brightness or saturation. Transparent pixels do not darken the result; a fully transparent image returns `#00000000`. Animated images use their first frame. Analysis is serialized and limited to 16 megapixels per decoded image; analysis failures do not prevent an otherwise supported image from displaying.
+- Artwork: uses the selected player's host album-color API. This may return the current or last-known album color rather than the exact historical artwork ID requested by the image. Host cache limitations still apply.
+- Icon Packs: **not supported for color analysis in SDK beta.17**. The host returns a resource handle, not image bytes or a palette. Setting `averageColorKey` on such a source produces an explicit layout error; normal image display remains supported without that attribute.
+
+A live widget or modal writes the result to its Channel under the output name. **Write display value to variable**, **Copy display value** and **Copy display data** can read it normally; no direct write to a Macro Deck variable is performed. Missing keys are initialized with the fallback. Existing Channel data is not replaced by an initial fallback while waiting for the first result. Only changed values are written. Settings previews and picker samples do not publish generated colors, so editing an unsaved preview cannot overwrite live data. After closing the live display, the last published Channel value remains until replaced. Use a dedicated output name: multiple live elements sharing a Channel and output name can overwrite one another.
+
+Results appear asynchronously. The fallback is available for the initial frame; failed image loads retain the last successful image/color. Source changes trigger loading; unchanged URLs reuse the existing 30-second image recheck and content hash, avoiding a second download or repeated analysis of unchanged bytes. Artwork color is checked separately approximately once per second while visible. Queries for the same player are shared across widget, modal and preview sessions; color checks do not re-download or re-register images. SDK beta.17 exposes no artwork/color-change subscription, so this is demand-driven polling, not a change hook. Host state/cache refresh may add latency. Hidden/unopened elements do not promise refreshes. Do not make an image's source depend on its own generated color, which can create a feedback loop.
+
+## Image sources
+
 The BASIC **Image sources** template (`basic_image`) displays three sources side by side.
 Set `iconPackId` to an installed icon UUID (without the `icon-pack:` prefix),
 `localFilePath` to an absolute path on the host computer, and `artworkUrl` to the

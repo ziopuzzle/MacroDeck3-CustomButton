@@ -22,6 +22,8 @@ public sealed class ButtonSession : IUiSession
     private readonly ButtonSettings settings;
     private readonly DataHub? hub;
     private readonly SessionImages? images;
+    private readonly bool publishImageColors;
+    private readonly Dictionary<string, string> publishedImageColors = new(StringComparer.Ordinal);
     private long lastImageRevision;
     private long lastInputRevision;
     private readonly Func<CancellationToken, Task<ActionResult>>? press;
@@ -71,10 +73,12 @@ public sealed class ButtonSession : IUiSession
         Func<SharedScriptUpdates.Lease>? startSharedUpdates = null,
         Action<string>? onWidgetEvent = null, bool sampleHistory = false,
         Func<SharedScriptUpdates.Lease>? startDisplayTicks = null, Action<ControlInput>? onControlInput = null, Action<string>? diagnostic = null,
-        AnimationContinuity? continuity = null, DisplayActivation.Lease? activation = null, SessionImages? images = null, Action<string?>? reportError = null, Action? onOpened = null, Func<string, string, string>? modalAnswer = null)
+        AnimationContinuity? continuity = null, DisplayActivation.Lease? activation = null, SessionImages? images = null, Action<string?>? reportError = null, Action? onOpened = null, Func<string, string, string>? modalAnswer = null,
+        bool publishImageColors = false)
     {
         this.onOpened = onOpened; this.modalAnswer = modalAnswer;
         this.diagnostic = diagnostic; this.images = images; this.reportError = reportError;
+        this.publishImageColors = publishImageColors;
         this.activation = activation;
         this.previewSelection = previewSelection;
         this.onWidgetEvent = onWidgetEvent; this.sampleHistory = sampleHistory;
@@ -92,6 +96,7 @@ public sealed class ButtonSession : IUiSession
             if (settings.Design == null || settings.Design.Preset == "xml")
             {
                 renderer = new(settings.Layout);
+                if (images != null) renderer.ConfigureImageColor = images.ConfigureColor;
                 renderer.RestoreContacts(contacts);
                 initial = DataHub.ParseValues(settings.InitialValues);
             }
@@ -162,6 +167,11 @@ public sealed class ButtonSession : IUiSession
             if (updateError != null) throw new FormatException(updateError);
             var values = new Dictionary<string, JsonElement>(initial, StringComparer.Ordinal);
             foreach (var pair in snapshot.Values) values[pair.Key] = pair.Value;
+            if (renderer != null)
+                foreach (var pair in renderer.ImageColorDefaults)
+                    if (publishImageColors) values.TryAdd(pair.Key, pair.Value); else values[pair.Key] = pair.Value;
+            if (images != null)
+                foreach (var pair in publishImageColors ? images.CompletedColors() : images.Colors()) values[pair.Key] = JsonSerializer.SerializeToElement(pair.Value);
             images?.BeginRender();
             var imageRatios = new Dictionary<string, double>();
             MacroDeck.Ui.Model.Resources.UiResource? ResolveImage(string id, string source)
@@ -173,6 +183,19 @@ public sealed class ButtonSession : IUiSession
             var content = renderer != null ? renderer.Render(values, snapshot.ReadHistory, selectedId, onControlInput != null ? HandleControlInput : null,
                 animation, images == null ? null : ResolveImage, id => imageRatios.GetValueOrDefault(id, 1), modal: surface.Kind == UiSurfaceKinds.Dialog, modalAnswer: modalAnswer) : settings.Design!.Render(values);
             var result = Build(content, renderer?.HasRootBackground(values) ?? true);
+            if (publishImageColors && hub != null && renderer != null && images != null)
+            {
+                var outputs = new Dictionary<string, JsonElement>();
+                foreach (var pair in renderer.ImageColorDefaults)
+                    if (!snapshot.Values.ContainsKey(pair.Key)) outputs[pair.Key] = pair.Value;
+                var completedColors = images.CompletedColors();
+                foreach (var pair in completedColors)
+                    if ((!publishedImageColors.TryGetValue(pair.Key, out var published) || published != pair.Value || !snapshot.Values.ContainsKey(pair.Key))
+                        && (!snapshot.Values.TryGetValue(pair.Key, out var current) || current.ValueKind != JsonValueKind.String || current.GetString() != pair.Value))
+                        outputs[pair.Key] = JsonSerializer.SerializeToElement(pair.Value);
+                if (outputs.Count > 0) hub.Update(settings.Channel, outputs);
+                foreach (var pair in completedColors) publishedImageColors[pair.Key] = pair.Value;
+            }
             lastRenderFailure = null;
             reportError?.Invoke(null);
             return result;

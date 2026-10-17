@@ -26,12 +26,14 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
     private DisplayActivation? activation;
     private readonly ILogger<CustomButtonIntegration>? logger;
     private readonly ShowModalAction showModal;
+    private readonly ArtworkColorCache artworkColors;
     public IReadOnlyList<IActionDefinition> Actions { get; }
     public IReadOnlyList<EventDefinition> EventDefinitions => ButtonEvents.Definitions;
     public CustomButtonIntegration() : this(null) { }
     public CustomButtonIntegration(ILogger<CustomButtonIntegration>? logger, IOptions<PluginHostOptions>? options = null)
     {
         this.logger = logger;
+        artworkColors = new(() => context?.MusicPlayers);
         imageHostUrl = Uri.TryCreate(options?.Value.HostUrl, UriKind.Absolute, out var host) ? host : null;
         showModal = new ShowModalAction(() => context?.Deck, () => context?.Widgets, () => context?.Events);
         Actions = [new UpdateValueAction(Hub), new UpdateValuesAction(Hub), new CopyDisplayValueAction(Hub, ReadWidget), new CopyDisplayDataAction(Hub, ReadWidget), new WriteDisplayVariableAction(Hub, () => context?.UserVariables, ReadWidget), showModal];
@@ -75,6 +77,7 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
             var completion = modalData.ValueKind == JsonValueKind.Object && modalData.TryGetProperty("closeWaitId", out var waitId) && waitId.ValueKind == JsonValueKind.String
                 ? showModal.Completion(waitId.GetString()!) : null;
             var modalSession = new ButtonSession(surface, modalSettings, Hub,
+                publishImageColors: true,
                 modalAnswer: completion == null ? null : completion.Register,
                 onOpened: context?.Events is { } openedEvents && !string.IsNullOrWhiteSpace(eventWidgetId)
                     ? () => openedEvents.Publish(ButtonEvents.ModalOpened, new Dictionary<string, object?>
@@ -82,7 +85,7 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
                 onControlInput: context?.Events is { } modalEvents && !string.IsNullOrWhiteSpace(eventWidgetId)
                     ? input => PublishControlEvent(modalEvents, eventWidgetId, input) : null,
                 images: context != null ? new SessionImages(context.UiResources, ImageHttp,
-                    message => logger?.LogWarning("{ImageDiagnostic}", message), imageHostUrl) : null);
+                    message => logger?.LogWarning("{ImageDiagnostic}", message), imageHostUrl, readArtworkColor: artworkColors.ReadAsync) : null);
             if (completion != null) completion.Opened = true;
             return Task.FromResult<IUiSession?>(modalSession);
         }
@@ -107,9 +110,10 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
         void PublishControl(ControlInput input) => PublishControlEvent(events!, ownerWidgetId!, input);
         var diagnosticSession = Guid.NewGuid().ToString("N");
         return Task.FromResult<IUiSession?>(new ButtonSession(surface, settings, sample ? null : Hub,
+            publishImageColors: canPress && !sample,
             reportError: canUpdate && ownerWidgetId != null ? error => diagnostics.Report(diagnosticSession, ownerWidgetId, settings.Channel, surface.Kind, error) : null,
             continuity: continuity,
-            images: canUpdate && context != null ? new SessionImages(context.UiResources, ImageHttp, message => logger?.LogWarning("{ImageDiagnostic}", message), imageHostUrl) : null,
+            images: canUpdate && context != null ? new SessionImages(context.UiResources, ImageHttp, message => logger?.LogWarning("{ImageDiagnostic}", message), imageHostUrl, readArtworkColor: artworkColors.ReadAsync) : null,
             activation: canPress && !sample && !string.IsNullOrWhiteSpace(ownerWidgetId) ? activation?.Acquire(ownerWidgetId) : null,
             diagnostic: message => logger?.LogInformation("{DisplayDiagnostic}", message),
             onWidgetEvent: canPress && !sample && ownerWidgetId != null && events != null ? Publish : null,

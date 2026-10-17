@@ -83,7 +83,7 @@ public sealed partial class EditorWindow
             var fields = new Dictionary<string, TextBox>(); var panel = new StackPanel { Spacing = 6 };
             fields["when"] = Field(panel, "Condition expression", (string?)style.Attribute("when") ?? "", "when", node.Name.LocalName);
             var conditionGroups = MakeGroups(panel, condition: true);
-            foreach (var attribute in allowed.Where(a => a != "id")) fields[attribute] = Field(conditionGroups[PropertyLayout.Group(type, attribute)], Label(attribute), (string?)style.Attribute(attribute) ?? "", attribute, type, inherited: true);
+            foreach (var attribute in allowed.Where(a => a is not ("id" or "averageColorKey" or "averageColorFallback"))) fields[attribute] = Field(conditionGroups[PropertyLayout.Group(type, attribute)], Label(attribute), (string?)style.Attribute(attribute) ?? "", attribute, type, inherited: true);
             var index = rules.Count; panel.Children.Add(Button("Delete this condition", () => Edit(d => { d.DeleteStyle(selected, index); return selected; })));
             var header = new Expander { Header = $"{T("Condition")} {index + 1}: {(string?)style.Attribute("when")}", Content = panel, HorizontalAlignment = HorizontalAlignment.Stretch };
             properties.Children.Add(header); ruleHeaders.Add(header); rules.Add(fields);
@@ -162,6 +162,8 @@ public sealed partial class EditorWindow
         if (attribute == "id") ToolTip.SetTip(box, "Unique element ID. Valid edits apply automatically. Update matching action-event filters separately.");
         if (attribute == "color" && component is "image" or "svg") ToolTip.SetTip(box, "Optional single-colour tint. Preserves the image alpha mask and replaces all RGB colours. Leave blank for original colours. Supports bindings, conditions and colour transitions. Colour alpha multiplies opacity. Requires client mask support; tinted artwork does not crossfade on beta.15.");
         if (attribute == "rasterSize") ToolTip.SetTip(box, "SVG image's longest edge in pixels: 64–1024, default 512. The aspect ratio is preserved. SVG variables update with display data; unchanged SVG is cached.");
+        if (attribute == "averageColorKey") ToolTip.SetTip(box, "Optional unique literal output name, read with {{name}}. Live widgets/modals also write it to Channel data for variable-write and copy actions. Preview edits stay local. Supports files, HTTP images, inline SVG and artwork, but not Icon Packs.");
+        if (attribute == "averageColorFallback") ToolTip.SetTip(box, "Literal color used before a result is available; default transparent. Alpha is supported. Source-load failures retain the last successful image and color.");
         if (attribute == "transitionMs") ToolTip.SetTip(box, "0 disables transitions. Range: 0–10000 ms. Only later changes animate; the initial value appears immediately.");
         if (attribute == "angle") ToolTip.SetTip(box, "Degrees: 0 points right, 90 down. Use cx/cy/length; clear x1/y1/x2/y2 and x/y/direction. Animate angle to rotate a needle without shortening it. Use a square box for a circular sweep.");
         if (attribute is "offsetX" or "offsetY") ToolTip.SetTip(box, "Use a fraction from -1 to 1: 0.2 moves by 20% of the image box. Positive X moves right; positive Y moves down. The offset is applied after zoom. Supports data bindings and transitions.");
@@ -183,7 +185,7 @@ public sealed partial class EditorWindow
             DockPanel.SetDock(browse, Dock.Right); row.Children.Add(browse);
         }
         if (attribute == "transitionProperties") ToolTip.SetTip(box, "Separate names with spaces, e.g. opacity color. Default: opacity. Only properties supported by this component are accepted.");
-        if (attribute.EndsWith("color", StringComparison.OrdinalIgnoreCase) || attribute == "background")
+        if (attribute.EndsWith("color", StringComparison.OrdinalIgnoreCase) || attribute is "background" or "averageColorFallback")
         {
             var colour = new ColorView { IsAlphaEnabled = true };
             var swatch = new Border { Width = 28, Height = 28, CornerRadius = new CornerRadius(3) };
@@ -240,7 +242,7 @@ public sealed partial class EditorWindow
         "angle" => "Line angle (degrees)",
         "fit" => "Image fit (contain / cover)",
         "zoom" => "Zoom (1 = normal)", "offsetX" => "Horizontal offset (fraction of width)", "offsetY" => "Vertical offset (fraction of height)",
-        "source" => "Image source (file / URL / Icon Pack)", "transition" => "Image change transition", "brightness" => "Brightness (0–2)", "saturation" => "Saturation (0–2)",
+        "source" => "Image source (file / URL / Icon Pack)", "averageColorKey" => "Average color output name", "averageColorFallback" => "Average color fallback", "transition" => "Image change transition", "brightness" => "Brightness (0–2)", "saturation" => "Saturation (0–2)",
         "coordinates" => "Coordinates (widget basis / local box)",
         "fontFace" => "Font (Macro Deck catalogue ID)", "weight" => "Font weight (regular / medium / semibold / bold)",
         "x1" => "Start X (0–100%)", "y1" => "Start Y (0–100%)", "x2" => "End X (0–100%)", "y2" => "End Y (0–100%)",

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.47.0 — image colors
+
+- Add opt-in Image/SVG averageColorKey and averageColorFallback properties, including GUI fields. Analyze local/HTTP images and rendered SVG; use the host's album-color API for artwork. Live widgets and modals publish results to Channel data for variable-write and copy actions; preview results remain local.
+- Refresh artwork colors independently approximately once per second, sharing player queries across visible sessions without reloading images. SDK beta.17 has no artwork-change subscription.
+- Support transparent and alpha-channel fallback colors. Reuse existing image refreshes and content hashes for color analysis.
+- Document automatic shared-data updates through the host's album-color variables and its artwork-ID cache limitation. Icon Pack color analysis is not supported by the current SDK.
+- Remove the unreleased Get artwork color action in favor of XML extraction or the host album-color variable.
+
 ## 0.46.0 — display data transfer
 
 - Clarify local/global variable destination selection and how to verify copied live data independently of the drawing.

@@ -7,6 +7,7 @@ internal static class PropertyDefaults
     internal static string? Get(string type, string name) => name switch
     {
         "opacity" => "1",
+        "averageColorFallback" => "transparent",
         "visible" => "true",
         "closeModal" or "interactive" or "disabled" or "showCursorWhileTouching" or "wrap" or "shadow" => "false",
         "transitionMs" => "0",
