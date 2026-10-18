@@ -26,7 +26,7 @@ internal static class PropertyLayout
     }
     private static readonly string[] Order = ("id placeholder source averageColorKey averageColorFallback name key value fallback min max step start marker format zone seconds positionMs durationMs anchor rate points data " +
         "keyX leftValue rightValue stepX keyY topValue bottomValue stepY " +
-        "coordinates direction x y x1 y1 x2 y2 cx cy length angle radius startAngle endAngle sweepAngle width height size " +
+        "coordinates direction x y x1 y1 x2 y2 cx cy length angle radius startAngle endAngle sweepAngle width height frame size " +
         "minWidth maxWidth minHeight maxHeight minAspect maxAspect fill mainSize justify align gap padding fit zoom offsetX offsetY rotation originX originY clip corner cornerRadius wrap maxLines " +
         "fontFace weight sizeCap minSize digits color role shadow trackColor gradient endColor gradientAngle gradientX gradientY background brightness saturation thickness plotTop strokeColor strokeWidth borderStyle borderColor opacity " +
         "interactive closeModal result disabled showCursorWhileTouching visible visibleWhen transition transitionMs transitionProperties easing colorSpace rasterSize").Split(' ', StringSplitOptions.RemoveEmptyEntries);

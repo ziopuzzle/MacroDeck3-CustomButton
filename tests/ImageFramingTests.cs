@@ -5,6 +5,43 @@ namespace Ziopuzzle.CustomButton.Tests;
 
 public class ImageFramingTests
 {
+    [TestCase("image", "contain")][TestCase("image", "cover")]
+    [TestCase("svg", "contain")][TestCase("svg", "cover")]
+    public void ContainerFrameUsesTransparentNoninteractiveRectangle(string type, string fit)
+    {
+        var content = type == "svg" ? "<![CDATA[<svg width='160' height='90'><rect width='160' height='90'/></svg>]]>" : "";
+        var root = new UiView(ButtonTests.Surface(), new LayoutRenderer($"<layer id='root'><icon id='under' name='star'/><{type} id='art' frame='container' fit='{fit}' size='ignored' zoom='1.2' offsetX='0.2' offsetY='-0.1' transition='crossfade' brightness='0.5' saturation='0.8' color='#ff880080' opacity='0.5'>{content}</{type}></layer>")
+            .Render(DataHub.ParseValues("{}"), imageAspectRatio: _ => double.NaN)).Tree.Root;
+        var modifier = ButtonTests.Nodes(root).Single(n => n.Type == "ui.modifier" && !n.Properties.ContainsKey("frame"));
+        Assert.That(modifier.Type, Is.EqualTo("ui.modifier"));
+        Assert.That(modifier.Properties.ContainsKey("frame"), Is.False, "No fixed square dimensions.");
+        Assert.That(modifier.Properties["fill"].GetBoolean(), Is.True);
+        Assert.That(modifier.Properties["clip"].GetString(), Is.EqualTo("bounds"));
+        var button = ButtonTests.Nodes(modifier).Single(n => n.Type == "ui.button");
+        Assert.That(button.Properties["background"].GetString(), Is.EqualTo("transparent"));
+        Assert.That(button.Properties["modifiers"].GetProperty("radius").GetProperty("basis").GetDouble(), Is.Zero);
+        Assert.That(button.Properties["fit"].GetString(), Is.EqualTo(fit));
+        Assert.That(button.Properties["zoom"].GetDouble(), Is.EqualTo(1.2));
+        Assert.That(button.Properties["offsetX"].GetDouble(), Is.EqualTo(.2));
+        Assert.That(button.Properties["offsetY"].GetDouble(), Is.EqualTo(-.1));
+        Assert.That(button.Properties["opacity"].GetDouble(), Is.EqualTo(.5 * 128 / 255));
+        Assert.That(button.Properties["brightness"].GetDouble(), Is.EqualTo(.5));
+        Assert.That(button.Properties["saturation"].GetDouble(), Is.EqualTo(.8));
+        Assert.That(button.Properties["transition"].GetString(), Is.EqualTo("crossfade"));
+        Assert.That(button.Properties.ContainsKey("events"), Is.False);
+        Assert.That(root.Children.First().Type, Is.Not.EqualTo("ui.button"));
+    }
+
+    [Test] public void ContainerFrameRespectsExplicitAllocationAndCanBeBound()
+    {
+        var renderer = new LayoutRenderer("<image id='art' frame='{{frameMode}}' fill='false' mainSize='80%' />");
+        var root = new UiView(ButtonTests.Surface(), renderer.Render(DataHub.ParseValues("{\"frameMode\":\"container\"}"))).Tree.Root;
+        Assert.That(root.Properties["fill"].GetBoolean(), Is.False);
+        Assert.That(root.Properties["mainSize"].GetProperty("basis").GetDouble(), Is.EqualTo(.8));
+        Assert.That(root.Properties.ContainsKey("frame"), Is.False);
+        Assert.Throws<FormatException>(() => renderer.Render(DataHub.ParseValues("{\"frameMode\":\"invalid\"}")));
+    }
+
     [TestCase("image", false)][TestCase("image", true)][TestCase("svg", false)]
     public void TintPreservesTransparentBackgroundAndMultipliesAlpha(string type, bool hostImage)
     {

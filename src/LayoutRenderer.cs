@@ -27,8 +27,8 @@ public sealed class LayoutRenderer
         "dynamic-text" => "zone format seconds size sizeCap minSize weight color role align",
         "icon" => "name size color role",
         "gauge" => "value min max startAngle endAngle color trackColor thickness",
-        "image" => "source size fit zoom offsetX offsetY transition brightness saturation color averageColorKey averageColorFallback",
-        "svg" => "rasterSize size fit zoom offsetX offsetY transition brightness saturation color averageColorKey averageColorFallback",
+        "image" => "source size frame fit zoom offsetX offsetY transition brightness saturation color averageColorKey averageColorFallback",
+        "svg" => "rasterSize size frame fit zoom offsetX offsetY transition brightness saturation color averageColorKey averageColorFallback",
         "text" => "size sizeCap minSize weight fontFace color role digits align wrap maxLines shadow strokeColor strokeWidth",
         "bar" => "value start marker min max color endColor thickness",
         "chart" => "key min max points color plotTop thickness",
@@ -244,7 +244,7 @@ public sealed class LayoutRenderer
         var horizontal = node.Name == "stack" && Choice("direction", "vertical") == "horizontal";
         var children = node.Elements().Where(e => e.Name != "style").Select(n => Make(n, values, history, horizontal, selectedId, node.Name == "segmented" ? null : input, animation, images, imageAspectRatio, modal && node.Name != "segmented", modalAnswer)
             ?? (node.Name.LocalName is "responsive" or "segmented" ? new UiLayer { Key = (string)n.Attribute("id")!, Children = [] } : null)).OfType<UiElement>().ToArray();
-        var textSize = Length("size", .18, 1);
+        var textSize = node.Name.LocalName is "image" or "svg" && Choice("frame", "square") == "container" ? .18 : Length("size", .18, 1);
         var minTextSize = Math.Min(Length("minSize", Math.Min(.08, textSize), 1), textSize);
         UiSize TextLength(double size) => attributes.ContainsKey("sizeCap") ? UiSize.Capped(size, N("sizeCap", 32, 1, 256)) : (UiSize)size;
         UiProgressReference Progress()
@@ -351,8 +351,9 @@ public sealed class LayoutRenderer
                         throw new FormatException("Average color is not available for Icon Pack resources in SDK beta.17.");
                     ConfigureImageColor?.Invoke(key, colorKey, (string?)node.Attribute("averageColorFallback") ?? "transparent");
                     var resource = images?.Invoke(key, source);
-                    var imageSize = Length("size", 1, 1);
-                    var imageFill = B("fill", false);
+                    var containerFrame = Choice("frame", "square") == "container";
+                    var imageSize = containerFrame ? 1 : Length("size", 1, 1);
+                    var imageFill = B("fill", containerFrame);
                     var imageOpacity = N("opacity", 1);
                     // Keep the native tint-capable tree stable when a conditional colour is cleared.
                     var tintMode = attributes.ContainsKey("color") || node.Elements("style").Any(s => s.Attribute("color") != null)
@@ -366,6 +367,16 @@ public sealed class LayoutRenderer
                     var zoom = N("zoom", 1, .1, 4);
                     var offsetX = N("offsetX", 0, -1, 1);
                     var offsetY = N("offsetY", 0, -1, 1);
+                    // A transparent native artwork surface fits the allocated rectangle, unlike
+                    // ui.image's intrinsic square. No events means the artwork cannot claim input.
+                    // The modifier owns clipping/radius so nested button corners do not leak in.
+                    if (containerFrame)
+                        return new UiModifier { Key = key, Fill = imageFill, MainSize = mainSize, Clip = "bounds",
+                            Child = new UiModifier { Key = "corners", Radius = 0, Child = new UiButton { Key = "art", Source = image.Source, Transition = image.Transition,
+                                Background = "transparent", Fit = fit, Zoom = zoom, OffsetX = offsetX, OffsetY = offsetY,
+                                Tint = tint == null ? default : UiValue.Of(tint),
+                                Opacity = imageOpacity * tintAlpha, Brightness = image.Brightness, Saturation = image.Saturation,
+                                Children = [] } } };
                     // Explicit framing keeps a stable tree while data-bound values change.
                     if (!tintMode && fit == "contain" && !attributes.ContainsKey("zoom") && !attributes.ContainsKey("offsetX") && !attributes.ContainsKey("offsetY")
                         && !(duration > 0 && animated.Overlaps(new[] { "zoom", "offsetX", "offsetY" })))

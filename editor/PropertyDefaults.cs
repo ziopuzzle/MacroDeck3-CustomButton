@@ -26,6 +26,7 @@ internal static class PropertyDefaults
         "originX" or "originY" => "0.5",
         "zoom" or "brightness" or "saturation" => "1",
         "fit" => "contain",
+        "frame" => "square",
         "name" when type == "icon" => "star",
         "format" => "time",
         "seconds" => type == "clock" ? "true" : "false",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.47.3 — rectangular image frames
+
+- Add Image/SVG `frame="container"` to fit artwork into the parent's allocated rectangle with contain or cover. Keep square frames as the default for existing layouts.
+- Use a transparent, noninteractive artwork surface without additional rounded corners. Preserve tint, alpha, brightness, saturation, framing and transitions.
+- Add GUI choices, help and defaults. Container mode ignores size and defaults to fill; use parent layout or mainSize to allocate space.
+
 ## 0.47.2 — expression picker
 
 - Replace the editor's data insertion menu with a shared searchable data/function editor and descriptions. Edit values live in the main GUI/preview and insert repeatedly at the last cursor/selection. Close with × while keeping edits; there are no OK or Cancel buttons. Respect existing bindings, selections, format suffixes and condition/key fields without nesting template braces.

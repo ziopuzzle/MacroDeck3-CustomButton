@@ -59,11 +59,12 @@ or an HTTP/HTTPS URL. Escape XML special characters such as `&` as `&amp;` in li
 | Attribute | Meaning |
 | --- | --- |
 | `source` | Absolute local path, HTTP/HTTPS URL, host `/api/...` URL, `icon-pack:UUID`, or `artwork:/api/music-player/artwork/...`; supports display-data bindings and conditional styles. Empty or missing data draws no image. |
-| `size` | Edge of the square image box, default `100%`. |
-| `fit` | `contain` (default) shows the complete image. `cover` fills the square box and clips the overflow at its center. Both preserve aspect ratio. |
+| `frame` | `square` (default) retains the existing square frame. `container` uses the rectangle allocated by the parent, ignoring `size`. Supports bindings and conditional styles. Also available on SVG. |
+| `size` | Edge of the square image box, default `100%`. Ignored for `frame="container"`. |
+| `fit` | `contain` (default) shows the complete image. `cover` fills the chosen frame and clips overflow at its center. Both preserve aspect ratio. |
 | `zoom` | 0.1–4, default 1. Multiplier applied after contain/cover fitting. |
 | `offsetX`, `offsetY` | −1–1, default 0. Shift right/down by a fraction of the image box, after scaling. Use `0.2` for 20%. |
-| `mainSize`, `fill` | Images default to a natural `size` × `size` footprint (`fill=false`) so the parent stack controls alignment. Ordinary contain images can explicitly request an expanded allocation with `fill=true` or `mainSize`; artwork is centered within it. Cover/zoom framing retains the square crop box. |
+| `mainSize`, `fill` | Square mode defaults to a natural `size` × `size` footprint (`fill=false`). Ordinary contain images can request expanded allocation, but their artwork still fits a square. Container mode defaults to `fill=true`; the parent's layout and `mainSize` determine the available rectangle. |
 | `opacity` | 0–1; supports the existing opacity animation. |
 | `color` | Optional single-colour tint, including alpha. Replaces all RGB colours while retaining the image's alpha mask. Blank preserves original colours. Supports bindings, conditional styles and colour transitions; colour alpha multiplies `opacity`. |
 | `brightness`, `saturation` | 0–2, default 1. Saturation 0 is grayscale. |
@@ -73,7 +74,25 @@ or an HTTP/HTTPS URL. Escape XML special characters such as `&` as `&amp;` in li
 Place an image inside an interactive stack to make it clickable, or inside a layer
 to put text and controls over it. Image itself does not emit input events.
 
-For a monochrome Icon Pack image, add `color="{{iconColor}}"` (for example `#54dfcc80`). Tint uses the host's native image mask and does not download/re-upload the image. It also works on the `svg` component, recolouring all SVG parts together. On beta.15, clients without CSS mask support show the original colours, and tinted artwork does not crossfade. Brightness and saturation are applied to the tint too. Tint uses the square image frame even when the source dimensions are known.
+For a monochrome Icon Pack image, add `color="{{iconColor}}"` (for example `#54dfcc80`). Tint uses the host's native image mask and does not download/re-upload the image. It also works on the `svg` component, recolouring all SVG parts together. On beta.15, clients without CSS mask support show the original colours, and tinted artwork does not crossfade. Brightness and saturation are applied to the tint too. Tint uses the selected image frame.
+
+## Fit a rectangular widget (0.47.3)
+
+Choose **Image frame → container** in the GUI, or set `frame="container"`. In a layer, the image uses the layer's available rectangle. This lets a landscape cover use a wide widget instead of being reduced to fit a square.
+
+```xml
+<layer id="player">
+  <image id="artwork" source="{{artwork}}" frame="container" fit="contain"
+         brightness="0.5" transition="crossfade" />
+  <stack id="overlay" padding="4%" justify="end">
+    <text id="title" size="10%" align="center">{{title}}</text>
+  </stack>
+</layer>
+```
+
+The image surface has a transparent background; no background color needs to be set. Letterboxing and transparent pixels show the underlying content. Set a background on a parent stack/layer if desired. The image has no press handlers and does not add its own rounded corners; ancestor clipping still applies. Existing child controls can remain above it in a layer.
+
+Container mode supports all existing image sources, SVG, tint, opacity, zoom, offsets and transitions. `contain` still leaves margins when source and frame aspect ratios differ; use `cover` to fill the frame with cropping. In a stack, use `mainSize` to reserve space, or let the default `fill=true` share remaining space. Inside a scrolling layout, provide an explicit main-axis size or a bounded modifier; an unbounded scroll axis has no remaining space to fill. Existing XML remains in square mode.
 
 PNG, JPEG, WebP and GIF are accepted. SVG is not supported by the host resource API.
 The plugin limits each file/download to 2 MiB; the host additionally enforces its
@@ -114,7 +133,7 @@ The editor's **Image fit (contain / cover)** suggestions select the mode. The sa
 can use a data binding or conditional style. The image canvas ratio is read from PNG, JPEG,
 GIF or WebP headers. The host's transform and clipping components implement the crop; image
 bytes are unchanged, transparency is retained, and the image does not become a button.
-This release covers the existing square image box rather than an arbitrary rectangular area.
+This describes the default square mode. Since 0.47.3, container mode instead uses the host's native artwork surface to fit the allocated rectangle without requiring image dimensions.
 Unknown/malformed dimensions fall back to a ratio of 1; host decoding still validates the image.
 Crossfade remains available, but a change in canvas ratio also changes the crop geometry immediately.
 
@@ -131,7 +150,7 @@ Crossfade remains available, but a change in canvas ratio also changes the crop 
 Initial framing data: `{"coverUrl":"","zoom":1,"panX":0,"panY":0}`.
 The editor exposes all three fields, value suggestions and display-data insertion.
 Changing these values reuses the loaded image. Zoom is centered; translation is measured
-against the original square box and is independent of zoom. Overflow is clipped. Zooming
+against the selected frame and is independent of zoom. Overflow is clipped. Zooming
 out or moving too far can expose empty areas of the box, including with Cover.
 These properties support the existing value-change transitions, bindings and conditional styles.
 

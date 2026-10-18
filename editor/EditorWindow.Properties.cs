@@ -163,6 +163,8 @@ public sealed partial class EditorWindow
         if (attribute == "id") ToolTip.SetTip(box, "Unique element ID. Valid edits apply automatically. Update matching action-event filters separately.");
         if (attribute == "color" && component is "image" or "svg") ToolTip.SetTip(box, "Optional single-colour tint. Preserves the image alpha mask and replaces all RGB colours. Leave blank for original colours. Supports bindings, conditions and colour transitions. Colour alpha multiplies opacity. Requires client mask support; tinted artwork does not crossfade on beta.15.");
         if (attribute == "rasterSize") ToolTip.SetTip(box, "SVG image's longest edge in pixels: 64–1024, default 512. The aspect ratio is preserved. SVG variables update with display data; unchanged SVG is cached.");
+        if (attribute == "frame") ToolTip.SetTip(box, "square: use size for a square frame (default). container: fit the parent's allocated rectangle; size is ignored and fill defaults to true. Background stays transparent. In a scrolling layout, give the image a mainSize or an enclosing modifier a height.");
+        if (attribute == "size" && component is "image" or "svg") ToolTip.SetTip(box, "Edge of the square image frame. Ignored when Image frame is container; use the parent's layout or mainSize instead.");
         if (attribute == "averageColorKey") ToolTip.SetTip(box, "Optional unique literal output name, read with {{name}}. Live widgets/modals also write it to Channel data for variable-write and copy actions. Preview edits stay local. Supports files, HTTP images, inline SVG and artwork, but not Icon Packs.");
         if (attribute == "averageColorFallback") ToolTip.SetTip(box, "Literal color used before a result is available; default transparent. Alpha is supported. Source-load failures retain the last successful image and color.");
         if (attribute == "transitionMs") ToolTip.SetTip(box, "0 disables transitions. Range: 0–10000 ms. Only later changes animate; the initial value appears immediately.");
@@ -250,6 +252,7 @@ public sealed partial class EditorWindow
         "endAngle" => "End angle (degrees)",
         "angle" => "Line angle (degrees)",
         "fit" => "Image fit (contain / cover)",
+        "frame" => "Image frame (square / container)",
         "zoom" => "Zoom (1 = normal)", "offsetX" => "Horizontal offset (fraction of width)", "offsetY" => "Vertical offset (fraction of height)",
         "source" => "Image source (file / URL / Icon Pack)", "averageColorKey" => "Average color output name", "averageColorFallback" => "Average color fallback", "transition" => "Image change transition", "brightness" => "Brightness (0–2)", "saturation" => "Saturation (0–2)",
         "coordinates" => "Coordinates (widget basis / local box)",
