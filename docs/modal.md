@@ -68,7 +68,7 @@ Interactive elements publish the existing Custom Button element events. **Event 
 Use distinct element IDs if the target widget itself has interactive elements and you want to distinguish them from dialog elements. Events deliberately share the same event types and target identity.
 Whole-dialog presses and display-activated/tick events are not emitted. Modal opened is a separate initialization event (see below). If you tested the unreleased Show details action, remove it and add Show modal again: its action ID changed from `show-details` to `show-modal`, and its view ID is now `custom-button-modal`. Existing dialogs should be closed and reopened.
 Lengths use the dialog's available area; a layout designed for a square tile may need different proportions.
-The dialog has a transparent root, without tile rounding or tile clipping. Set a background in XML if needed. Text shadow outside an explicit native button context remains subject to the host's text-shadow limitation. GUI editing is available from the action settings; see below.
+The dialog has a transparent root and a transparent, noninteractive button surface with square corners. Set a background in XML if needed. Text with `shadow="true"` uses the host's text shadow, including inside transparent stacks; shadows remain off by default. The content surface clips at its rectangular bounds; use a scroll container for overflowing content. GUI editing is available from the action settings; see below.
 
 ## GUI editing
 

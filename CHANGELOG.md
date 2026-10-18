@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.47.4 — modal text shadows
+
+- Enable opt-in text shadows in modals using a transparent, noninteractive surface with square corners.
+
 ## 0.47.3 — rectangular image frames
 
 - Add Image/SVG `frame="container"` to fit artwork into the parent's allocated rectangle with contain or cover. Keep square frames as the default for existing layouts.

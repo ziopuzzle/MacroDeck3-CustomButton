@@ -10,6 +10,21 @@ namespace Ziopuzzle.CustomButton.Tests;
 public class ModalTests
 {
     [Test]
+    public async Task ModalProvidesSquareNoninteractiveShadowContext()
+    {
+        await using var session = new ButtonSession(ButtonTests.Surface() with { Kind = UiSurfaceKinds.Dialog },
+            new("shadow", "<stack id='body'><text id='shadow' shadow='true'>Shadow</text><text id='plain'>Plain</text></stack>", "{}"), null);
+        var tree = session.BuildTree();
+        Assert.That(tree.Root.Type, Is.EqualTo("ui.stack"));
+        var button = ButtonTests.Nodes(tree.Root).Single(n => n.Type == "ui.button");
+        Assert.That(button.Properties["background"].GetString(), Is.EqualTo("transparent"));
+        Assert.That(button.Properties["modifiers"].GetProperty("radius").GetProperty("basis").GetDouble(), Is.Zero);
+        Assert.That(ButtonTests.Nodes(button).Single(n => n.Id.EndsWith(".shadow")).Properties["shadow"].GetBoolean(), Is.True);
+        Assert.That(ButtonTests.Nodes(button).Single(n => n.Id.EndsWith(".plain")).Properties["shadow"].GetBoolean(), Is.False);
+        Assert.That(JsonSerializer.Serialize(button), Does.Not.Contain("press"));
+    }
+
+    [Test]
     public async Task ModalInitializationRunsOncePerSessionEvenWhenRenderingFails()
     {
         var integration = new CustomButtonIntegration();
