@@ -62,7 +62,11 @@ public static class ButtonEvents
                     ActionParameter.Number("levelX", label: TextCatalog.Reference("X level (0–1)"), required: true),
                     ActionParameter.Number("levelY", label: TextCatalog.Reference("Y level (0–1)"), required: true),
                     ActionParameter.Text("keyX", label: TextCatalog.Reference("X data key"), required: true),
-                    ActionParameter.Text("keyY", label: TextCatalog.Reference("Y data key"), required: true) } : []).ToArray()
+                    ActionParameter.Text("keyY", label: TextCatalog.Reference("Y data key"), required: true) } : []).Concat(new[] {
+                    ActionParameter.Text("repeatId", label: TextCatalog.Reference("Repeat element ID")),
+                    ActionParameter.Text("itemKey", label: TextCatalog.Reference("Repeated item key")),
+                    ActionParameter.Number("itemIndex", label: TextCatalog.Reference("Repeated item index (zero-based)")),
+                    ActionParameter.Text("itemJson", label: TextCatalog.Reference("Repeated item (JSON)")) }).ToArray()
     })).ToArray();
     public static string ControlEventId(string name) => name.StartsWith("text-", StringComparison.Ordinal) ? name : name.StartsWith("position-", StringComparison.Ordinal) ? "trackpad-" + name[9..] : "element-" + name;
     private static bool IsControlEvent(string? id) => id != null && ControlNames.Keys.Any(name => ControlEventId(name) == id);

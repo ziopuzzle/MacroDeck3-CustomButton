@@ -33,7 +33,7 @@ public class HistoryTests
     [Test] public void BadValuesAndRemovedKeysClearOnlyTheirHistoryAndFailedUpdatesAreAtomic()
     {
         var hub = new DataHub(); hub.Update("demo", DataHub.ParseValues("{\"value\":10,\"ram\":20}"));
-        Assert.Throws<FormatException>(() => hub.Update("demo", new Dictionary<string, JsonElement> { ["value"] = JsonSerializer.SerializeToElement(new[] { 1, 2 }) }));
+        Assert.Throws<FormatException>(() => hub.Update("demo", new Dictionary<string, JsonElement> { ["value"] = JsonSerializer.SerializeToElement(new string('x', 16001)) }));
         Assert.That(hub.ReadHistory("demo", "value", 60), Is.EqualTo(new[] { 10d }));
         hub.Update("demo", DataHub.ParseValues("{\"value\":\"NaN\"}"));
         Assert.That(hub.ReadHistory("demo", "value", 60), Is.Empty);

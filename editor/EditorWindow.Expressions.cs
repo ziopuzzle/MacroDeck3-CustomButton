@@ -13,6 +13,8 @@ public sealed partial class EditorWindow
         var start = box.SelectionStart; var end = box.SelectionEnd;
         var choices = keys.Concat(new LayoutRenderer(history.Xml).ImageColorDefaults.Keys).Distinct().OrderBy(k => k)
             .Select(k => new ExpressionChoice("Display data", k, "Display data key. This is Channel data, not a direct Macro Deck variable lookup.", k))
+            .Concat(LayoutRenderer.RepeatPreviewKeys(history.Xml, selected, initialValues).Select(k =>
+                new ExpressionChoice("Repeated item", k, "Read-only value for the nearest Repeat item. index is zero-based; itemKey identifies the item.", k)))
             .Concat(ExpressionInsertion.KeyOnly(attribute) ? [] : ExpressionInsertion.Functions.Where(f =>
                 ExpressionInsertion.IsCondition(attribute) ? f.Condition : f.Function != "type")).ToArray();
         var dialog = new Window { Title = "Edit value — display data and functions", Width = 680, Height = 700, MinWidth = 480, MinHeight = 560,

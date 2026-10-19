@@ -169,7 +169,7 @@ public class ButtonTests
     [TestCase("<text>Missing id</text>")]
     public void RejectsMalformedLayouts(string xml) => Assert.Throws<FormatException>(() => new LayoutRenderer(xml));
     [Test] public void ProhibitsDtd() => Assert.Throws<XmlException>(() => new LayoutRenderer("<!DOCTYPE text [<!ENTITY x SYSTEM 'file:///secret'>]><text id=\"a\">&x;</text>"));
-    [TestCase("[]")][TestCase("{\"x\":[]}")][TestCase("{\"x\":1,\"x\":2}")]
+    [TestCase("[]")][TestCase("{\"x\":1,\"x\":2}")]
     public void RejectsAmbiguousData(string json) => Assert.Throws<FormatException>(() => DataHub.ParseValues(json));
     [Test] public async Task FailedUpdateLeavesLastGoodValue()
     {

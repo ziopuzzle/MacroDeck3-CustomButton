@@ -25,7 +25,7 @@ public static class LayoutOptions
         "transitionProperties" => TransitionProperties(component),
         "direction" => ["vertical", "horizontal"],
         "corner" => ["square", "rounded"],
-        "align" when component == "stack" => ["start", "center", "end", "stretch", "baseline"],
+        "align" when component is "stack" or "repeat" => ["start", "center", "end", "stretch", "baseline"],
         "align" => ["start", "center", "end"],
         "justify" => ["start", "center", "end", "space-between"],
         "weight" => ["regular", "medium", "semibold", "bold"],

@@ -11,6 +11,7 @@ public static class LayoutLimits
     public const int XmlCharacters = 65536;
     public const int XmlElements = 512;
     public const int XmlDepth = 32;
+    public const int RepeatItems = 256;
     // beta.15 allows 2,000 nodes, JSON depth 32, and 64 KiB per patch.
     // Reserve room for the session envelope and replace-node operation.
     public const int RenderNodes = 2000;

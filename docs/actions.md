@@ -26,7 +26,7 @@ These actions combine the source Custom Button's **saved Initial JSON** with its
 | Copy display data | Copies all effective keys. Merge overwrites matching keys and keeps other destination keys; Replace removes other destination keys. The default is Merge. |
 | Write display value to variable | Sets an existing writable Macro Deck variable using one effective display value. Select the destination variable name, not `{{ vars.name }}`. |
 
-Channel copies preserve JSON strings, numbers, booleans and null without converting their types. History is not copied; destination history follows the normal update rules. Missing keys or an empty/missing effective source fail without changing the destination. A limit-exceeding merge also fails without a partial update. Same-channel copying is supported, including copying a value to a different name.
+Channel copies preserve JSON strings, numbers, booleans, arrays, objects and null without converting their types. Arrays and objects are copied as whole values, not merged recursively. History is not copied; destination history follows the normal update rules. Missing keys or an empty/missing effective source fail without changing the destination. A limit-exceeding merge also fails without a partial update. Same-channel copying is supported, including copying a value to a different name.
 
 New actions added inside Custom Button use the widget's Channel as the source. Set the destination explicitly. Changing the sidebar Channel or adopting a copied widget's automatic Channel updates matching source and destination references in that widget's transfer actions; unrelated channels are kept.
 
@@ -34,7 +34,7 @@ For variable writes, **Which variable to write** selects the destination, not th
 
 To verify a copy independently of the drawing, open the receiving Custom Button's **Diagnostics**, press **Refresh diagnostics**, and check **Current display data**. Copied values appear as `live`; the sidebar's Initial JSON remains unchanged. The receiving XML must use the copied names (for example `{{volume}}`), and its Channel must match Destination channel exactly. Copies run once; they do not keep two channels synchronized automatically. A later data-update action can overwrite a copied value.
 
-The host applies the destination variable's type and precision. Strings retain whitespace, numbers use JSON's invariant numeric notation, booleans become `true`/`false`, and JSON null becomes an empty string. Empty or incompatible values may be rejected by a numeric variable. Read-only, missing and unavailable variables return the host's failure rather than reporting success.
+The host applies the destination variable's type and precision. Strings retain whitespace, numbers use JSON's invariant numeric notation, booleans become `true`/`false`, and JSON null becomes an empty string. Arrays/objects become JSON text; use a text variable for these. Empty or incompatible values may be rejected by a numeric variable. Read-only, missing and unavailable variables return the host's failure rather than reporting success.
 
 Example: after a slider changes `volume` on Channel `player`, use Copy display value with source `player` / `volume` and destination `overlay` / `volume` to update a separate modal. To persist it in a Macro Deck variable, create a numeric variable named `saved_volume`, then use Write display value to variable with source `player` / `volume` and destination `saved_volume`.
 

@@ -16,7 +16,7 @@ public sealed class LayoutDocument
     public IEnumerable<XElement> Components => Root.DescendantsAndSelf().Where(e => e.Name != "style");
     public XElement Find(string id) => Components.SingleOrDefault(e => (string?)e.Attribute("id") == id)
         ?? throw new FormatException("The selected component was not found.");
-    public static bool IsContainer(XElement element) => element.Name.LocalName is "scroll" or "stack" or "layer" or "transform" or "modifier" or "responsive" or "variant" or "segmented";
+    public static bool IsContainer(XElement element) => element.Name.LocalName is "repeat" or "scroll" or "stack" or "layer" or "transform" or "modifier" or "responsive" or "variant" or "segmented";
     public string Serialize()
     {
         // All non-text components can contain styles with insignificant indentation.
@@ -49,6 +49,7 @@ public sealed class LayoutDocument
         var child = new XElement(type, new XAttribute("id", NewId(type)));
         switch (type)
         {
+            case "repeat": child.SetAttributeValue("items", "{{items}}"); child.SetAttributeValue("direction", "vertical"); break;
             case "segmented":
                 child.SetAttributeValue("key", "mode"); child.SetAttributeValue("mainSize", "20%");
                 child.Add(new XElement("text", new XAttribute("id", NewId("text")), "A"));

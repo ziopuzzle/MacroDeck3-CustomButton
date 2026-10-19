@@ -19,6 +19,25 @@ public static class TestApp
 }
 public class EditorTests
 {
+    [AvaloniaTest] public void RepeatPropertiesAndItemSuggestionsAreEditable()
+    {
+        var w = new EditorWindow("<repeat id='rows' items='items' itemKey='id'><text id='label'>{{item.title}}</text></repeat>",
+            "{\"items\":[{\"id\":\"a\",\"title\":\"Song\"}]}", true); w.Show(); Flush(w);
+        try
+        {
+            Assert.That(Find<TextBox>(w, "field_items").Text, Is.EqualTo("items"));
+            Assert.That(Find<TextBox>(w, "field_itemKey").Text, Is.EqualTo("id"));
+            Assert.That(Find<Border>(w, "block_rows").BorderBrush!.ToString(), Is.EqualTo("#ff9874cf"));
+            Click(w, Find<Border>(w, "block_label"));
+            Click(w, Find<Button>(w, "insert_text"));
+            var picker = w.OwnedWindows.Single();
+            var choices = picker.GetVisualDescendants().OfType<ListBox>().Single().Items.Cast<ExpressionChoice>().ToArray();
+            Assert.That(choices.Any(c => c.Group == "Repeated item" && c.First == "item.title"), Is.True);
+            picker.Close(); Flush(w);
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
     [AvaloniaTest] public void FunctionPickerWorksWithoutDataAndPreservesTheSelection()
     {
         var w = new EditorWindow("<text id='label' size='{{= max(0, 1)}}'>Hello</text>", "{}", true); w.Show(); Flush(w);
@@ -299,8 +318,9 @@ public class EditorTests
             var groups = add.ContextMenu!.Items.Cast<MenuItem>().ToArray();
             Assert.That(groups.Select(g => g.Header), Is.EqualTo(new[] { "Layout", "Text and time", "Images", "Shapes", "Data display", "Controls" }));
             var entries = groups.SelectMany(g => g.Items.Cast<MenuItem>()).ToArray();
-            Assert.That(entries.Length, Is.EqualTo(30));
-            Assert.That(entries.Select(e => e.Header).Distinct().Count(), Is.EqualTo(30));
+            Assert.That(entries.Length, Is.EqualTo(31));
+            Assert.That(entries.Select(e => e.Header).Distinct().Count(), Is.EqualTo(31));
+            Assert.That(groups[0].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("↻ Repeat"));
             Assert.That(groups[0].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("↕ Scroll"));
             Assert.That(groups[2].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("▧ SVG"));
             Assert.That(groups[0].Items.Cast<MenuItem>().Select(e => e.Header), Does.Contain("↻ Transform"));

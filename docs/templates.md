@@ -16,6 +16,7 @@ The gallery is built directly from `examples/*.xml`. A same-stem `.json` provide
 | BASIC | Playback progress | basic_progress |
 | BASIC | Shapes | basic_shape |
 | BASIC | Slider | basic_slider |
+| BASIC | Repeat array | basic_repeat |
 | ADVANCED | Clock | widget_clock |
 | ADVANCED | History Graph | widget_history-chart |
 | ADVANCED | Meter | widget_meter |

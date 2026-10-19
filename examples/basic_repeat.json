@@ -1,0 +1,8 @@
+{
+  "tracks": [
+    { "id": "track-a", "title": "First song", "artist": "Artist A", "playing": false },
+    { "id": "track-b", "title": "Now playing", "artist": "Artist B", "playing": true },
+    { "id": "track-c", "title": "Next song", "artist": "Artist C", "playing": false },
+    { "id": "track-d", "title": "Last song", "artist": "Artist D", "playing": false }
+  ]
+}

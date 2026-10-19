@@ -38,11 +38,11 @@ The first field is not zero-padded; following fields have two digits. Durations 
 `number(key, fallback)` converts a finite number or numeric string, otherwise using the fallback.
 `isNumber(key)` tests the JSON number type; `isNumeric(key)` tests whether a finite number can be obtained.
 These predicates return 1/0 in calculations and true/false in conditions.
-In conditions, `type(key)` returns `number`, `string`, `boolean`, `null`, or `missing`.
+In conditions, `type(key)` returns `number`, `string`, `boolean`, `array`, `object`, `null`, or `missing`.
 The key is a data name, not an expression. Conditions also accept quoted keys such as `type('my-key')`.
 Calculation keys follow the existing identifier grammar (letters, digits, underscores and dots).
 Calculation fallbacks can be arithmetic expressions; condition fallbacks are values or nested function calls.
-This does not add array/object support to display data.
+Since 0.48.0, display data accepts arrays and objects. Use [Repeat](components.md#repeat-array-0480) to render arrays; its local `item.field`, `index` and `itemKey` values can be used in expressions. Arithmetic on an array/object is not supported.
 
 ```xml
 <text id="time">{{= floor(number(position, 0) / 1000):duration}}</text>

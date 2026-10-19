@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.48.0 — repeated array layouts
+
+- Accept arrays and objects in display data and add Repeat to XML and the GUI. Render item fields, zero-based indices, conditions and expressions using a private per-item scope.
+- Preserve item rendering identities across reordering with optional unique item keys. Include repeat ID, item key, index and JSON in child control events while retaining the template's element ID.
+- Add a scrollable Repeat array example and document limits and read-only item bindings. Automatic item scrolling and array-editing actions are not included.
+
 ## 0.47.4 — modal text shadows
 
 - Enable opt-in text shadows in modals using a transparent, noninteractive surface with square corners.

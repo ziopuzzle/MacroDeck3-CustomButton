@@ -27,7 +27,7 @@ public class ReviewRegressionTests
         Assert.That(before.ReadHistory("value", 60), Is.EqualTo(new[] {12d}));
         Assert.That(after.Values["value"].GetInt32(), Is.EqualTo(20));
         Assert.That(after.ReadHistory("value", 60), Is.EqualTo(new[] {12d, 20d}));
-        Assert.Throws<FormatException>(() => hub.Update("demo", DataHub.ParseValues("{\"invalid\":[]}")));
+        Assert.Throws<FormatException>(() => hub.Update("demo", DataHub.ParseValues("{\"invalid name\":[]}")));
         Assert.That(hub.Snapshot("demo"), Is.SameAs(after));
     }
 

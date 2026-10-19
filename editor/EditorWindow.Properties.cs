@@ -161,6 +161,8 @@ public sealed partial class EditorWindow
         }
         ToolTip.SetTip(box, T("Leave blank for the default. Use {{dataName}}, {{= used / total * 100:F1}}%, or {{= floor(position / 1000):duration}} for milliseconds. Math supports floor, ceil, round, abs, min, max, clamp and more."));
         if (attribute == "id") ToolTip.SetTip(box, "Unique element ID. Valid edits apply automatically. Update matching action-event filters separately.");
+        if (attribute == "items") ToolTip.SetTip(box, "Array data name or {{tracks}}. Children are rendered once per item. Use {{item.title}}, {{item}} and {{index}} inside them. Missing or null arrays render no children.");
+        if (attribute == "itemKey") ToolTip.SetTip(box, "Optional literal property path such as id. Values must be unique, nonempty strings or numbers. Keeps item identity when reordered. Blank uses the zero-based index.");
         if (attribute == "color" && component is "image" or "svg") ToolTip.SetTip(box, "Optional single-colour tint. Preserves the image alpha mask and replaces all RGB colours. Leave blank for original colours. Supports bindings, conditions and colour transitions. Colour alpha multiplies opacity. Requires client mask support; tinted artwork does not crossfade on beta.15.");
         if (attribute == "rasterSize") ToolTip.SetTip(box, "SVG image's longest edge in pixels: 64–1024, default 512. The aspect ratio is preserved. SVG variables update with display data; unchanged SVG is cached.");
         if (attribute == "frame") ToolTip.SetTip(box, "square: use size for a square frame (default). container: fit the parent's allocated rectangle; size is ignored and fill defaults to true. Background stays transparent. In a scrolling layout, give the image a mainSize or an enclosing modifier a height.");
@@ -243,6 +245,7 @@ public sealed partial class EditorWindow
         "closeModal" => "Close modal on press (no press event)",
         "result" => "Modal result (requires Close modal)",
         "start" => "Range start (same units as value)", "marker" => "Marker (same units as value)",
+        "items" => "Array source", "itemKey" => "Item key property",
         "format" => "Time / date format", "zone" => "Time zone (IANA name)", "clip" => "Clip shape", "disabled" => "Disable child interactions",
         "minWidth" => "Minimum width (variant: cells; modifier: length)", "maxWidth" => "Maximum width (variant: cells; modifier: length)",
         "minHeight" => "Minimum height (variant: cells; modifier: length)", "maxHeight" => "Maximum height (variant: cells; modifier: length)",

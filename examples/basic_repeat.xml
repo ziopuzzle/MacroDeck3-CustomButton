@@ -1,0 +1,9 @@
+<scroll id="playlist" background="#1a1a1a">
+  <repeat id="tracks" items="{{tracks}}" itemKey="id" gap="3%" padding="3%">
+    <stack id="row" interactive="true" padding="4%" background="#252525">
+      <style when="item.playing == true" background="#244a52" />
+      <text id="title" size="12%">{{= index + 1}}. {{item.title}}</text>
+      <text id="artist" size="8%" color="#aaaaaa">{{item.artist}}</text>
+    </stack>
+  </repeat>
+</scroll>

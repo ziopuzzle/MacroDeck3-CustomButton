@@ -10,13 +10,14 @@ using MacroDeck.Ui.Model.Resources;
 
 namespace Ziopuzzle.CustomButton;
 
-public sealed class LayoutRenderer
+public sealed partial class LayoutRenderer
 {
     public Action<string, string, string>? ConfigureImageColor { get; set; }
     public Dictionary<string, JsonElement> ImageColorDefaults { get; } = new(StringComparer.Ordinal);
     private static readonly Regex Slot = new(@"\{\{\s*([A-Za-z0-9_.-]+)\s*(?::([^{}]{1,32}))?\s*\}\}", RegexOptions.CultureInvariant);
     internal static string Allowed(string type) => "id fill mainSize visible visibleWhen opacity transitionMs transitionProperties easing colorSpace " + (type switch
     {
+        "repeat" => "items itemKey direction justify align gap padding background",
         "scroll" => "direction gap padding background",
         "stack" => "direction justify align gap padding background borderStyle borderColor interactive closeModal result",
         "layer" => "interactive closeModal result background",
@@ -96,8 +97,17 @@ public sealed class LayoutRenderer
                 if (ids.TryGetValue(id, out var first)) throw new FormatException($"Duplicate ID '{id}'. First defined on <{first.Name}> at line {((IXmlLineInfo)first).LineNumber}, column {((IXmlLineInfo)first).LinePosition}.");
                 ids.Add(id, node);
                 var allowed = Allowed(node.Name.LocalName);
+                if (node.Name == "repeat")
+                {
+                    _ = RepeatDataName((string?)node.Attribute("items") ?? "");
+                    var itemKey = (string?)node.Attribute("itemKey") ?? "";
+                    if (itemKey.Length > 0 && !Regex.IsMatch(itemKey, @"\A[A-Za-z0-9_.-]+\z"))
+                        throw new FormatException("itemKey must be a literal item property path, such as id.");
+                }
                 if (node.Attribute("averageColorKey") is { } output && output.Value.Length > 0)
                 {
+                    if (node.Ancestors().Any(a => a.Name == "repeat"))
+                        throw new FormatException("Image average-color output is not supported inside repeat; each output needs a unique literal data name.");
                     DataHub.ValidateName(output.Value);
                     var fallback = DisplayColor.Parse((string?)node.Attribute("averageColorFallback") ?? "transparent").Hex;
                     if (!ImageColorDefaults.TryAdd(output.Value, JsonSerializer.SerializeToElement(fallback)))
@@ -149,20 +159,26 @@ public sealed class LayoutRenderer
             values = combined;
         }
         animation?.BeginFrame();
+        expandedComponents = 0;
         try { return Make(root, values, history, false, selectedId, input, animation, images, imageAspectRatio, modal, modalAnswer) ?? new UiStack { Key = "hidden", Fill = true, Children = [] }; }
         finally { animation?.EndFrame(); }
     }
-    private UiElement? Make(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio, bool modal, Func<string, string, string>? modalAnswer)
+    private UiElement? Make(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio, bool modal, Func<string, string, string>? modalAnswer, RepeatScope? scope = null)
     {
         try
         {
-            var element = MakeCore(node, values, history, parentHorizontal, selectedId, input, animation, images, imageAspectRatio, modal, modalAnswer);
+            if (++expandedComponents > LayoutLimits.RenderNodes)
+                throw new FormatException($"Expanded layout exceeds {LayoutLimits.RenderNodes} components. Reduce the array or repeated template.");
+            var element = MakeCore(node, values, history, parentHorizontal, selectedId, input, animation, images, imageAspectRatio, modal, modalAnswer, scope);
             return element != null && (string?)node.Attribute("id") == selectedId ? PreviewSelection.Highlight(element) : element;
         }
         catch (FormatException e) when (!e.Data.Contains("LayoutLine")) { throw LocatedError(node, e); }
     }
-    private UiElement? MakeCore(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio, bool modal, Func<string, string, string>? modalAnswer)
+    private UiElement? MakeCore(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio, bool modal, Func<string, string, string>? modalAnswer, RepeatScope? scope)
     {
+        var elementId = (string)node.Attribute("id")!;
+        var key = scope?.NodeKey(elementId) ?? elementId;
+        void Emit(ControlInput value) => input?.Invoke(scope == null ? value : value with { RepeatedItem = scope.Item });
         var attributes = node.Attributes().ToDictionary(a => a.Name.LocalName, a => a.Value);
         foreach (var style in node.Elements("style"))
             if (DisplayCondition.Evaluate((string)style.Attribute("when")!, values))
@@ -181,7 +197,7 @@ public sealed class LayoutRenderer
             if (!supported.Contains(property))
                 throw new FormatException($"Transition property {property} is not supported on {node.Name}.");
         double Animate(string name, double value) => duration > 0 && animated.Contains(name) && animation != null
-            ? animation.Value((string)node.Attribute("id")! + "." + name, value, duration, easing) : value;
+            ? animation.Value(key + "." + name, value, duration, easing) : value;
         double N(string name, double fallback, double min = 0, double max = 1)
         {
             var raw = A(name);
@@ -199,6 +215,13 @@ public sealed class LayoutRenderer
             throw new FormatException($"{name} must be true or false.");
         }
         if (!B("visible", true) || attributes.TryGetValue("visibleWhen", out var visibleWhen) && !DisplayCondition.Evaluate(visibleWhen, values)) return null;
+        if (scope != null && B("interactive", false) && node.Name.LocalName is "slider" or "dial" or "toggle" or "text-field" or "segmented" or "trackpad")
+            foreach (var name in new[] { "key", "keyX", "keyY" })
+            {
+                var boundKey = A(name);
+                if (boundKey is "item" or "index" or "itemKey" || boundKey.StartsWith("item.", StringComparison.Ordinal))
+                    throw new FormatException("Repeat item/index bindings are read-only. For interactive controls, use a separate Channel key, such as volume_{{itemKey}}.");
+            }
         double Length(string name, double fallback, double max = 4)
         {
             var raw = A(name);
@@ -229,21 +252,24 @@ public sealed class LayoutRenderer
             if (duration > 0 && animated.Contains(name) && animation != null)
             {
                 // Keep alpha/structure constant during RGB interpolation. Use opacity for fades.
-                var rgb = animation.Color((string)node.Attribute("id")! + "." + name, color.Rgb, duration, easing, colorSpace);
+                var rgb = animation.Color(key + "." + name, color.Rgb, duration, easing, colorSpace);
                 color = new DisplayColor(rgb, color.Alpha);
             }
             colors[name] = color;
             return color.Rgb;
         }
         string EndColor() => Color("endColor", colors["color"].Hex);
-        var key = (string)node.Attribute("id")!;
         var fill = B("fill", node.Parent == null || parentHorizontal || node.Name.LocalName is "scroll" or "layer" or "chart" or "clock" or "trackpad" or "slider" or "dial" or "toggle" or "segmented" or "text-field" or "gauge" or "transform" or "modifier" or "responsive");
         // Keep omitted sizes unset; a numeric ternary would turn default into an explicit zero.
         UiSize mainSize = default;
         if (attributes.ContainsKey("mainSize") && A("mainSize") != "auto") mainSize = Length("mainSize", 0);
-        var horizontal = node.Name == "stack" && Choice("direction", "vertical") == "horizontal";
-        var children = node.Elements().Where(e => e.Name != "style").Select(n => Make(n, values, history, horizontal, selectedId, node.Name == "segmented" ? null : input, animation, images, imageAspectRatio, modal && node.Name != "segmented", modalAnswer)
-            ?? (node.Name.LocalName is "responsive" or "segmented" ? new UiLayer { Key = (string)n.Attribute("id")!, Children = [] } : null)).OfType<UiElement>().ToArray();
+        var horizontal = node.Name.LocalName is "stack" or "repeat" && Choice("direction", "vertical") == "horizontal";
+        UiElement[] RenderChildren(IReadOnlyDictionary<string, JsonElement> data, RepeatScope? childScope) => node.Elements().Where(e => e.Name != "style").Select(n => Make(n, data, history, horizontal, selectedId, node.Name == "segmented" ? null : input, animation, images, imageAspectRatio, modal && node.Name != "segmented", modalAnswer, childScope)
+            ?? (node.Name.LocalName is "responsive" or "segmented" ? new UiLayer { Key = childScope?.NodeKey((string)n.Attribute("id")!) ?? (string)n.Attribute("id")!, Children = [] } : null)).OfType<UiElement>().ToArray();
+        var children = node.Name == "repeat"
+            ? RepeatItems(attributes["items"], attributes.GetValueOrDefault("itemKey", ""), elementId, values, scope)
+                .SelectMany(item => RenderChildren(item.Values, item.Scope)).ToArray()
+            : RenderChildren(values, scope);
         var textSize = node.Name.LocalName is "image" or "svg" && Choice("frame", "square") == "container" ? .18 : Length("size", .18, 1);
         var minTextSize = Math.Min(Length("minSize", Math.Min(.08, textSize), 1), textSize);
         UiSize TextLength(double size) => attributes.ContainsKey("sizeCap") ? UiSize.Capped(size, N("sizeCap", 32, 1, 256)) : (UiSize)size;
@@ -533,7 +559,7 @@ public sealed class LayoutRenderer
                         var position = new TrackpadValue(x, y, (x - minX) / (maxX - minX), (y - minY) / (maxY - minY), keyX, keyY,
                             contact.StartX, contact.StartY, contact.PreviousX, contact.PreviousY);
                         contact.PreviousX = x; contact.PreviousY = y;
-                        input!(new(key, eventName, Position: position));
+                        Emit(new(elementId, eventName, Position: position));
                     }
                     var padEvents = enabled ? new[]
                     {
@@ -582,7 +608,7 @@ public sealed class LayoutRenderer
                                 if (!e.TryGetString(out var text)) return UiEventOutcome.Rejected("Expected a string.");
                                 // Match the channel payload limit before attempting a data update.
                                 if (JsonSerializer.Serialize(text).Length > 16000) return UiEventOutcome.Rejected("Text exceeds the display data limit.");
-                                try { input(new(key, name == UiComponentEvents.Adjust ? "text-changing" : "text-changed", DataKey: textKey, TextValue: text, PreviousTextValue: textValue)); }
+                                try { Emit(new(elementId, name == UiComponentEvents.Adjust ? "text-changing" : "text-changed", DataKey: textKey, TextValue: text, PreviousTextValue: textValue)); }
                                 catch (FormatException error) { return UiEventOutcome.Rejected(error.Message); }
                                 textValue = text;
                                 return UiEventOutcome.Accepted;
@@ -602,7 +628,7 @@ public sealed class LayoutRenderer
                             Events = input != null && B("interactive", false) ? [UiEventHandler.On(UiComponentEvents.Change, e =>
                             {
                                 if (!e.TryGetBoolean(out var next)) return UiEventOutcome.Rejected("Expected a boolean.");
-                                input(new(key, "change", next ? 1 : 0, next ? 1 : 0, controlKey, next, PreviousValue: on ? 1 : 0));
+                                Emit(new(elementId, "change", next ? 1 : 0, next ? 1 : 0, controlKey, next, PreviousValue: on ? 1 : 0));
                                 return UiEventOutcome.Accepted;
                             })] : [] };
                     }
@@ -620,7 +646,7 @@ public sealed class LayoutRenderer
                         Events = input != null && B("interactive", false) ? [UiEventHandler.On(UiComponentEvents.Change, e =>
                         {
                             if (!e.TryGetDouble(out var index) || !double.IsFinite(index) || index != Math.Truncate(index) || index < 0 || index >= children.Length) return UiEventOutcome.Rejected("Expected a valid segment index.");
-                            input(new(key, "change", index, children.Length == 1 ? 0 : index / (children.Length - 1), controlKey, PreviousValue: selection));
+                            Emit(new(elementId, "change", index, children.Length == 1 ? 0 : index / (children.Length - 1), controlKey, PreviousValue: selection));
                             return UiEventOutcome.Accepted;
                         })] : [] };
                 case "dial":
@@ -645,7 +671,7 @@ public sealed class LayoutRenderer
                     {
                         if (!e.TryGetDouble(out var level) || !double.IsFinite(level) || level < 0 || level > 1) return UiEventOutcome.Rejected("Expected a level between 0 and 1.");
                         var value = Snap(sliderMin + level * (sliderMax - sliderMin));
-                        input!(new(key, name, value, (value - sliderMin) / (sliderMax - sliderMin), sliderKey, PreviousValue: sliderValue));
+                        Emit(new(elementId, name, value, (value - sliderMin) / (sliderMax - sliderMin), sliderKey, PreviousValue: sliderValue));
                         return UiEventOutcome.Accepted;
                     });
                     if (node.Name == "dial") return new UiDial { Key = key, Fill = fill, MainSize = mainSize,
@@ -674,6 +700,7 @@ public sealed class LayoutRenderer
                         BorderStyle = border == "none" ? default : UiValue.Of(border), BorderColor = Color("borderColor", "#54dfcc"),
                         Corner = node.Parent == null ? UiValue.Of("tile") : default };
                 case "scroll": return new UiList { Key = key, Fill = fill, MainSize = mainSize, Children = children, Direction = Choice("direction", "vertical"), Gap = Length("gap", 0), Padding = Length("padding", 0), Background = !attributes.ContainsKey("background") ? default : UiValue.Of(Color("background", "#1a1a1a")) };
+                case "repeat":
                 case "stack": return new UiStack { Key = key, Children = children, Fill = fill, MainSize = mainSize,
                     Direction = Choice("direction", "vertical"), Justify = Choice("justify", "start"),
                     Align = Choice("align", "stretch"), Gap = Length("gap", 0), Padding = Length("padding", 0),
@@ -743,11 +770,11 @@ public sealed class LayoutRenderer
             // The client consumes this press to settle its own modal; do not publish an action event.
             var answer = Expand(attributes.GetValueOrDefault("result", ""), values);
             if (answer.Length > 4096) throw new FormatException("Modal result must not exceed 4096 characters.");
-            result = closeContainer with { Answer = modalAnswer?.Invoke(key, answer) ?? "close", Events = [UiEventHandler.On(UiComponentEvents.Press, () => { })] };
+            result = closeContainer with { Answer = modalAnswer?.Invoke(elementId, answer) ?? "close", Events = [UiEventHandler.On(UiComponentEvents.Press, () => { })] };
         }
         else if (input != null && (node.Name.LocalName is "stack" or "layer") && B("interactive", false))
             result = result with { Events = new[] { UiComponentEvents.Press, UiComponentEvents.LongPress, UiComponentEvents.PressStart, UiComponentEvents.PressEnd }
-                .Select(name => UiEventHandler.On(name, () => input(new(key, name)))).ToArray() };
+                .Select(name => UiEventHandler.On(name, () => Emit(new(elementId, name)))).ToArray() };
         return result;
     }
 

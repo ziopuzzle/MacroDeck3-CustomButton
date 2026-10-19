@@ -8,6 +8,33 @@ Every component requires a unique `id`. Common attributes include `fill`, `mainS
 
 Direct children use natural size along the scroll axis; a direct child's `mainSize` is ignored by the native list. Wrap sized sections in a stack pointing in the same direction. See [vertical scrolling](modal.md#vertical-scrolling) and [horizontal scrolling](modal.md#horizontal-scrolling) for examples and input-gesture considerations.
 
+## Repeat array (0.48.0)
+
+`repeat` renders its child template once per array item. Add **Repeat** under Layout in the GUI, or choose **Repeat array (BASIC)**. Edit one template in the editor; generated rows are not separate editable elements. It works in widgets and modals and can be placed inside `scroll`.
+
+```json
+{"tracks":[{"id":"a","title":"First song"},{"id":"b","title":"Second song"}]}
+```
+
+```xml
+<scroll id="playlist">
+  <repeat id="tracks" items="{{tracks}}" itemKey="id" gap="3%">
+    <stack id="row" interactive="true" padding="4%">
+      <text id="title" size="12%">{{= index + 1}}. {{item.title}}</text>
+    </stack>
+  </repeat>
+</scroll>
+```
+
+- `items` accepts a data name (`tracks`) or a single binding (`{{tracks}}`), not a JSON string or calculation. Initial JSON and **Set display data from JSON** accept arrays and objects. Replace the array to add/remove/reorder items. The JSON action replaces the entire Channel data, so include other live keys you need to retain.
+- Inside the template, `item` is the current value, `item.title` / `item.metadata.title` access object fields, `index` is zero-based, and `itemKey` is the resolved key as text. Global display data remains available. These local aliases also work in conditions, calculations and SVG content. Primitive arrays use `{{item}}`. Nested repeats can use `items="{{item.tracks}}"`; aliases and event metadata refer to the nearest repeat.
+- Optional `itemKey="id"` reads a literal item property path. Its values must be unique, nonempty strings or numbers (a string and number with the same spelling count as duplicates). Explicit keys retain internal drawing identities across reordering. Without itemKey, identity follows the array index instead. This does not implement automatic scrolling or guarantee preservation of scroll position when the list changes shape.
+- Repeat arranges generated children like a stack: `direction="vertical|horizontal"`, `justify`, `align`, `gap`, `padding`, `background`, and common visibility/layout attributes. Wrap each item's multiple elements in a stack/layer if they should move as one row. Use matching scroll/repeat directions for horizontal lists. The usual scroll sizing rules apply.
+- Missing/null/empty arrays render no items. Non-array values and missing/duplicate explicit keys show a located error. An empty template is allowed while editing.
+- Template XML IDs stay unique in the document. Generated instances get separate internal IDs; event filters still use the original template ID (such as `row`). **Button press** and other control events additionally expose `repeatId`, `itemKey`, `itemIndex` and `itemJson` (JSON text). Select one event for the template and use its event values in actions.
+- Item bindings are read-only. Interactive input controls must write to separate Channel keys (for example `key="volume_{{itemKey}}"` with suitable key characters), not `key="item.volume"`. Updating a control does not modify the source array. Repeated image average-color outputs are not supported; ordinary images and SVG are supported.
+- Data remains limited to 16,000 JSON characters and JSON depth 8. A repeat accepts at most 256 items. Total expansion, generated UI nodes, JSON depth and payload size remain bounded by the rendering limits below; effects may exhaust those limits before reaching 256 items. This is eager rendering, not a virtualized large-list view.
+
 ## Arc gauge
 
 ```xml
@@ -69,7 +96,7 @@ outside rotated groups.
 
 The XML supports stacks, layers, scrolling, text, images, SVG, built-in icons, shapes, range bars, charts, gauges, transforms, modifiers, responsive layouts, dynamic time text, clocks and playback progress bars. Input components include sliders, dials, toggles, segmented controls, text fields and trackpads. Pressable stacks/layers provide button behavior; in modals they can also close the view and return a result.
 
-Grid, data-driven repeated lists and progress text are not exposed as separate XML components. Scroll uses the host list component internally; it does not repeat array data. Internal use of a host component does not imply XML or editor support for all of its properties.
+Grid and progress text are not exposed as separate XML components. Scroll uses the host list component internally; combine it with Repeat to display array data. Internal use of a host component does not imply XML or editor support for all of its properties.
 
 ## Range bar
 

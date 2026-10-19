@@ -76,7 +76,6 @@ public sealed class DataHub(TimeProvider? timeProvider = null)
         foreach (var item in document.RootElement.EnumerateObject())
         {
             ValidateName(item.Name);
-            if (item.Value.ValueKind is JsonValueKind.Object or JsonValueKind.Array) throw new FormatException("Values must be strings, numbers, booleans or null.");
             if (!result.TryAdd(item.Name, item.Value.Clone())) throw new FormatException("The data contains duplicate keys.");
         }
         if (result.Count > 64) throw new FormatException("Data must contain at most 64 entries.");

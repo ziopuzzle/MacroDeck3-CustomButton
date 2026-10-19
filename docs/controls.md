@@ -43,6 +43,8 @@ Enable `interactive="true"` on a `stack` or `layer`. Its entire allocated rectan
 
 Choose the target widget and element ID in the event's configuration filters. The host's standard event-condition mechanism performs matching. `interactive` defaults to false and supports `style` conditions. Invisible or noninteractive elements cannot publish. A disabled child can allow its interactive ancestor to receive the gesture; disabling is not a pointer-blocking overlay.
 
+Since 0.48.0, controls inside [Repeat](components.md#repeat-array-0480) also report `repeatId`, `itemKey`, `itemIndex` (zero-based) and `itemJson` (JSON text). Element ID remains the template's XML ID, so one configured event can handle all rows. These additional fields are absent outside Repeat. Item metadata comes from the render snapshot used by the event handler.
+
 If the host offers **This widget** (`$self`), the plugin resolves it to the actual widget ID when editing or reopening the configuration. Save the configuration once after upgrading to 0.15.1 to repair existing self-target filters. Explicit targets and other providers' events are preserved.
 
 Use the interactive container's ID, not the ID of its text: in the media template these are `previous`, `playPause`, and `next`, not `previousLabel`, `playLabel`, or `nextLabel`. The Actions tab lists input target IDs and explains invalid local targets. Two labels inside the same container share its event; use an If/Else action for state-dependent play/pause behavior.
