@@ -8,9 +8,33 @@ Every component requires a unique `id`. Common attributes include `fill`, `mainS
 
 Direct children use natural size along the scroll axis; a direct child's `mainSize` is ignored by the native list. Wrap sized sections in a stack pointing in the same direction. See [vertical scrolling](modal.md#vertical-scrolling) and [horizontal scrolling](modal.md#horizontal-scrolling) for examples and input-gesture considerations.
 
+Since 0.48.1, optional `anchor="start|end"` enables native List version 3 anchoring for vertical Scroll. `end` follows the bottom while pinned; manually scrolling away suspends following. `start` disables following; it does not jump to the top. Bindings and conditional styles can switch the anchor. Omit the attribute to retain the previous component compatibility. Horizontal anchoring is not supported. See the separate [scroll anchor experiment](../experiments/scroll-anchor/README.md) for a staged attempt to center a row without a direct scroll API.
+
+## Experimental Scroll follow (0.48.1)
+
+Use `<scroll id="s" followKey="currentIndex" followOffset="1" followDelayMs="300">` with exactly one direct `repeat` child. `currentIndex` is a display-data name containing a **zero-based array index**, not an item key. For the fifth item use 4. Offset is a signed number of items: 0 puts the target at the bottom; 1 includes the next item. The resulting index is clamped to the array bounds. This does not measure row heights or guarantee centering. Use one visual row per item; hidden items still count as array indices.
+
+On initial display and changes to the target or offset, the renderer empties Repeat under end anchoring, waits, renders through target+offset under end anchoring, waits, then restores all items under start anchoring. The default delay is 300 ms per stage (0–5000); increase it for slower clients. Zero adds no intentional phase wait, but transport delivery and the roughly 16 ms refresh cadence still apply. Very short delays may miss scrolling. A new target replaces an unfinished request. The delay starts after the host takes the snapshot/patch, not after client paint acknowledgement. Unrelated data changes do not restart completed following. Session replacement starts a new request.
+
+While `followKey` is configured, it controls anchoring; normal display uses start so manual scrolling remains possible until the next target change. Missing, nonnumeric, negative or fractional targets disable following and show all rows. Remove/clear `followKey` to use ordinary `anchor="start|end"` again. `followOffset` supports bindings; `followKey` accepts a data name or a single binding, not a calculation. Follow is vertical only and cannot be placed inside Repeat. Rows are removed/recreated, so avoid active text input or other transient control state in the list. It is not a native scroll-to API.
+
+Try [follow-widget.json](../experiments/scroll-anchor/follow-widget.json): the slider selects indices 0–7; offset 1 centers row 5 when target=4 in this fixed three-row viewport. No phase variables or Wait actions are needed.
+
 ## Repeat array (0.48.0)
 
 `repeat` renders its child template once per array item. Add **Repeat** under Layout in the GUI, or choose **Repeat array (BASIC)**. Edit one template in the editor; generated rows are not separate editable elements. It works in widgets and modals and can be placed inside `scroll`.
+
+Repeat supplies **read-only local variables**, not new Channel values:
+
+| Attribute | Default variable | Meaning |
+| --- | --- | --- |
+| `itemAlias` | `item` | Current array value; use `item.title` for object fields. |
+| `indexAlias` | `index` | Zero-based array position (first item is 0). |
+| `keyAlias` | `itemKey` | Stable key resolved using the `itemKey` property path, or the index as text. |
+
+Names shadow same-named Channel data **only inside the Repeat children**. Channel data is never overwritten. To retain access to Channel data named `item` or `index`, choose different aliases, for example `<repeat id="r" items="tracks" itemAlias="track" indexAlias="trackIndex" keyAlias="trackKey">`, then use `{{track.title}}` and `{{trackIndex}}`. Aliases must be distinct literal names made of letters, digits and underscores, starting with a letter or underscore. They cannot be bound or changed through styles. Nested Repeat with different aliases can read outer aliases; reusing aliases shadows them. Alias names do not change the event payload field names (`itemKey`, `itemIndex`, `itemJson`).
+
+The GUI shows this scope explanation on Repeat. Data-name fields (Array source, control keys, followKey and averageColorKey) offer plain-name selection rather than value/function insertion. Selecting a name replaces the whole field without adding `{{...}}`; manual typing remains available.
 
 ```json
 {"tracks":[{"id":"a","title":"First song"},{"id":"b","title":"Second song"}]}
@@ -27,7 +51,7 @@ Direct children use natural size along the scroll axis; a direct child's `mainSi
 ```
 
 - `items` accepts a data name (`tracks`) or a single binding (`{{tracks}}`), not a JSON string or calculation. Initial JSON and **Set display data from JSON** accept arrays and objects. Replace the array to add/remove/reorder items. The JSON action replaces the entire Channel data, so include other live keys you need to retain.
-- Inside the template, `item` is the current value, `item.title` / `item.metadata.title` access object fields, `index` is zero-based, and `itemKey` is the resolved key as text. Global display data remains available. These local aliases also work in conditions, calculations and SVG content. Primitive arrays use `{{item}}`. Nested repeats can use `items="{{item.tracks}}"`; aliases and event metadata refer to the nearest repeat.
+- With the default aliases, inside the template, `item` is the current value, `item.title` / `item.metadata.title` access object fields, `index` is zero-based, and `itemKey` is the resolved key as text. Global display data remains available. These local aliases also work in conditions, calculations and SVG content. Primitive arrays use `{{item}}`. Nested repeats can use `items="{{item.tracks}}"`; reused aliases and event metadata refer to the nearest repeat.
 - Optional `itemKey="id"` reads a literal item property path. Its values must be unique, nonempty strings or numbers (a string and number with the same spelling count as duplicates). Explicit keys retain internal drawing identities across reordering. Without itemKey, identity follows the array index instead. This does not implement automatic scrolling or guarantee preservation of scroll position when the list changes shape.
 - Repeat arranges generated children like a stack: `direction="vertical|horizontal"`, `justify`, `align`, `gap`, `padding`, `background`, and common visibility/layout attributes. Wrap each item's multiple elements in a stack/layer if they should move as one row. Use matching scroll/repeat directions for horizontal lists. The usual scroll sizing rules apply.
 - Missing/null/empty arrays render no items. Non-array values and missing/duplicate explicit keys show a located error. An empty template is allowed while editing.

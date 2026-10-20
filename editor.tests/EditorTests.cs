@@ -19,6 +19,23 @@ public static class TestApp
 }
 public class EditorTests
 {
+    [AvaloniaTest] public void DataNameSelectionReplacesBindingWithLiteralName()
+    {
+        var w = new EditorWindow("<scroll id='s' followKey='{{old}}'><repeat id='r' items='rows'/></scroll>", "{\"rows\":[],\"target\":4}", true);
+        w.Show(); Flush(w);
+        try
+        {
+            var button = Find<Button>(w, "select_followKey");
+            button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var option = button.ContextMenu!.Items.Cast<MenuItem>().Single(i => i.Header?.ToString() == "target");
+            option.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            Assert.That(Find<TextBox>(w, "field_followKey").Text, Is.EqualTo("target"));
+            Assert.That(w.OwnedWindows, Is.Empty);
+            button.ContextMenu.Close();
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
     [AvaloniaTest] public void RepeatPropertiesAndItemSuggestionsAreEditable()
     {
         var w = new EditorWindow("<repeat id='rows' items='items' itemKey='id'><text id='label'>{{item.title}}</text></repeat>",

@@ -17,8 +17,8 @@ public sealed partial class LayoutRenderer
     private static readonly Regex Slot = new(@"\{\{\s*([A-Za-z0-9_.-]+)\s*(?::([^{}]{1,32}))?\s*\}\}", RegexOptions.CultureInvariant);
     internal static string Allowed(string type) => "id fill mainSize visible visibleWhen opacity transitionMs transitionProperties easing colorSpace " + (type switch
     {
-        "repeat" => "items itemKey direction justify align gap padding background",
-        "scroll" => "direction gap padding background",
+        "repeat" => "items itemKey itemAlias indexAlias keyAlias direction justify align gap padding background",
+        "scroll" => "direction anchor followKey followOffset followDelayMs gap padding background",
         "stack" => "direction justify align gap padding background borderStyle borderColor interactive closeModal result",
         "layer" => "interactive closeModal result background",
         "transform" => "rotation originX originY zoom offsetX offsetY",
@@ -83,6 +83,8 @@ public sealed partial class LayoutRenderer
                 if (node.Name.Namespace != XNamespace.None) throw new FormatException("XML namespaces are not supported.");
                 if (node.Name.LocalName == "style")
                 {
+                    if (node.Attributes().Any(a => a.Name.LocalName is "itemAlias" or "indexAlias" or "keyAlias"))
+                        throw new FormatException("Set Repeat aliases on Repeat itself, not on a style.");
                     if (node.Attribute("averageColorKey") != null || node.Attribute("averageColorFallback") != null)
                         throw new FormatException("Set averageColorKey and averageColorFallback on the image/SVG itself, not on a style.");
                     if (node.Parent == null || node.Parent.Name.LocalName == "style" || node.HasElements || !string.IsNullOrWhiteSpace(node.Value)) throw new FormatException("Place style directly inside a component and leave it empty.");
@@ -99,6 +101,7 @@ public sealed partial class LayoutRenderer
                 var allowed = Allowed(node.Name.LocalName);
                 if (node.Name == "repeat")
                 {
+                    _ = RepeatAliases.Read(node);
                     _ = RepeatDataName((string?)node.Attribute("items") ?? "");
                     var itemKey = (string?)node.Attribute("itemKey") ?? "";
                     if (itemKey.Length > 0 && !Regex.IsMatch(itemKey, @"\A[A-Za-z0-9_.-]+\z"))
@@ -160,8 +163,14 @@ public sealed partial class LayoutRenderer
         }
         animation?.BeginFrame();
         expandedComponents = 0;
+        scrollLimits.Clear();
+        seenScrolls.Clear();
         try { return Make(root, values, history, false, selectedId, input, animation, images, imageAspectRatio, modal, modalAnswer) ?? new UiStack { Key = "hidden", Fill = true, Children = [] }; }
-        finally { animation?.EndFrame(); }
+        finally
+        {
+            animation?.EndFrame();
+            foreach (var id in scrollFollowing.Keys.Where(id => !seenScrolls.Contains(id)).ToArray()) scrollFollowing.Remove(id);
+        }
     }
     private UiElement? Make(XElement node, IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history, bool parentHorizontal, string? selectedId, Action<ControlInput>? input, DisplayAnimation? animation, Func<string, string, UiResource?>? images, Func<string, double>? imageAspectRatio, bool modal, Func<string, string, string>? modalAnswer, RepeatScope? scope = null)
     {
@@ -219,7 +228,7 @@ public sealed partial class LayoutRenderer
             foreach (var name in new[] { "key", "keyX", "keyY" })
             {
                 var boundKey = A(name);
-                if (boundKey is "item" or "index" or "itemKey" || boundKey.StartsWith("item.", StringComparison.Ordinal))
+                if (scope.ReadOnlyNames.Any(n => boundKey == n || boundKey.StartsWith(n + ".", StringComparison.Ordinal)))
                     throw new FormatException("Repeat item/index bindings are read-only. For interactive controls, use a separate Channel key, such as volume_{{itemKey}}.");
             }
         double Length(string name, double fallback, double max = 4)
@@ -264,10 +273,12 @@ public sealed partial class LayoutRenderer
         UiSize mainSize = default;
         if (attributes.ContainsKey("mainSize") && A("mainSize") != "auto") mainSize = Length("mainSize", 0);
         var horizontal = node.Name.LocalName is "stack" or "repeat" && Choice("direction", "vertical") == "horizontal";
+        var followAnchor = node.Name == "scroll" ? FollowScroll(node, attributes, values, scope != null) : null;
         UiElement[] RenderChildren(IReadOnlyDictionary<string, JsonElement> data, RepeatScope? childScope) => node.Elements().Where(e => e.Name != "style").Select(n => Make(n, data, history, horizontal, selectedId, node.Name == "segmented" ? null : input, animation, images, imageAspectRatio, modal && node.Name != "segmented", modalAnswer, childScope)
             ?? (node.Name.LocalName is "responsive" or "segmented" ? new UiLayer { Key = childScope?.NodeKey((string)n.Attribute("id")!) ?? (string)n.Attribute("id")!, Children = [] } : null)).OfType<UiElement>().ToArray();
         var children = node.Name == "repeat"
-            ? RepeatItems(attributes["items"], attributes.GetValueOrDefault("itemKey", ""), elementId, values, scope)
+            ? RepeatItems(attributes["items"], attributes.GetValueOrDefault("itemKey", ""), elementId, values, scope, RepeatAliases.Read(node))
+                .Take(scrollLimits.GetValueOrDefault(elementId, int.MaxValue))
                 .SelectMany(item => RenderChildren(item.Values, item.Scope)).ToArray()
             : RenderChildren(values, scope);
         var textSize = node.Name.LocalName is "image" or "svg" && Choice("frame", "square") == "container" ? .18 : Length("size", .18, 1);
@@ -699,7 +710,14 @@ public sealed partial class LayoutRenderer
                         Background = Color("background", "#1a1a1a"),
                         BorderStyle = border == "none" ? default : UiValue.Of(border), BorderColor = Color("borderColor", "#54dfcc"),
                         Corner = node.Parent == null ? UiValue.Of("tile") : default };
-                case "scroll": return new UiList { Key = key, Fill = fill, MainSize = mainSize, Children = children, Direction = Choice("direction", "vertical"), Gap = Length("gap", 0), Padding = Length("padding", 0), Background = !attributes.ContainsKey("background") ? default : UiValue.Of(Color("background", "#1a1a1a")) };
+                case "scroll":
+                    var scroll = new UiList { Key = key, Fill = fill, MainSize = mainSize, Children = children, Direction = Choice("direction", "vertical"), Gap = Length("gap", 0), Padding = Length("padding", 0), Background = !attributes.ContainsKey("background") ? default : UiValue.Of(Color("background", "#1a1a1a")) };
+                    if (!attributes.ContainsKey("anchor") && followAnchor == null) return scroll;
+                    if (Choice("direction", "vertical") != "vertical") throw new FormatException("Scroll anchor is supported only in the vertical direction.");
+                    // Keep version and fallback stable while toggling the anchor and changing rows.
+                    // A changing fallback would make TreeChanges replace the list and lose its position.
+                    return scroll with { Anchor = followAnchor ?? Choice("anchor", "start"), RequiredComponentVersion = 3,
+                        Fallback = new UiTextRun { Key = "unsupported", Text = "Scroll anchoring requires List component version 3.", Shadow = false } };
                 case "repeat":
                 case "stack": return new UiStack { Key = key, Children = children, Fill = fill, MainSize = mainSize,
                     Direction = Choice("direction", "vertical"), Justify = Choice("justify", "start"),

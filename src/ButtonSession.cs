@@ -96,6 +96,7 @@ public sealed class ButtonSession : IUiSession
             if (settings.Design == null || settings.Design.Preset == "xml")
             {
                 renderer = new(settings.Layout);
+                renderer.RequireScrollDelivery = true;
                 if (images != null) renderer.ConfigureImageColor = images.ConfigureColor;
                 renderer.RestoreContacts(contacts);
                 initial = DataHub.ParseValues(settings.InitialValues);
@@ -132,6 +133,7 @@ public sealed class ButtonSession : IUiSession
             pendingRoot = null;
             if (!disposed && configurationError == null && lastRenderFailure == null) activation?.Ready();
             result = tree;
+            renderer?.ScrollDelivered();
             opened = disposed ? null : onOpened;
             onOpened = null;
         }
@@ -142,7 +144,7 @@ public sealed class ButtonSession : IUiSession
     }
     public IReadOnlyList<UiPatch> DrainPatches()
     {
-        lock (gate) { if (pending == null) return []; var result = pending; pending = null; pendingRoot = null; return [result]; }
+        lock (gate) { if (pending == null) return []; var result = pending; pending = null; pendingRoot = null; renderer?.ScrollDelivered(); return [result]; }
     }
     private (UiTree Tree, string Json) BuildCurrent(DataSnapshot snapshot, string? selectedId)
     {
@@ -231,7 +233,7 @@ public sealed class ButtonSession : IUiSession
                 // Bound continuous traffic without delaying the first update after an idle period.
                 // The mailbox retains only a wake-up; Refresh always reads the newest snapshot.
                 await Task.Delay(TimeSpan.FromMilliseconds(16), lifetime.Token);
-                lock (gate) { if (!disposed && animation.IsActive) RequestRefresh(settings.Channel); }
+                lock (gate) { if (!disposed && (animation.IsActive || renderer?.ScrollFollowActive == true)) RequestRefresh(settings.Channel); }
             }
         }
         catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
@@ -279,7 +281,7 @@ public sealed class ButtonSession : IUiSession
             if (sampleHistory && configurationError == null) hub?.Sample(settings.Channel, initial);
             if (sharedUpdates != null) updateError = sharedUpdates.Error;
             var selection = previewSelection?.Invoke();
-            if ((renderer?.InputRevision ?? 0) == lastInputRevision && images?.NeedsRefresh != true && (images?.Revision ?? 0) == lastImageRevision && !animation.IsActive && (hub?.Revision(settings.Channel) ?? 0) == lastDataRevision && pressError == lastPressError && updateError == lastUpdateError && selection == lastSelection) return;
+            if (renderer?.ScrollFollowActive != true && (renderer?.InputRevision ?? 0) == lastInputRevision && images?.NeedsRefresh != true && (images?.Revision ?? 0) == lastImageRevision && !animation.IsActive && (hub?.Revision(settings.Channel) ?? 0) == lastDataRevision && pressError == lastPressError && updateError == lastUpdateError && selection == lastSelection) return;
             var now = Stopwatch.GetTimestamp();
             if (animation.IsActive && lastAnimationFrame != 0 && Stopwatch.GetElapsedTime(lastAnimationFrame, now).TotalMilliseconds > 250)
                 Trace($"animation frame gap {Stopwatch.GetElapsedTime(lastAnimationFrame, now).TotalMilliseconds:F0} ms");

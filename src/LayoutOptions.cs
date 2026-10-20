@@ -16,6 +16,7 @@ public static class LayoutOptions
         "gradient" => ["none", "linear", "radial"],
         "fit" => ["contain", "cover"],
         "frame" => ["square", "container"],
+        "anchor" when component == "scroll" => ["start", "end"],
         "zoom" => ["0.5", "1", "1.25", "1.5", "2", "4"],
         "offsetX" or "offsetY" => ["-1", "-0.5", "0", "0.5", "1"],
         "transition" => ["none", "crossfade"],

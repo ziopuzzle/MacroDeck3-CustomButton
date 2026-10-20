@@ -1,0 +1,8 @@
+{
+  "channel": "scroll-follow-probe",
+  "layout": "<stack id=\"c\" background=\"#1a1a1a\" gap=\"0%\"><slider min=\"0\" id=\"target\" key=\"target\" step=\"1\" max=\"7\" mainSize=\"20%\" interactive=\"true\" /><scroll id=\"v\" mainSize=\"75%\" fill=\"false\" anchor=\"start\" followKey=\"target\" followOffset=\"1\" followDelayMs=\"300\"><repeat id=\"r\" items=\"{{rows}}\" itemKey=\"id\"><modifier id=\"frame\" height=\"25%\"><stack id=\"row\" justify=\"center\" align=\"center\" background=\"#293340\"><style when=\"item.id == 5\" background=\"#805f12\" /><text id=\"label\" size=\"10%\">Row {{item.id}}</text></stack></modifier></repeat></scroll></stack>",
+  "initialValues": "{\"target\":4,\"rows\":[{\"id\":1},{\"id\":2},{\"id\":3},{\"id\":4},{\"id\":5},{\"id\":6},{\"id\":7},{\"id\":8}]}",
+  "designPreset": "xml",
+  "wholeButtonInteraction": false,
+  "flows": []
+}

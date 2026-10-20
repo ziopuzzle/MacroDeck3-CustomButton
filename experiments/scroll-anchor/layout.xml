@@ -1,0 +1,16 @@
+<stack id="c" background="#1a1a1a" gap="0%">
+  <stack id="run" interactive="true" mainSize="20%" background="#335577" justify="center" align="center">
+    <text id="runLabel" size="7%">Run probe / phase {{phase}}</text>
+  </stack>
+  <scroll id="v" mainSize="75%" fill="false" anchor="start">
+    <style when="phase == 1 or phase == 2" anchor="end" />
+    <repeat id="r" items="{{rows}}" itemKey="id">
+      <modifier id="frame" height="25%" visibleWhen="phase == 0 or phase == 4 or (phase == 1 and index &lt; 5) or ((phase == 2 or phase == 3) and index &lt; 6)">
+        <stack id="row" justify="center" align="center" background="#293340">
+          <style when="item.id == 5" background="#805f12" />
+          <text id="label" size="10%">Row {{item.id}}</text>
+        </stack>
+      </modifier>
+    </repeat>
+  </scroll>
+</stack>

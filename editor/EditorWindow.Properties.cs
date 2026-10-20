@@ -27,6 +27,7 @@ public sealed partial class EditorWindow
         properties.Children.Add(new TextBlock { Text = T("Valid settings are applied automatically."), Foreground = B("#bbbbbb") });
         var attributes = new Dictionary<string, TextBox>(); TextBox? text = null;
         var type = node.Name.LocalName;
+        if (type == "repeat") properties.Children.Add(new TextBlock { Text = "Repeat creates read-only local variables: item = current value (item.title for object fields), index = zero-based position, itemKey = stable key. These names shadow Channel data inside this Repeat only. Change the aliases below to avoid collisions; Channel data is not overwritten.", TextWrapping = TextWrapping.Wrap, Foreground = B("#bbbbbb") });
         var allowed = PropertyLayout.Attributes(type);
         attributes["id"] = Field(properties, Label("id"), (string?)node.Attribute("id") ?? "", "id", type);
         Dictionary<string, StackPanel> MakeGroups(StackPanel parent, bool condition = false)
@@ -83,7 +84,7 @@ public sealed partial class EditorWindow
             var fields = new Dictionary<string, TextBox>(); var panel = new StackPanel { Spacing = 6 };
             fields["when"] = Field(panel, "Condition expression", (string?)style.Attribute("when") ?? "", "when", node.Name.LocalName);
             var conditionGroups = MakeGroups(panel, condition: true);
-            foreach (var attribute in allowed.Where(a => a is not ("id" or "averageColorKey" or "averageColorFallback"))) fields[attribute] = Field(conditionGroups[PropertyLayout.Group(type, attribute)], Label(attribute), (string?)style.Attribute(attribute) ?? "", attribute, type, inherited: true);
+            foreach (var attribute in allowed.Where(a => a is not ("id" or "averageColorKey" or "averageColorFallback" or "itemAlias" or "indexAlias" or "keyAlias"))) fields[attribute] = Field(conditionGroups[PropertyLayout.Group(type, attribute)], Label(attribute), (string?)style.Attribute(attribute) ?? "", attribute, type, inherited: true);
             var index = rules.Count; panel.Children.Add(Button("Delete this condition", () => Edit(d => { d.DeleteStyle(selected, index); return selected; })));
             var header = new Expander { Header = $"{T("Condition")} {index + 1}: {(string?)style.Attribute("when")}", Content = panel, HorizontalAlignment = HorizontalAlignment.Stretch };
             properties.Children.Add(header); ruleHeaders.Add(header); rules.Add(fields);
@@ -161,6 +162,13 @@ public sealed partial class EditorWindow
         }
         ToolTip.SetTip(box, T("Leave blank for the default. Use {{dataName}}, {{= used / total * 100:F1}}%, or {{= floor(position / 1000):duration}} for milliseconds. Math supports floor, ceil, round, abs, min, max, clamp and more."));
         if (attribute == "id") ToolTip.SetTip(box, "Unique element ID. Valid edits apply automatically. Update matching action-event filters separately.");
+        if (attribute == "anchor" && component == "scroll") ToolTip.SetTip(box, "Vertical scroll only. end follows the bottom while pinned; manually scrolling away suspends following. start disables following; it is not a command to jump to the top. Requires List version 3. Supports bindings and styles.");
+        if (attribute == "followKey") ToolTip.SetTip(box, "Experimental: display data name containing a zero-based Repeat index. On change, temporarily removes rows and follows the target plus offset. Requires one direct Repeat child. Overrides anchor while enabled; missing/negative values disable following.");
+        if (attribute == "followOffset") ToolTip.SetTip(box, "Item offset from the target index. 0 aligns the target at the bottom; 1 includes the next item. This is not a pixel offset or guaranteed centering.");
+        if (attribute == "followDelayMs") ToolTip.SetTip(box, "Experimental phase delay, 0–5000 ms (default 300). Zero adds no intentional wait, but updates still use the session refresh cadence and transport delivery. Short delays can miss scrolling; increase if needed.");
+        if (attribute is "followKey" or "followOffset" or "followDelayMs")
+            ToolTip.SetTip(box, ToolTip.GetTip(box) + " Experimental: behavior and configuration may change in future versions.");
+        if (attribute is "itemAlias" or "indexAlias" or "keyAlias") ToolTip.SetTip(box, "Literal local variable name; no braces or functions. Defaults: item, index, itemKey. Must be distinct. These read-only names shadow same-named Channel values only inside Repeat.");
         if (attribute == "items") ToolTip.SetTip(box, "Array data name or {{tracks}}. Children are rendered once per item. Use {{item.title}}, {{item}} and {{index}} inside them. Missing or null arrays render no children.");
         if (attribute == "itemKey") ToolTip.SetTip(box, "Optional literal property path such as id. Values must be unique, nonempty strings or numbers. Keeps item identity when reordered. Blank uses the zero-based index.");
         if (attribute == "color" && component is "image" or "svg") ToolTip.SetTip(box, "Optional single-colour tint. Preserves the image alpha mask and replaces all RGB colours. Leave blank for original colours. Supports bindings, conditions and colour transitions. Colour alpha multiplies opacity. Requires client mask support; tinted artwork does not crossfade on beta.15.");
@@ -213,6 +221,7 @@ public sealed partial class EditorWindow
         void Menu(string title, string tooltip, IEnumerable<(string Label, string Value)> entries)
         {
             var button = Button(title, () => { }); ToolTip.SetTip(button, T(tooltip)); button.Margin = new Thickness(4, 0, 0, 0);
+            if (ExpressionInsertion.KeyOnly(attribute)) button.Name = "select_" + attribute;
             button.Click += (_, _) =>
             {
                 var menu = new ContextMenu();
@@ -227,7 +236,10 @@ public sealed partial class EditorWindow
         }
         var options = LayoutOptions.Choices(component, attribute);
         if (options.Length > 0) Menu("▾", "Suggested values", new[] { ("Use default", "") }.Concat(options.Select(o => (o, o))));
-        if (ExpressionInsertion.Available(attribute))
+        if (ExpressionInsertion.KeyOnly(attribute))
+            Menu("▾", "Select a display data name (replaces the field; no value binding)", new[] { ("Clear", "") }.Concat(keys.Concat(new LayoutRenderer(history.Xml).ImageColorDefaults.Keys)
+                .Concat(attribute == "items" ? LayoutRenderer.RepeatPreviewKeys(history.Xml, selected, initialValues) : []).Distinct().OrderBy(k => k).Select(k => (k, k))));
+        else if (ExpressionInsertion.Available(attribute))
         {
             var insert = Button("{ }", () => { }, "insert_" + attribute);
             insert.Focusable = false; // Keep the text selection until the picker has captured it.
@@ -242,10 +254,13 @@ public sealed partial class EditorWindow
     private static string Label(string attribute) => attribute switch
     {
         "id" => "Element ID",
+        "followKey" => "Follow data key (experimental)",
+        "followOffset" => "Follow item offset (experimental)",
+        "followDelayMs" => "Follow delay (ms) (experimental)",
         "closeModal" => "Close modal on press (no press event)",
         "result" => "Modal result (requires Close modal)",
         "start" => "Range start (same units as value)", "marker" => "Marker (same units as value)",
-        "items" => "Array source", "itemKey" => "Item key property",
+        "items" => "Array source", "itemKey" => "Item key property", "itemAlias" => "Item variable name", "indexAlias" => "Index variable name", "keyAlias" => "Item key variable name",
         "format" => "Time / date format", "zone" => "Time zone (IANA name)", "clip" => "Clip shape", "disabled" => "Disable child interactions",
         "minWidth" => "Minimum width (variant: cells; modifier: length)", "maxWidth" => "Maximum width (variant: cells; modifier: length)",
         "minHeight" => "Minimum height (variant: cells; modifier: length)", "maxHeight" => "Maximum height (variant: cells; modifier: length)",

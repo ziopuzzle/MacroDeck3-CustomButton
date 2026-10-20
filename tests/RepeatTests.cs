@@ -8,6 +8,32 @@ namespace Ziopuzzle.CustomButton.Tests;
 
 public class RepeatTests
 {
+    [Test]
+    public void AliasesPreserveChannelNamesAndExposeNestedFields()
+    {
+        const string xml = "<repeat id='r' items='rows' itemAlias='track' indexAlias='position' keyAlias='trackKey' itemKey='id'><text id='t'>{{track.title}}/{{position}}/{{trackKey}}/{{item}}/{{index}}/{{itemKey}}</text></repeat>";
+        const string json = """{"rows":[{"id":"a","title":"Song"}],"item":"global","index":99,"itemKey":"globalKey"}""";
+        Assert.That(Texts(Render(xml, json)), Is.EqualTo(new[] { "Song/0/a/global/99/globalKey" }));
+        var keys = LayoutRenderer.RepeatPreviewKeys(xml, "t", DataHub.ParseValues(json));
+        Assert.That(keys, Does.Contain("track.title").And.Contain("position").And.Contain("trackKey"));
+        Assert.That(keys, Does.Not.Contain("item"));
+    }
+
+    [Test]
+    public void NestedAliasesRetainOuterScopeAndRemainReadOnly()
+    {
+        const string json = """{"rows":[{"title":"Outer","children":["Inner"]}]}""";
+        const string xml = "<repeat id='r' items='rows' itemAlias='outer' indexAlias='outerIndex' keyAlias='outerKey'><repeat id='n' items='outer.children'><text id='t'>{{outer.title}}/{{item}}/{{outerIndex}}/{{index}}</text></repeat></repeat>";
+        Assert.That(Texts(Render(xml, json)), Is.EqualTo(new[] { "Outer/Inner/0/0" }));
+        Assert.Throws<FormatException>(() => Render(xml.Replace("<text id='t'>{{outer.title}}/{{item}}/{{outerIndex}}/{{index}}</text>", "<slider id='s' key='outer.title' interactive='true'/>"), json));
+    }
+
+    [TestCase("itemAlias='index'")]
+    [TestCase("indexAlias='{{name}}'")]
+    [TestCase("keyAlias='a.b'")]
+    public void InvalidAliasesAreRejectedEvenWithEmptyArrays(string attributes)
+        => Assert.Throws<FormatException>(() => new LayoutRenderer($"<repeat id='r' items='rows' {attributes}/>"));
+
     private static UiNode Render(string xml, string json) => new UiView(ButtonTests.Surface(), new LayoutRenderer(xml).Render(DataHub.ParseValues(json))).Tree.Root;
     private static string[] Texts(UiNode node) => ButtonTests.Nodes(node).Where(n => n.Type == "ui.text").Select(n => n.Properties["text"].GetString()!).ToArray();
     private const string Rows = "<repeat id='tracks' items='{{tracks}}' itemKey='id'><stack id='row' interactive='true'><text id='title'>{{item.title}}</text></stack></repeat>";

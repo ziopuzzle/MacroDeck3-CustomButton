@@ -7,7 +7,9 @@ internal static class PropertyLayout
     internal static string Group(string type, string name)
     {
         if (name == "id") return "Identity";
-        if (name is "fallback" or "items" or "itemKey") return "Content and data";
+        if (name == "anchor" && type == "scroll") return "Layout and geometry";
+        if (name is "followKey" or "followOffset" or "followDelayMs") return "Content and data";
+        if (name is "fallback" or "items" or "itemKey" or "itemAlias" or "indexAlias" or "keyAlias") return "Content and data";
         if (name is "averageColorKey" or "averageColorFallback") return "Content and data";
         if (name is "visible" or "visibleWhen") return "Visibility";
         if (name is "transitionMs" or "transitionProperties" or "easing" or "colorSpace" or "transition") return "Animation";
@@ -24,7 +26,7 @@ internal static class PropertyLayout
         if (name is "fontFace" or "weight" or "digits" or "sizeCap" or "minSize" || name == "size" && type is "text" or "dynamic-text" or "text-field") return "Appearance";
         return "Layout and geometry";
     }
-    private static readonly string[] Order = ("id items itemKey placeholder source averageColorKey averageColorFallback name key value fallback min max step start marker format zone seconds positionMs durationMs anchor rate points data " +
+    private static readonly string[] Order = ("id items itemKey itemAlias indexAlias keyAlias followKey followOffset followDelayMs placeholder source averageColorKey averageColorFallback name key value fallback min max step start marker format zone seconds positionMs durationMs anchor rate points data " +
         "keyX leftValue rightValue stepX keyY topValue bottomValue stepY " +
         "coordinates direction x y x1 y1 x2 y2 cx cy length angle radius startAngle endAngle sweepAngle width height frame size " +
         "minWidth maxWidth minHeight maxHeight minAspect maxAspect fill mainSize justify align gap padding fit zoom offsetX offsetY rotation originX originY clip corner cornerRadius wrap maxLines " +

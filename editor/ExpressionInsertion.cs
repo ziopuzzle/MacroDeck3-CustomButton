@@ -38,9 +38,9 @@ public static class ExpressionInsertion
         new("Colors", "scaleBrightness(color, factor)", "Multiply HSV value, clamping the result to 0–1.", "'#ffffff'", ", 0.5", "scaleBrightness"),
         new("Colors", "setAlpha(color, alpha)", "Replace alpha: 0 transparent, 1 opaque. Alpha is the last hex pair.", "'#ffffff'", ", 0.5", "setAlpha")
     ];
-    public static bool KeyOnly(string attribute) => attribute is "key" or "keyX" or "keyY" or "items";
+    public static bool KeyOnly(string attribute) => attribute is "key" or "keyX" or "keyY" or "items" or "followKey" or "averageColorKey";
     public static bool IsCondition(string attribute) => attribute is "when" or "visibleWhen";
-    public static bool Available(string attribute) => attribute is not ("id" or "itemKey" or "averageColorKey" or "averageColorFallback");
+    public static bool Available(string attribute) => attribute is not ("id" or "itemKey" or "itemAlias" or "indexAlias" or "keyAlias" or "averageColorKey" or "averageColorFallback");
 
     public static Result Insert(string text, int start, int end, string attribute, ExpressionChoice choice)
     {

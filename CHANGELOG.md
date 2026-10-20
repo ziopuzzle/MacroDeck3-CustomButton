@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.48.1 — scroll anchor experiment
+
+- Explain Repeat local scope in the GUI and support itemAlias/indexAlias/keyAlias to avoid Channel-name collisions, including nested scopes and variable suggestions.
+- Use plain-name selection for data-name fields instead of the variable/function editor.
+- Mark automatic-follow parameter titles as experimental; tooltips explain that behavior/configuration may change.
+
+- Add experimental Scroll followKey/followOffset/followDelayMs. Automatically stage empty/prefix/full Repeat rows on target changes, preserving the list identity and waiting between transport updates. Include a slider-driven demonstration without phase variables or Wait actions.
+
+- Expose optional vertical Scroll anchor (start/end), with bindings and conditional styles. Require native List version 3 when specified; retain existing behavior when omitted.
+
 ## 0.48.0 — repeated array layouts
 
 - Accept arrays and objects in display data and add Repeat to XML and the GUI. Render item fields, zero-based indices, conditions and expressions using a private per-item scope.

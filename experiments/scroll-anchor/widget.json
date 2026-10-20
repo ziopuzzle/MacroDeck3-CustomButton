@@ -1,0 +1,273 @@
+{
+  "channel": "scroll-anchor-probe",
+  "layout": "<stack id=\"c\" background=\"#1a1a1a\" gap=\"0%\">\n  <stack id=\"run\" interactive=\"true\" mainSize=\"20%\" background=\"#335577\" justify=\"center\" align=\"center\">\n    <text id=\"runLabel\" size=\"7%\">Run probe / phase {{phase}}</text>\n  </stack>\n  <scroll id=\"v\" mainSize=\"75%\" fill=\"false\" anchor=\"start\">\n    <style when=\"phase == 1 or phase == 2\" anchor=\"end\" />\n    <repeat id=\"r\" items=\"{{rows}}\" itemKey=\"id\">\n      <modifier id=\"frame\" height=\"25%\" visibleWhen=\"phase == 0 or phase == 4 or (phase == 1 and index &lt; 5) or ((phase == 2 or phase == 3) and index &lt; 6)\">\n        <stack id=\"row\" justify=\"center\" align=\"center\" background=\"#293340\">\n          <style when=\"item.id == 5\" background=\"#805f12\" />\n          <text id=\"label\" size=\"10%\">Row {{item.id}}</text>\n        </stack>\n      </modifier>\n    </repeat>\n  </scroll>\n</stack>\n",
+  "initialValues": "{\"phase\":0,\"rows\":[{\"id\":1},{\"id\":2},{\"id\":3},{\"id\":4},{\"id\":5},{\"id\":6},{\"id\":7},{\"id\":8}]}",
+  "designPreset": "xml",
+  "wholeButtonInteraction": false,
+  "flows": [
+    {
+      "triggerId": "773cb979-4c99-4dcd-9108-3e7e1287a42d",
+      "event": {
+        "providerId": "net.ziopuzzle.custombutton",
+        "eventId": "element-press",
+        "eventName": "Button press - run",
+        "parameters": [
+          {
+            "label": "Target widget",
+            "type": "widget-target",
+            "required": true,
+            "value": "$self",
+            "name": "widgetId",
+            "allowSelf": false
+          },
+          {
+            "name": "elementId",
+            "label": "Element ID",
+            "type": "string",
+            "required": true,
+            "value": "run"
+          }
+        ]
+      },
+      "triggerType": "onEvent",
+      "children": [
+        {
+          "id": "dfce0b87-a8c7-47ae-b37c-b9fdd0e8bd6a",
+          "type": "action",
+          "blockType": "net.ziopuzzle.custombutton.set-value",
+          "label": "Set phase 0",
+          "color": "#2196f3",
+          "enabled": true,
+          "integrationId": "net.ziopuzzle.custombutton",
+          "actionId": "set-value",
+          "parameters": [
+            {
+              "name": "channel",
+              "label": "Channel",
+              "type": "string",
+              "required": true,
+              "value": "scroll-anchor-probe"
+            },
+            {
+              "name": "key",
+              "label": "Data name",
+              "type": "string",
+              "required": true,
+              "value": "phase"
+            },
+            {
+              "name": "value",
+              "label": "Value",
+              "type": "string",
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "id": "6e27ccfe-5f94-43e7-b7b5-b2b7c45b6cbf",
+          "type": "delay",
+          "blockType": "wait",
+          "label": "Wait",
+          "color": "#8b5cf6",
+          "enabled": true,
+          "parameters": [
+            {
+              "max": 60000,
+              "label": "Duration (ms)",
+              "type": "number",
+              "value": 800,
+              "min": 0,
+              "name": "duration",
+              "step": 100
+            }
+          ]
+        },
+        {
+          "id": "f8228250-84cb-4756-9173-ad518989177e",
+          "type": "action",
+          "blockType": "net.ziopuzzle.custombutton.set-value",
+          "label": "Set phase 1",
+          "color": "#2196f3",
+          "enabled": true,
+          "integrationId": "net.ziopuzzle.custombutton",
+          "actionId": "set-value",
+          "parameters": [
+            {
+              "name": "channel",
+              "label": "Channel",
+              "type": "string",
+              "required": true,
+              "value": "scroll-anchor-probe"
+            },
+            {
+              "name": "key",
+              "label": "Data name",
+              "type": "string",
+              "required": true,
+              "value": "phase"
+            },
+            {
+              "name": "value",
+              "label": "Value",
+              "type": "string",
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "id": "147b283d-6c67-4125-baa6-f61e1b7f8973",
+          "type": "delay",
+          "blockType": "wait",
+          "label": "Wait",
+          "color": "#8b5cf6",
+          "enabled": true,
+          "parameters": [
+            {
+              "max": 60000,
+              "label": "Duration (ms)",
+              "type": "number",
+              "value": 800,
+              "min": 0,
+              "name": "duration",
+              "step": 100
+            }
+          ]
+        },
+        {
+          "id": "76da260f-a018-41ab-ae93-03f7394bd7d2",
+          "type": "action",
+          "blockType": "net.ziopuzzle.custombutton.set-value",
+          "label": "Set phase 2",
+          "color": "#2196f3",
+          "enabled": true,
+          "integrationId": "net.ziopuzzle.custombutton",
+          "actionId": "set-value",
+          "parameters": [
+            {
+              "name": "channel",
+              "label": "Channel",
+              "type": "string",
+              "required": true,
+              "value": "scroll-anchor-probe"
+            },
+            {
+              "name": "key",
+              "label": "Data name",
+              "type": "string",
+              "required": true,
+              "value": "phase"
+            },
+            {
+              "name": "value",
+              "label": "Value",
+              "type": "string",
+              "value": "2"
+            }
+          ]
+        },
+        {
+          "id": "b33ce401-f752-48a1-8a9a-631b7fcc9336",
+          "type": "delay",
+          "blockType": "wait",
+          "label": "Wait",
+          "color": "#8b5cf6",
+          "enabled": true,
+          "parameters": [
+            {
+              "max": 60000,
+              "label": "Duration (ms)",
+              "type": "number",
+              "value": 800,
+              "min": 0,
+              "name": "duration",
+              "step": 100
+            }
+          ]
+        },
+        {
+          "id": "1718b612-23b2-4333-837a-5e4455db4cd1",
+          "type": "action",
+          "blockType": "net.ziopuzzle.custombutton.set-value",
+          "label": "Set phase 3",
+          "color": "#2196f3",
+          "enabled": true,
+          "integrationId": "net.ziopuzzle.custombutton",
+          "actionId": "set-value",
+          "parameters": [
+            {
+              "name": "channel",
+              "label": "Channel",
+              "type": "string",
+              "required": true,
+              "value": "scroll-anchor-probe"
+            },
+            {
+              "name": "key",
+              "label": "Data name",
+              "type": "string",
+              "required": true,
+              "value": "phase"
+            },
+            {
+              "name": "value",
+              "label": "Value",
+              "type": "string",
+              "value": "3"
+            }
+          ]
+        },
+        {
+          "id": "5c145c4a-2f73-424b-9a85-6b354faf4718",
+          "type": "delay",
+          "blockType": "wait",
+          "label": "Wait",
+          "color": "#8b5cf6",
+          "enabled": true,
+          "parameters": [
+            {
+              "max": 60000,
+              "label": "Duration (ms)",
+              "type": "number",
+              "value": 800,
+              "min": 0,
+              "name": "duration",
+              "step": 100
+            }
+          ]
+        },
+        {
+          "id": "bcfea85c-1ce2-43e4-967d-ca5387d5fc1f",
+          "type": "action",
+          "blockType": "net.ziopuzzle.custombutton.set-value",
+          "label": "Set phase 4",
+          "color": "#2196f3",
+          "enabled": true,
+          "integrationId": "net.ziopuzzle.custombutton",
+          "actionId": "set-value",
+          "parameters": [
+            {
+              "name": "channel",
+              "label": "Channel",
+              "type": "string",
+              "required": true,
+              "value": "scroll-anchor-probe"
+            },
+            {
+              "name": "key",
+              "label": "Data name",
+              "type": "string",
+              "required": true,
+              "value": "phase"
+            },
+            {
+              "name": "value",
+              "label": "Value",
+              "type": "string",
+              "value": "4"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
