@@ -41,9 +41,10 @@ internal static class TransferData
         return values;
     }
     internal static async Task<JsonElement> Value(DataHub hub, ActionExecutionContext context,
-        Func<string, CancellationToken, Task<WidgetDataSnapshot?>>? readWidget)
+        Func<string, CancellationToken, Task<WidgetDataSnapshot?>>? readWidget, bool detailedTarget = false)
     {
         var key = Read(context, "key");
+        if (detailedTarget) return DataTarget.Read(await Snapshot(hub, context, readWidget), key);
         DataHub.ValidateName(key);
         if (!(await Snapshot(hub, context, readWidget)).TryGetValue(key, out var value))
             throw new FormatException($"No display value named '{key}' exists in initial JSON or Channel data.");
@@ -112,7 +113,8 @@ public sealed class WriteDisplayVariableAction(DataHub hub, Func<IUserVariableAp
     public LocalizedText Description => "Write a display value to an existing writable Macro Deck variable. The host converts it to the destination variable's type.";
     public IReadOnlyList<ActionParameter> Parameters { get; } =
     [
-        TransferData.Channel(), TransferData.InitialWidget(), TransferData.Key(),
+        TransferData.Channel(), TransferData.InitialWidget(),
+        ActionParameter.Text("key", label: "Source target", required: true, description: DataTarget.Help),
         ActionParameter.Autocomplete("variable", label: "Destination variable", optionsSourceId: "macrodeck.user-variables", required: true,
             description: "Select a variable name, not a value binding. Create the variable in Macro Deck first."),
         ActionParameter.Choice("scope", [new() { Value = "owner", Label = "Prefer this widget's variable; otherwise use global" },
@@ -128,7 +130,7 @@ public sealed class WriteDisplayVariableAction(DataHub hub, Func<IUserVariableAp
             context.CancellationToken.ThrowIfCancellationRequested();
             try
             {
-                var value = await TransferData.Value(hub, context, readWidget);
+                var value = await TransferData.Value(hub, context, readWidget, detailedTarget: true);
                 var name = TransferData.Read(context, "variable");
                 if (name.Length == 0) throw new FormatException("Select a destination variable.");
                 var scope = TransferData.Read(context, "scope");

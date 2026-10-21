@@ -102,7 +102,7 @@ public sealed partial class LayoutRenderer
                 if (node.Name == "repeat")
                 {
                     _ = RepeatAliases.Read(node);
-                    _ = RepeatDataName((string?)node.Attribute("items") ?? "");
+                    ValidateRepeatSource((string?)node.Attribute("items") ?? "");
                     var itemKey = (string?)node.Attribute("itemKey") ?? "";
                     if (itemKey.Length > 0 && !Regex.IsMatch(itemKey, @"\A[A-Za-z0-9_.-]+\z"))
                         throw new FormatException("itemKey must be a literal item property path, such as id.");
@@ -136,22 +136,43 @@ public sealed partial class LayoutRenderer
         return result;
     }
     public static string Expand(string text, IReadOnlyDictionary<string, JsonElement> values)
-        => Slot.Replace(Regex.Replace(text, @"\{\{\s*=([^{}]*)\}\}", m =>
+    {
+        var output = new System.Text.StringBuilder();
+        for (int position = 0; position < text.Length;)
         {
-            var expression = m.Groups[1].Value;
-            var separator = expression.IndexOf(':');
-            var result = DisplayMath.Evaluate(separator < 0 ? expression : expression[..separator], values);
-            return separator < 0 ? result : DisplayFormat.Apply(result, expression[(separator + 1)..]);
-        }), match =>
-        {
-            if (!values.TryGetValue(match.Groups[1].Value, out var value) || value.ValueKind == JsonValueKind.Null) return "—";
-            var raw = value.ValueKind == JsonValueKind.String ? value.GetString()! : value.ToString();
-            if (match.Groups[2].Success)
+            var open = text.IndexOf("{{", position, StringComparison.Ordinal);
+            if (open < 0) { output.Append(text[position..]); break; }
+            output.Append(text[position..open]);
+            var body = open + 2;
+            while (body < text.Length && char.IsWhiteSpace(text[body])) body++;
+            if (body < text.Length && text[body] == '=')
             {
-                return DisplayFormat.Apply(raw, match.Groups[2].Value);
+                var close = -1; var separator = -1; char quote = '\0';
+                for (var i = body + 1; i < text.Length; i++)
+                {
+                    var c = text[i];
+                    if (quote != '\0') { if (c == '\\') i++; else if (c == quote) quote = '\0'; }
+                    else if (c is '\'' or '"') quote = c;
+                    else if (c == ':' && separator < 0) separator = i;
+                    else if (c == '}' && i + 1 < text.Length && text[i + 1] == '}') { close = i; break; }
+                }
+                if (close < 0) { output.Append(text[open..]); break; }
+                var result = DisplayMath.Evaluate(text[(body + 1)..(separator < 0 ? close : separator)], values);
+                output.Append(separator < 0 ? result : DisplayFormat.Apply(result, text[(separator + 1)..close]));
+                position = close + 2;
             }
-            return raw;
-        });
+            else
+            {
+                var match = Slot.Match(text, open);
+                if (!match.Success || match.Index != open) { output.Append("{{"); position = open + 2; continue; }
+                var raw = values.TryGetValue(match.Groups[1].Value, out var value) && value.ValueKind != JsonValueKind.Null
+                    ? value.ValueKind == JsonValueKind.String ? value.GetString()! : value.ToString() : "—";
+                output.Append(match.Groups[2].Success ? DisplayFormat.Apply(raw, match.Groups[2].Value) : raw);
+                position = open + match.Length;
+            }
+        }
+        return output.ToString();
+    }
 
     public UiElement Render(IReadOnlyDictionary<string, JsonElement> values, Func<string, int, IReadOnlyList<double>>? history = null, string? selectedId = null, Action<ControlInput>? input = null, DisplayAnimation? animation = null, Func<string, string, UiResource?>? images = null, Func<string, double>? imageAspectRatio = null, bool modal = false, Func<string, string, string>? modalAnswer = null)
     {

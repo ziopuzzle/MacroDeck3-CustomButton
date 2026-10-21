@@ -26,6 +26,19 @@ public static class ExpressionInsertion
         new("Numbers", "pow(x, y)", "Raise x to the power y.", "1", ", 2", "pow"),
         new("Numbers", "sin(x)", "Sine; angle is in radians.", "0", Function: "sin"),
         new("Numbers", "cos(x)", "Cosine; angle is in radians.", "0", Function: "cos"),
+        new("Strings / arrays", "length(value)", "Number of array items or Unicode text elements (Japanese and emoji supported).", "title", Function: "length", Condition: true),
+        new("Strings", "contains(text, search)", "Case-sensitive literal substring match; returns true/false.", "title", ", 'song'", "contains", true),
+        new("Strings", "startsWith(text, prefix)", "Case-sensitive prefix match; returns true/false.", "title", ", 'Song'", "startsWith", true),
+        new("Strings", "endsWith(text, suffix)", "Case-sensitive suffix match; returns true/false.", "title", ", '.mp3'", "endsWith", true),
+        new("Strings", "replace(text, search, replacement)", "Replace all literal matches. Search must not be empty; no regular expressions.", "title", ", 'old', 'new'", "replace", true),
+        new("Strings", "substring(text, start, count)", "Cut text using a zero-based Unicode text-element index. Count is optional; oversized ranges are clamped.", "title", ", 0, 20", "substring", true),
+        new("Strings", "lower(text)", "Convert to lowercase using invariant rules.", "title", Function: "lower", Condition: true),
+        new("Strings", "upper(text)", "Convert to uppercase using invariant rules.", "title", Function: "upper", Condition: true),
+        new("Strings", "trim(text)", "Remove surrounding whitespace.", "title", Function: "trim", Condition: true),
+        new("Arrays", "split(text, separator)", "Split by a nonempty literal separator; preserve empty items. Returns an array (up to 256 items), usable as Repeat source.", "text", ", ','", "split", true),
+        new("Arrays", "join(array, separator)", "Join primitive array values. Null items become empty text.", "rows", ", ', '", "join", true),
+        new("Arrays", "at(array, index)", "Get a zero-based item, preserving its type. Out-of-range indices return null.", "rows", ", 0", "at", true),
+        new("Arrays", "slice(array, start, count)", "Get a portion of an array. Count is optional; oversized ranges are clamped.", "rows", ", 0, 10", "slice", true),
         new("Data", "number(key, fallback)", "Read a finite number or numeric string; otherwise use fallback. First argument must be a data name.", "value", ", 0", "number", true),
         new("Data", "isNumber(key)", "Test the JSON number type. Returns 1/0 in calculations and true/false in conditions.", "value", Function: "isNumber", Condition: true),
         new("Data", "isNumeric(key)", "Test whether data can be converted to a finite number.", "value", Function: "isNumeric", Condition: true),
@@ -38,7 +51,7 @@ public static class ExpressionInsertion
         new("Colors", "scaleBrightness(color, factor)", "Multiply HSV value, clamping the result to 0–1.", "'#ffffff'", ", 0.5", "scaleBrightness"),
         new("Colors", "setAlpha(color, alpha)", "Replace alpha: 0 transparent, 1 opaque. Alpha is the last hex pair.", "'#ffffff'", ", 0.5", "setAlpha")
     ];
-    public static bool KeyOnly(string attribute) => attribute is "key" or "keyX" or "keyY" or "items" or "followKey" or "averageColorKey";
+    public static bool KeyOnly(string attribute) => attribute is "key" or "keyX" or "keyY" or "followKey" or "averageColorKey";
     public static bool IsCondition(string attribute) => attribute is "when" or "visibleWhen";
     public static bool Available(string attribute) => attribute is not ("id" or "itemKey" or "itemAlias" or "indexAlias" or "keyAlias" or "averageColorKey" or "averageColorFallback");
 

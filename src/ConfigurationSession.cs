@@ -142,7 +142,9 @@ public sealed class ConfigurationSession : IUiSession
                         Binding = Bind.Custom(() => widgetId ?? settings.ConfigurationWidgetId, _ => { }),
                         VisibleWhen = new UiVisibleWhen { ParameterName = "channel", Values = [], SiblingValue = () => channel.Value } },
                     new UiBooleanInput { Key = "wholeButtonInteraction", Label = "Whole button interaction", Description = "Disable whole-button gestures and their press effect. Interactive elements and sliders remain available.", Binding = Bind.To(wholeButtonInteraction) },
-                    new UiJsonInput { Key = "initialValues", Label = TextCatalog.Reference("Initial data JSON (before receiving data)"), LiteralOnly = true, Binding = Bind.To(values) },
+                    new UiJsonInput { Key = "initialValues", Label = "Initial data JSON",
+                        Description = "Defaults for top-level data names missing from the Channel. Removing a Channel value makes its default apply again. These defaults do not initialize live Channel data.",
+                        LiteralOnly = true, Binding = Bind.To(values) },
                     new UiProse { Key = "hint", Text = TextCatalog.Reference("Use matching data names in your update actions and display layout.") }
                 ]
             },

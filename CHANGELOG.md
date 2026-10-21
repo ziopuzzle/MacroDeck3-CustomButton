@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.48.2 — structured data editing and text/array functions
+
+- Clarify in the Initial data JSON field that defaults apply to missing top-level Channel values and apply again after those values are removed.
+
+- Extend Set display value with shared dot/bracket targets (settings.volume, playlist[2].title) and optional JSON input. Add Insert array item and Remove display value; removal can write the removed value to a Macro Deck variable. Editing uses live Channel data without implicit initial-JSON reads.
+- Include the new actions in automatic Channel defaults and Channel renaming. Support JSON-typed values or plain text, append/insert and property/item removal.
+- Add length, contains, startsWith, endsWith, replace, substring, lower, upper, trim, split, join, at and slice to XML calculations and conditions, with searchable GUI descriptions. Text length/slicing use Unicode text elements; comparisons and replacement are literal and case-sensitive.
+- Allow typed array expressions as Repeat sources, including split and slice. Keep data-name selection and add the function editor for Array source. Preserve string and array types in function chains.
+- Handle colons and binding delimiters inside quoted expression strings without re-expanding computed text. Normalize line endings in the scroll experiment test for Windows checkouts.
+
 ## 0.48.1 — scroll anchor experiment
 
 - Explain Repeat local scope in the GUI and support itemAlias/indexAlias/keyAlias to avoid Channel-name collisions, including nested scopes and variable suggestions.

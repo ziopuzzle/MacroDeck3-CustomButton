@@ -42,6 +42,26 @@ public static class DisplayCondition
                 }
                 if (t.Kind == "text") return t.Text[1..^1];
                 if (t.Kind != "id") throw new FormatException("Invalid condition value.");
+                if (DataFunctions.IsSupported(t.Text) && Take("("))
+                {
+                    var arguments = new List<JsonElement>();
+                    if (!Take(")"))
+                    {
+                        do
+                        {
+                            if (arguments.Count == 3) throw new FormatException("Data functions accept at most three arguments.");
+                            arguments.Add(JsonSerializer.SerializeToElement(Atom()));
+                        } while (Take(","));
+                        if (!Take(")")) throw new FormatException("Expected ')' after function arguments.");
+                    }
+                    var computed = DataFunctions.Evaluate(t.Text, arguments);
+                    return computed.ValueKind switch
+                    {
+                        JsonValueKind.String => computed.GetString(), JsonValueKind.Number => computed.GetDouble(),
+                        JsonValueKind.True => true, JsonValueKind.False => false,
+                        JsonValueKind.Null => null, _ => computed
+                    };
+                }
                 if (t.Text is "type" or "isNumber" or "isNumeric" or "number" && Take("("))
                 {
                     if (at == tokens.Count || tokens[at].Kind is not ("id" or "text")) throw new FormatException("Expected a data name.");
@@ -66,7 +86,8 @@ public static class DisplayCondition
                 return values.TryGetValue(t.Text, out var value) ? value.ValueKind switch
                 {
                     JsonValueKind.String => value.GetString(), JsonValueKind.Number => value.GetDouble(),
-                    JsonValueKind.True => true, JsonValueKind.False => false, _ => null
+                    JsonValueKind.True => true, JsonValueKind.False => false,
+                    JsonValueKind.Array or JsonValueKind.Object => value, _ => null
                 } : null;
             }
             finally { depth--; }

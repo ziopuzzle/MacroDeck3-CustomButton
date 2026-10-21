@@ -36,7 +36,12 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
         artworkColors = new(() => context?.MusicPlayers);
         imageHostUrl = Uri.TryCreate(options?.Value.HostUrl, UriKind.Absolute, out var host) ? host : null;
         showModal = new ShowModalAction(() => context?.Deck, () => context?.Widgets, () => context?.Events);
-        Actions = [new UpdateValueAction(Hub), new UpdateValuesAction(Hub), new CopyDisplayValueAction(Hub, ReadWidget), new CopyDisplayDataAction(Hub, ReadWidget), new WriteDisplayVariableAction(Hub, () => context?.UserVariables, ReadWidget), showModal];
+        Actions = [
+            new UpdateValueAction(Hub), new UpdateValuesAction(Hub),
+            new EditDisplayDataAction(Hub, "add"), new EditDisplayDataAction(Hub, "remove", () => context?.UserVariables),
+            new CopyDisplayValueAction(Hub, ReadWidget), new CopyDisplayDataAction(Hub, ReadWidget),
+            new WriteDisplayVariableAction(Hub, () => context?.UserVariables, ReadWidget), showModal
+        ];
     }
     private Task<WidgetDataSnapshot?> ReadWidget(string id, CancellationToken ct) => context?.Widgets.GetWidgetDataAsync(id, ct) ?? Task.FromResult<WidgetDataSnapshot?>(null);
     private static readonly WidgetTypeDescriptor Descriptor = new("custom-button", "Custom Button", TextCatalog.Reference("A button rendered from templates and variable data"), DefaultData: ButtonSettings.DefaultData, DataSchema: ButtonSettings.Schema, HasConfiguration: true);

@@ -4,13 +4,45 @@ Calculations read the button's display data. Macro Deck variables still enter th
 
 ## Inserting data and functions in the GUI
 
-The **{ }** button opens one searchable value editor for display-data names and functions, with categories, descriptions and examples. The value field is directly editable and updates the main GUI as you type. **Insert** inserts the selected item without closing the window. Close the window with **×** to keep edits, just like the main GUI. There are no OK or Cancel buttons. It remains available without initial data. Image average-color output names are also listed. Literal-only ID/output/fallback fields do not offer the picker; key fields offer names only, and condition fields only offer their supported functions.
+The **{ }** button opens one searchable value editor for display-data names and functions, with categories, descriptions and examples. The value field is directly editable and updates the main GUI as you type. **Insert** inserts the selected item without closing the window. Close the window with **×** while keeping edits. Image average-color output names are also listed. Literal-only ID/alias/fallback fields do not offer the picker; data-key fields offer plain-name selection. Repeat's Array source offers both a name menu and the function editor because it can evaluate an array expression. Condition fields offer only supported functions.
 
 The value editor starts at the main field's cursor/selection. Clicking or selecting in the value changes the insertion position; using search or the list retains that position. A line/column and selection-count indicator shows where Insert will operate, and selections remain highlighted while choosing an item. Valid edits use the normal throttled preview update pipeline. Incomplete input stays in the main field with a warning, while the last accepted layout is kept. Use the main GUI's Undo or Reset input to revert edits. Saving in Macro Deck is still required afterwards.
 
 Outside a binding, inserting a name adds `{{name}}`; inserting a function adds `{{= function(...)}}`. Inside a calculation, only the name or function is inserted. Inside a direct binding such as `{{value:F1}}`, choosing a name replaces the key; choosing `round` wraps it as `{{= round(value, 0):F1}}`. Selecting an expression before choosing a function uses the selection as its first argument. The first argument is selected after insertion so it can immediately be replaced with a data name.
 
 Insert before a format suffix, not inside it. Cross-binding selections, incomplete delimiters and insertion inside quoted strings are rejected with guidance; select the whole quoted argument to replace it. Hyphenated keys work in direct bindings but cannot be inserted into calculations, where a hyphen means subtraction. Function templates are starting points: adjust their arguments to the intended values. All changes still need to be saved in Macro Deck.
+
+## Text and array functions (0.48.2)
+
+These functions work in `{{= ...}}` and in `visibleWhen`/style conditions. Functions preserve JSON types internally: a string `"001"` keeps its leading zeroes, `split`/`slice` return arrays, and `at` preserves the selected item's type. Numeric operators still perform arithmetic, not string concatenation. Use `join` to combine text.
+
+| Function | Behavior |
+| --- | --- |
+| `length(value)` | String length in Unicode text elements (including combined emoji), or array item count. |
+| `contains(text, search)` | Whether text contains a literal substring. |
+| `startsWith(text, prefix)`, `endsWith(text, suffix)` | Prefix/suffix tests. |
+| `replace(text, search, replacement)` | Replace every literal match. Empty search is invalid. |
+| `substring(text, start[, count])` | Zero-based Unicode text-element slicing. Omitted count means the rest. Oversized ranges are clamped. |
+| `lower(text)`, `upper(text)`, `trim(text)` | Invariant case conversion or surrounding-whitespace removal. |
+| `split(text, separator)` | Split by a nonempty literal separator; keep empty entries. Maximum 256 results. |
+| `join(array, separator)` | Join strings, numbers, booleans and null (empty text). Nested arrays/objects are invalid. |
+| `at(array, index)` | Zero-based lookup; out-of-range returns null. |
+| `slice(array, start[, count])` | Return an array portion. Omitted count means the rest; oversized ranges are clamped. |
+
+Searches are case-sensitive and ordinal; use `lower` on both inputs for case-insensitive matching. These are not regular expressions. Indices/counts must be nonnegative integers. Missing/null inputs propagate null (`—` in text, false as a condition); wrong input types and invalid arguments produce located rendering errors. Boolean results display as `true`/`false`. Function output is limited to 16,000 JSON characters; existing expression length/nesting limits still apply.
+
+```xml
+<stack id="content">
+  <text id="count">{{= length(tracks)}} tracks</text>
+  <text id="title">{{= substring(trim(title), 0, 24)}}</text>
+  <text id="match" visibleWhen="contains(lower(title), lower(query))">Match</text>
+  <repeat id="tags" items="{{= split(tagsText, ',')}}">
+    <text id="tag">{{= trim(item)}}</text>
+  </repeat>
+</stack>
+```
+
+Quoted colons are literal text: `{{= replace(title, ':', ' - ')}}`. Computed strings containing `{{...}}` are displayed literally, not evaluated a second time. Repeat consumes actual arrays from expressions; other text bindings display arrays/objects as JSON. The functions read Channel data and do not write it or fetch Macro Deck variables.
 
 ## Duration formatting uses seconds
 

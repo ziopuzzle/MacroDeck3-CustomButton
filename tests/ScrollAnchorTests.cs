@@ -89,7 +89,7 @@ public class ScrollAnchorTests
         var path = Path.Combine(directory!.FullName, "experiments/scroll-anchor");
         using var config = JsonDocument.Parse(File.ReadAllText(Path.Combine(path, "widget.json")));
         var settings = ButtonSettings.Read(config.RootElement);
-        Assert.That(settings.Layout, Is.EqualTo(File.ReadAllText(Path.Combine(path, "layout.xml"))));
+        Assert.That(settings.Layout.ReplaceLineEndings("\n"), Is.EqualTo(File.ReadAllText(Path.Combine(path, "layout.xml")).ReplaceLineEndings("\n")));
         var flows = ButtonEvents.Normalize(settings.Flows, "test-widget");
         Assert.That(flows[0].GetProperty("children").GetArrayLength(), Is.EqualTo(9));
         var renderer = new LayoutRenderer(settings.Layout);

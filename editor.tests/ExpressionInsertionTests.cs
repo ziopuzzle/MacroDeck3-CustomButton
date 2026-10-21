@@ -65,8 +65,10 @@ public class ExpressionInsertionTests
     }
     [Test] public void AllCalculationExamplesEvaluate()
     {
-        var values = DataHub.ParseValues("{\"value\":1}");
+        var values = DataHub.ParseValues("""{"value":1,"title":"Song","text":"a,b","rows":[1,"two"]}""");
         foreach (var choice in ExpressionInsertion.Functions.Where(f => f.Function != "type"))
             Assert.DoesNotThrow(() => DisplayMath.Evaluate(choice.Example, values), choice.Label);
+        foreach (var choice in ExpressionInsertion.Functions.Where(f => f.Condition))
+            Assert.DoesNotThrow(() => DisplayCondition.Evaluate(choice.Example, values), choice.Label);
     }
 }

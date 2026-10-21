@@ -12,7 +12,7 @@ public static class ActionEditorDefaults
         foreach (var block in Blocks(flows))
         {
             if (block["integrationId"]?.ToString() != CustomButtonIntegration.PluginId
-                || block["actionId"]?.ToString() is not ("set-value" or "set-data" or "copy-value" or "copy-data" or "write-variable")
+                || block["actionId"]?.ToString() is not ("set-value" or "set-data" or "add-array-item" or "remove-data-part" or "copy-value" or "copy-data" or "write-variable")
                 || block["parameters"] is not JsonArray parameters) continue;
             foreach (var parameter in parameters.OfType<JsonObject>())
                 if ((parameter["name"]?.ToString() == "channel"
@@ -33,7 +33,7 @@ public static class ActionEditorDefaults
         {
             if (block["id"]?.ToString() is not { Length: > 0 } id || existing.Contains(id)
                 || block["integrationId"]?.ToString() != CustomButtonIntegration.PluginId
-                || block["actionId"]?.ToString() is not ("set-value" or "set-data" or "copy-value" or "copy-data" or "write-variable" or "show-modal")) continue;
+                || block["actionId"]?.ToString() is not ("set-value" or "set-data" or "add-array-item" or "remove-data-part" or "copy-value" or "copy-data" or "write-variable" or "show-modal")) continue;
             var defaultChannel = block["actionId"]?.ToString() == "show-modal" ? widgetId : channel;
             if (string.IsNullOrWhiteSpace(defaultChannel)) continue;
             if (block["parameters"] is not JsonArray parameters) continue;

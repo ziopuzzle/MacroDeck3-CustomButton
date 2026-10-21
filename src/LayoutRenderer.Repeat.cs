@@ -116,6 +116,16 @@ public sealed partial class LayoutRenderer
             throw new FormatException("Repeat items needs a data name or a single binding, such as {{tracks}}.");
         return source;
     }
+    private static string? RepeatExpression(string source)
+    {
+        var match = Regex.Match(source.Trim(), @"\A\{\{\s*=(.*)\}\}\z", RegexOptions.Singleline | RegexOptions.CultureInvariant);
+        return match.Success ? match.Groups[1].Value.Trim() : null;
+    }
+    private static void ValidateRepeatSource(string source)
+    {
+        if (RepeatExpression(source) is { } expression) _ = DisplayMath.EvaluateValue(expression, new Dictionary<string, JsonElement>());
+        else _ = RepeatDataName(source);
+    }
 
     private static bool ItemProperty(JsonElement item, string path, out JsonElement value)
     {
@@ -134,8 +144,11 @@ public sealed partial class LayoutRenderer
         string source, string keyPath, string repeatId, IReadOnlyDictionary<string, JsonElement> values, RepeatScope? parent, RepeatAliases? aliases = null)
     {
         aliases ??= new("item", "index", "itemKey");
-        var name = RepeatDataName(source);
-        if (!values.TryGetValue(name, out var array) || array.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined) yield break;
+        var name = source;
+        JsonElement array;
+        if (RepeatExpression(source) is { } expression) array = DisplayMath.EvaluateValue(expression, values);
+        else { name = RepeatDataName(source); values.TryGetValue(name, out array); }
+        if (array.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined) yield break;
         if (array.ValueKind != JsonValueKind.Array) throw new FormatException($"Repeat source '{name}' must be a JSON array, not {DisplayData.TypeOf(array)}.");
         if (array.GetArrayLength() > LayoutLimits.RepeatItems)
             throw new FormatException($"Repeat source '{name}' exceeds {LayoutLimits.RepeatItems} items. Pass a smaller array.");

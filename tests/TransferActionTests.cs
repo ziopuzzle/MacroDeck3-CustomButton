@@ -147,6 +147,40 @@ public class TransferActionTests
         Assert.That(api.Calls, Is.EqualTo(2));
     }
 
+    [TestCase("playlist[0].title", "First")]
+    [TestCase("playlist[-1].duration", "123")]
+    [TestCase("playlist[0]", "{\"title\":\"First\"}")]
+    [TestCase("settings.volume", "50")]
+    public async Task WriteVariableReadsDetailedTargets(string target, string expected)
+    {
+        var hub = new DataHub();
+        hub.Update("source", DataHub.ParseValues("""{"playlist":[{"title":"First"},{"duration":123}],"settings":{"volume":50}}"""));
+        var api = new Variables();
+        var result = await new WriteDisplayVariableAction(hub, () => api).CreateExecutor().ExecuteAsync(Context(
+            ("channel", "source"), ("key", target), ("variable", "destination")));
+        Assert.That(result.Status, Is.EqualTo(ActionResultStatus.Succeeded));
+        Assert.That(api.Last.Value, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public async Task WriteVariableReadsInitialNestedValuesAndHonorsLiteralDottedNames()
+    {
+        var hub = new DataHub();
+        Task<WidgetDataSnapshot?> Saved(string id, CancellationToken ct) => Task.FromResult<WidgetDataSnapshot?>(
+            new(id, CustomButtonIntegration.TypeId, JsonSerializer.SerializeToElement(new {
+                channel = "source", initialValues = """{"settings":{"volume":50},"settings.volume":75}"""
+            })));
+        var api = new Variables();
+        var action = new WriteDisplayVariableAction(hub, () => api, Saved).CreateExecutor();
+        await action.ExecuteAsync(Context(("channel", "source"), ("key", "settings.volume"), ("variable", "destination")));
+        Assert.That(api.Last.Value, Is.EqualTo("75"));
+        await action.ExecuteAsync(Context(("channel", "source"), ("key", """["settings"].volume"""), ("variable", "destination")));
+        Assert.That(api.Last.Value, Is.EqualTo("50"));
+        hub.Update("source", DataHub.ParseValues("""{"settings":{"volume":90}}"""));
+        await action.ExecuteAsync(Context(("channel", "source"), ("key", """["settings"].volume"""), ("variable", "destination")));
+        Assert.That(api.Last.Value, Is.EqualTo("90"));
+    }
+
     [TestCase(UserVariableWriteStatus.NotFound, ActionErrorCodes.NotFound)]
     [TestCase(UserVariableWriteStatus.NotEditable, ActionErrorCodes.PermissionDenied)]
     [TestCase(UserVariableWriteStatus.Unavailable, ActionErrorCodes.NotConnected)]

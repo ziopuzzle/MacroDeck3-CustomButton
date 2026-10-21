@@ -17,6 +17,7 @@ public class ActionEditorDefaultsTests
     private static string? Channel(JsonElement flows) => flows[0].GetProperty("children")[0].GetProperty("children")[0].GetProperty("parameters")[0].GetProperty("value").GetString();
 
     [TestCase("set-value")][TestCase("set-data")][TestCase("copy-value")][TestCase("copy-data")][TestCase("write-variable")]
+    [TestCase("add-array-item")][TestCase("remove-data-part")]
     public async Task NewNestedActionsUseCurrentChannelButLaterEditsRemainEditable(string action)
     {
         await using var session = new ConfigurationSession(ButtonTests.Surface("config"), TestLayouts.Sample with { Channel = "music", Flows = ButtonEvents.Empty });

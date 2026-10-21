@@ -95,7 +95,9 @@ public sealed class DataHub(TimeProvider? timeProvider = null)
         => UpdateCore(channel, values, replace, null);
     internal JsonElement? UpdateValue(string channel, string key, JsonElement value)
         => UpdateCore(channel, new Dictionary<string, JsonElement> { [key] = value }, false, key);
-    private JsonElement? UpdateCore(string channel, IReadOnlyDictionary<string, JsonElement> values, bool replace, string? previousKey)
+    internal void Edit(string channel, Action<Dictionary<string, JsonElement>> edit)
+        => UpdateCore(channel, new Dictionary<string, JsonElement>(), false, null, edit: edit);
+    private JsonElement? UpdateCore(string channel, IReadOnlyDictionary<string, JsonElement> values, bool replace, string? previousKey, Action<Dictionary<string, JsonElement>>? edit = null)
     {
         ValidateName(channel);
         JsonElement? previous = null;
@@ -105,6 +107,14 @@ public sealed class DataHub(TimeProvider? timeProvider = null)
             if (!channels.ContainsKey(channel) && channels.Count >= 256) throw new FormatException("The maximum of 256 channels has been reached.");
             var merged = !replace && channels.TryGetValue(channel, out var old) ? new Dictionary<string, JsonElement>(old, StringComparer.Ordinal) : new(StringComparer.Ordinal);
             foreach (var pair in values) { ValidateName(pair.Key); merged[pair.Key] = pair.Value.Clone(); }
+            if (edit != null)
+            {
+                var beforeEdit = new Dictionary<string, JsonElement>(merged, StringComparer.Ordinal);
+                edit(merged);
+                values = merged.Where(pair => !beforeEdit.TryGetValue(pair.Key, out var priorValue)
+                    || priorValue.GetRawText() != pair.Value.GetRawText()).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+                replace = true;
+            }
             // Revalidate the combined payload, so small updates cannot grow it without bound.
             ParseValues(JsonSerializer.Serialize(merged));
             channels[channel] = merged;

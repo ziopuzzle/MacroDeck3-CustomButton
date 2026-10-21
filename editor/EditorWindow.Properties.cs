@@ -169,7 +169,7 @@ public sealed partial class EditorWindow
         if (attribute is "followKey" or "followOffset" or "followDelayMs")
             ToolTip.SetTip(box, ToolTip.GetTip(box) + " Experimental: behavior and configuration may change in future versions.");
         if (attribute is "itemAlias" or "indexAlias" or "keyAlias") ToolTip.SetTip(box, "Literal local variable name; no braces or functions. Defaults: item, index, itemKey. Must be distinct. These read-only names shadow same-named Channel values only inside Repeat.");
-        if (attribute == "items") ToolTip.SetTip(box, "Array data name or {{tracks}}. Children are rendered once per item. Use {{item.title}}, {{item}} and {{index}} inside them. Missing or null arrays render no children.");
+        if (attribute == "items") ToolTip.SetTip(box, "Array data name, {{tracks}}, or an array expression such as {{= split(text, ',')}} / {{= slice(tracks, 0, 10)}}. Use the name menu or the function editor. Children render once per item; missing/null arrays render no children.");
         if (attribute == "itemKey") ToolTip.SetTip(box, "Optional literal property path such as id. Values must be unique, nonempty strings or numbers. Keeps item identity when reordered. Blank uses the zero-based index.");
         if (attribute == "color" && component is "image" or "svg") ToolTip.SetTip(box, "Optional single-colour tint. Preserves the image alpha mask and replaces all RGB colours. Leave blank for original colours. Supports bindings, conditions and colour transitions. Colour alpha multiplies opacity. Requires client mask support; tinted artwork does not crossfade on beta.15.");
         if (attribute == "rasterSize") ToolTip.SetTip(box, "SVG image's longest edge in pixels: 64–1024, default 512. The aspect ratio is preserved. SVG variables update with display data; unchanged SVG is cached.");
@@ -236,10 +236,10 @@ public sealed partial class EditorWindow
         }
         var options = LayoutOptions.Choices(component, attribute);
         if (options.Length > 0) Menu("▾", "Suggested values", new[] { ("Use default", "") }.Concat(options.Select(o => (o, o))));
-        if (ExpressionInsertion.KeyOnly(attribute))
+        if (ExpressionInsertion.KeyOnly(attribute) || attribute == "items")
             Menu("▾", "Select a display data name (replaces the field; no value binding)", new[] { ("Clear", "") }.Concat(keys.Concat(new LayoutRenderer(history.Xml).ImageColorDefaults.Keys)
                 .Concat(attribute == "items" ? LayoutRenderer.RepeatPreviewKeys(history.Xml, selected, initialValues) : []).Distinct().OrderBy(k => k).Select(k => (k, k))));
-        else if (ExpressionInsertion.Available(attribute))
+        if (!ExpressionInsertion.KeyOnly(attribute) && ExpressionInsertion.Available(attribute))
         {
             var insert = Button("{ }", () => { }, "insert_" + attribute);
             insert.Focusable = false; // Keep the text selection until the picker has captured it.

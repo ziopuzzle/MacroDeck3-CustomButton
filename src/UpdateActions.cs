@@ -9,19 +9,25 @@ public sealed class UpdateValueAction(DataHub hub) : IActionDefinition
 {
     public string Id => "set-value";
     public LocalizedText Name => TextCatalog.Reference("Set display value");
-    public LocalizedText Description => TextCatalog.Reference("Update one value on a channel. The value can be bound to a Macro Deck variable.");
+    public LocalizedText Description => "Set a Channel value, object property or array item. Other values are kept.";
     public IReadOnlyList<ActionParameter> Parameters { get; } =
     [
         ActionParameter.Text("channel", label: TextCatalog.Reference("Channel"), defaultValue: "demo", required: true),
-        ActionParameter.Text("key", label: TextCatalog.Reference("Data name"), defaultValue: "value", required: true),
-        ActionParameter.Text("value", label: TextCatalog.Reference("Value (supports variable bindings)"))
+        ActionParameter.Text("key", label: "Target", required: true, description: DataTarget.Help),
+        ActionParameter.Text("value", label: TextCatalog.Reference("Value (supports variable bindings)")),
+        DataTarget.ValueType()
     ];
     public IActionExecutor CreateExecutor() => new UpdateExecutor(context =>
     {
         var channel = Parameter(context, "channel").Trim(); var key = Parameter(context, "key").Trim();
-        var value = context.Parameters.GetValueOrDefault("value");
-        if (value is JsonElement element) value = element.ValueKind == JsonValueKind.String ? element.GetString() : element.ToString();
-        hub.Update(channel, new Dictionary<string, JsonElement> { [key] = JsonSerializer.SerializeToElement(value is null ? "" : Convert.ToString(value, CultureInfo.InvariantCulture)) });
+        var value = DataTarget.Value(context);
+        // Old saved actions have no input-format parameter and used literal data names.
+        if (!context.Parameters.ContainsKey("valueType") && System.Text.RegularExpressions.Regex.IsMatch(key, @"\A[A-Za-z0-9_.-]{1,64}\z"))
+        {
+            hub.Update(channel, new Dictionary<string, JsonElement> { [key] = value });
+            return;
+        }
+        hub.Edit(channel, data => DataTarget.Apply(data, key, "set", value));
     });
     internal static string Parameter(ActionExecutionContext context, string name) => Convert.ToString(context.Parameters.GetValueOrDefault(name), CultureInfo.InvariantCulture) ?? "";
 }
