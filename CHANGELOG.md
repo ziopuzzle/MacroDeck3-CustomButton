@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.48.3 — Macro Deck beta.18
+
+- Update Macro Deck SDK, UI, hosting, analyzers, testing helpers and local/release CLI to 3.0.0-beta.18; regenerate all NuGet lock files.
+- Require Macro Deck 3.0.0-beta.18 or later. This release updates dependencies without adding new components or actions.
+
 ## 0.48.2 — structured data editing and text/array functions
 
 - Clarify in the Initial data JSON field that defaults apply to missing top-level Channel values and apply again after those values are removed.

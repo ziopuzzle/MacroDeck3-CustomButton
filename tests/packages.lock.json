@@ -4,13 +4,13 @@
     "net10.0": {
       "MacroDeck.Plugin.Testing": {
         "type": "Direct",
-        "requested": "[3.0.0-beta.17, )",
-        "resolved": "3.0.0-beta.17",
-        "contentHash": "QpAVit8kSfGM7PtzGhg1xmt4Ig+VKDR2AgR8JvAANLc4vwL9hB5XIQin+AiKKowP9A8pGRKeYLN0Ox/c+bEE3g==",
+        "requested": "[3.0.0-beta.18, )",
+        "resolved": "3.0.0-beta.18",
+        "contentHash": "JMmx+BHXqHd/qMdEBsMVypkg8vXv2MnwxYUDpbJAa0RswX8eM2e4iEgVrYM0+lA34KXcvEn+/l9BZC5DyrIyng==",
         "dependencies": {
           "JsonSchema.Net": "9.4.0",
-          "MacroDeck.Plugin.Hosting": "3.0.0-beta.17",
-          "MacroDeck.Plugin.Packaging": "3.0.0-beta.17",
+          "MacroDeck.Plugin.Hosting": "3.0.0-beta.18",
+          "MacroDeck.Plugin.Packaging": "3.0.0-beta.18",
           "Serilog": "4.4.0"
         }
       },
@@ -98,74 +98,74 @@
       },
       "MacroDeck.Localization": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.17",
-        "contentHash": "Oj6n/I1RG3iCUsdFwdBT9LYyRX75NQLPR/m0jpDcKPJ4Yb4lYRN2S5mFKxOKXslG5sFsS8FA9rWcZ6vFiLWTcg=="
+        "resolved": "3.0.0-beta.18",
+        "contentHash": "cEhVK2VVXTOhYtECt9d1AJcZefIE505lvXxBl3vTdAAAnHtQK9Z1BVzEtJlZRjOFtZ9FDWy50rS22Xi3P0+h6A=="
       },
       "MacroDeck.Plugin.Hosting": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.17",
-        "contentHash": "N89+thFjh/ltAu/4MhImmA0i+x0KblhcSQdo4I+KrowNwgmrAITiw9YoW/J0/bUnlXFc/4dHDWtl2S9Eb8hbGA==",
+        "resolved": "3.0.0-beta.18",
+        "contentHash": "y8UT7YWwRTCSX/hyvEGhCMB/YCWab/Q+8bJZx5rudigxYXyCcKuzywut/MvMuUEqaJJU/mbygpu6MmJej5qaKw==",
         "dependencies": {
-          "MacroDeck.Localization": "3.0.0-beta.17",
-          "MacroDeck.Plugin.Protocol": "3.0.0-beta.17",
-          "MacroDeck.Sdk": "3.0.0-beta.17",
-          "MacroDeck.Ui": "3.0.0-beta.17",
+          "MacroDeck.Localization": "3.0.0-beta.18",
+          "MacroDeck.Plugin.Protocol": "3.0.0-beta.18",
+          "MacroDeck.Sdk": "3.0.0-beta.18",
+          "MacroDeck.Ui": "3.0.0-beta.18",
           "Serilog": "4.4.0"
         }
       },
       "MacroDeck.Plugin.Packaging": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.17",
-        "contentHash": "G7GuzZcqe7nQ1E9dGozn4dB6UgEdw0QtbN2ZesfH0CVaRTd00tPpo2e/dB9NEFGQxA5xzS5c2UDYRTMQy2UN1Q==",
+        "resolved": "3.0.0-beta.18",
+        "contentHash": "wNBMtiJztNQelzqTptCpTc7QrDIMjO+qvnEtTBOoWsc0oXY+laFQ57MaHjaMowv5npq/w1NqWJQUWjxgKxkWKQ==",
         "dependencies": {
-          "MacroDeck.Plugin.Protocol": "3.0.0-beta.17",
+          "MacroDeck.Plugin.Protocol": "3.0.0-beta.18",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
           "Serilog": "4.4.0"
         }
       },
       "MacroDeck.Plugin.Protocol": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.17",
-        "contentHash": "WFVa7OmNk0bZmDs4D1sDulZa1hqM2G0DeZAPNWpN+/UzqnS5QDGaBkSV2gN+bepkbnGHw4BV03wLNRgA98IZAA==",
+        "resolved": "3.0.0-beta.18",
+        "contentHash": "o9YwKn6/ooALcaFIVFLfDUZWV3FPdPspAbwa+5VJp+wntRKRETxEGiudkU+p1QNbjGlKbbN2/1/0eWLPYWzoAw==",
         "dependencies": {
-          "MacroDeck.Sdk": "3.0.0-beta.17",
+          "MacroDeck.Sdk": "3.0.0-beta.18",
           "Serilog": "4.4.0"
         }
       },
       "MacroDeck.Plugin.Serilog": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.17",
-        "contentHash": "zonEw1qHresgUuVsbXbkGBQ42UJkb8EsHVWhX/GhYIjcL/3tpLCWO/0Q9sSOWysZWCjeqIrwiJkKQsH19cpRlA==",
+        "resolved": "3.0.0-beta.18",
+        "contentHash": "nHD9KsfYYmCXj6mAWV97K64Q2IJoeQMiQVvjIRtonTLRWRCANsHNdHZ/qYikpR7ug3iCX9HNQhOXcmntr4U4Sw==",
         "dependencies": {
-          "MacroDeck.Plugin.Hosting": "3.0.0-beta.17",
-          "MacroDeck.Plugin.Protocol": "3.0.0-beta.17",
+          "MacroDeck.Plugin.Hosting": "3.0.0-beta.18",
+          "MacroDeck.Plugin.Protocol": "3.0.0-beta.18",
           "Serilog": "4.4.0",
           "Serilog.Extensions.Hosting": "10.0.0"
         }
       },
       "MacroDeck.Sdk": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.17",
-        "contentHash": "e6q/Cysls2NJ12wxBYH3uau20PgY+Gkb1RhYXd3FZiKklWFtw79j4CtdzSk+y6snohEWHIyQtprzfPlCdQmUyg==",
+        "resolved": "3.0.0-beta.18",
+        "contentHash": "FI2+ELpMINW5b1yFz5UphHmO74nFiu558V+QO+Bb4p8xXoBmvUTs/HyolfPon5AoY9fiG5n2J9ye9tTVC58gGg==",
         "dependencies": {
-          "MacroDeck.Localization": "3.0.0-beta.17",
-          "MacroDeck.Ui.Model": "3.0.0-beta.17",
+          "MacroDeck.Localization": "3.0.0-beta.18",
+          "MacroDeck.Ui.Model": "3.0.0-beta.18",
           "Serilog": "4.4.0"
         }
       },
       "MacroDeck.Ui": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.17",
-        "contentHash": "y3uHQVuv4Yuyn3PCzta0fU8C5eCo2ENtZYjAqEo2U2gnxYM76tv7CCvKO1tha4dzV0C1mjlZ5CZkTS/KipRIcQ==",
+        "resolved": "3.0.0-beta.18",
+        "contentHash": "ifKrWLjTlvemR9hHBDibI6KgcBECt/c1IWWjrYeWzUbUDD1mLZKiFlnbe4MALj5SAkDpwsVPFVIwHt46WjcqUA==",
         "dependencies": {
-          "MacroDeck.Localization": "3.0.0-beta.17",
-          "MacroDeck.Ui.Model": "3.0.0-beta.17"
+          "MacroDeck.Localization": "3.0.0-beta.18",
+          "MacroDeck.Ui.Model": "3.0.0-beta.18"
         }
       },
       "MacroDeck.Ui.Model": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.17",
-        "contentHash": "UbEK1x/4Gb0kgnsfoGf91NNe3hFOofjxFTNXZPTBoLxGgQzjhrhRLndMXT63vxJWbEFFMPPfe+9LMt0jppkgRg=="
+        "resolved": "3.0.0-beta.18",
+        "contentHash": "+RlZDtdUg/gYIWoCFivPXxkVLGM43M9gd2SJuj/Z8flIx7DyyGX+xIxuWlijbYUYqv4V6Zjbeq3SEVMAeoGfhQ=="
       },
       "Microsoft.ApplicationInsights": {
         "type": "Transitive",
@@ -420,9 +420,9 @@
         "dependencies": {
           "HarfBuzzSharp": "[8.3.1.1, )",
           "HarfBuzzSharp.NativeAssets.Linux": "[8.3.1.1, )",
-          "MacroDeck.Plugin.Hosting": "[3.0.0-beta.17, )",
-          "MacroDeck.Plugin.Serilog": "[3.0.0-beta.17, )",
-          "MacroDeck.Ui": "[3.0.0-beta.17, )",
+          "MacroDeck.Plugin.Hosting": "[3.0.0-beta.18, )",
+          "MacroDeck.Plugin.Serilog": "[3.0.0-beta.18, )",
+          "MacroDeck.Ui": "[3.0.0-beta.18, )",
           "SkiaSharp": "[2.88.9, )",
           "SkiaSharp.HarfBuzz": "[2.88.9, )",
           "SkiaSharp.NativeAssets.Linux": "[2.88.9, )",

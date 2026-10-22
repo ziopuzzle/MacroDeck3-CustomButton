@@ -36,12 +36,12 @@
       },
       "MacroDeck.Ui": {
         "type": "Direct",
-        "requested": "[3.0.0-beta.17, )",
-        "resolved": "3.0.0-beta.17",
-        "contentHash": "y3uHQVuv4Yuyn3PCzta0fU8C5eCo2ENtZYjAqEo2U2gnxYM76tv7CCvKO1tha4dzV0C1mjlZ5CZkTS/KipRIcQ==",
+        "requested": "[3.0.0-beta.18, )",
+        "resolved": "3.0.0-beta.18",
+        "contentHash": "ifKrWLjTlvemR9hHBDibI6KgcBECt/c1IWWjrYeWzUbUDD1mLZKiFlnbe4MALj5SAkDpwsVPFVIwHt46WjcqUA==",
         "dependencies": {
-          "MacroDeck.Localization": "3.0.0-beta.17",
-          "MacroDeck.Ui.Model": "3.0.0-beta.17"
+          "MacroDeck.Localization": "3.0.0-beta.18",
+          "MacroDeck.Ui.Model": "3.0.0-beta.18"
         }
       },
       "Avalonia": {
@@ -150,13 +150,13 @@
       },
       "MacroDeck.Localization": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.17",
-        "contentHash": "Oj6n/I1RG3iCUsdFwdBT9LYyRX75NQLPR/m0jpDcKPJ4Yb4lYRN2S5mFKxOKXslG5sFsS8FA9rWcZ6vFiLWTcg=="
+        "resolved": "3.0.0-beta.18",
+        "contentHash": "cEhVK2VVXTOhYtECt9d1AJcZefIE505lvXxBl3vTdAAAnHtQK9Z1BVzEtJlZRjOFtZ9FDWy50rS22Xi3P0+h6A=="
       },
       "MacroDeck.Ui.Model": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.17",
-        "contentHash": "UbEK1x/4Gb0kgnsfoGf91NNe3hFOofjxFTNXZPTBoLxGgQzjhrhRLndMXT63vxJWbEFFMPPfe+9LMt0jppkgRg=="
+        "resolved": "3.0.0-beta.18",
+        "contentHash": "+RlZDtdUg/gYIWoCFivPXxkVLGM43M9gd2SJuj/Z8flIx7DyyGX+xIxuWlijbYUYqv4V6Zjbeq3SEVMAeoGfhQ=="
       },
       "MicroCom.Runtime": {
         "type": "Transitive",
