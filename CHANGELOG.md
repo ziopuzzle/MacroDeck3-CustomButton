@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.48.4 — Macro Deck 3.0.0
+
+- Update Macro Deck SDK, UI, hosting, analyzers, testing helpers and local/release CLI to the stable 3.0.0 release; regenerate all NuGet lock files.
+- Require Macro Deck 3.0.0 or later. This release updates dependencies without changing component or action behavior.
+
 ## 0.48.3 — Macro Deck beta.18
 
 - Update Macro Deck SDK, UI, hosting, analyzers, testing helpers and local/release CLI to 3.0.0-beta.18; regenerate all NuGet lock files.

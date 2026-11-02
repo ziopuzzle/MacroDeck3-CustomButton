@@ -181,22 +181,22 @@
       },
       "MacroDeck.Localization": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.18",
-        "contentHash": "cEhVK2VVXTOhYtECt9d1AJcZefIE505lvXxBl3vTdAAAnHtQK9Z1BVzEtJlZRjOFtZ9FDWy50rS22Xi3P0+h6A=="
+        "resolved": "3.0.0",
+        "contentHash": "1m20CIEUQUk0+SREGo2iJQVV5XcEQ0tU8lCzj62zt+Jqgh7OeFfVVHt87rUTqDGIa4776beVHGFT+O1qgZ4Agw=="
       },
       "MacroDeck.Ui": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.18",
-        "contentHash": "ifKrWLjTlvemR9hHBDibI6KgcBECt/c1IWWjrYeWzUbUDD1mLZKiFlnbe4MALj5SAkDpwsVPFVIwHt46WjcqUA==",
+        "resolved": "3.0.0",
+        "contentHash": "Bv6owcJoRn7oVuaoTxgMn/QkQ0iahTmL0ZonolEU8bvRicKpFSsHZhDaL03JllL8Qyh7JL9Th+FhJpoECQNLfA==",
         "dependencies": {
-          "MacroDeck.Localization": "3.0.0-beta.18",
-          "MacroDeck.Ui.Model": "3.0.0-beta.18"
+          "MacroDeck.Localization": "3.0.0",
+          "MacroDeck.Ui.Model": "3.0.0"
         }
       },
       "MacroDeck.Ui.Model": {
         "type": "Transitive",
-        "resolved": "3.0.0-beta.18",
-        "contentHash": "+RlZDtdUg/gYIWoCFivPXxkVLGM43M9gd2SJuj/Z8flIx7DyyGX+xIxuWlijbYUYqv4V6Zjbeq3SEVMAeoGfhQ=="
+        "resolved": "3.0.0",
+        "contentHash": "kO8gzpb//Q3H5bsYJuQokufp6F068xEg5d5hXAR0aNW+lpe4EyT6AlHeavB0f1WZXMUcHGW6oGHPZWE6zfIsPQ=="
       },
       "MicroCom.Runtime": {
         "type": "Transitive",
@@ -317,7 +317,7 @@
           "Avalonia.Controls.ColorPicker": "[11.3.21, )",
           "Avalonia.Desktop": "[11.3.21, )",
           "Avalonia.Themes.Fluent": "[11.3.21, )",
-          "MacroDeck.Ui": "[3.0.0-beta.18, )"
+          "MacroDeck.Ui": "[3.0.0, )"
         }
       }
     }
