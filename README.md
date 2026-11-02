@@ -1,11 +1,11 @@
+# MacroDeck3 Custom Button
+
 <a href="https://macro-deck.app/store/net.ziopuzzle.custombutton">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://assets.macro-deck.app/branding/Open%20in%20the%20Macro%20Deck%20Store%20Badge%20Dark.png">
     <img alt="Open in the Macro Deck Store" src="https://assets.macro-deck.app/branding/Open%20in%20the%20Macro%20Deck%20Store%20Badge%20Light.png" height="56">
   </picture>
 </a>
-
-# MacroDeck3 Custom Button
 
 Build custom Macro Deck widgets with XML, templates and a native block editor. Display live data, draw shapes and graphs, and put several interactive buttons or sliders in one widget.
 
