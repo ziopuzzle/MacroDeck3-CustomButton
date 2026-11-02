@@ -71,7 +71,7 @@ public static class ActionEditorDefaults
                 if (parameter["type"]?.ToString() != "widget-target"
                     && !(binding["providerId"]?.ToString() == CustomButtonIntegration.PluginId && parameter["name"]?.ToString() == "widgetId")) continue;
                 if (sourceWidgetId != null && parameter["value"]?.ToString() != sourceWidgetId) continue;
-                parameter["value"] = widgetId;
+                parameter["value"] = binding["providerId"]?.ToString() == CustomButtonIntegration.PluginId && parameter["name"]?.ToString() == "widgetId" ? "$self" : widgetId;
                 parameter.Remove("valueLabel");
             }
         }

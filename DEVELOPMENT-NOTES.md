@@ -41,7 +41,7 @@ the unauthenticated HTTP requests responsible for the beta.14 authorization fail
 Supported sources include `icon-pack:UUID`, `/api/icons/UUID/image`, and
 `/api/music-player/artwork/ID?instanceId=PROVIDER%3A%3APLAYER`, optionally prefixed
 with `artwork:` for the artwork path. A temporary player is not required and is no
-longer registered. See [Images](images.md) for configuration examples.
+longer registered. See [Images](docs/images.md) for configuration examples.
 
 The referenced icon must still be installed, and the selected player and artwork
 must be available. The plugin retains the last successful image while retrying

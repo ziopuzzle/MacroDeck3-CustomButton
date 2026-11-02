@@ -21,7 +21,7 @@ public class ButtonEventTests
         var binding = result.GetProperty("event");
         Assert.That(binding.GetProperty("eventId").GetString(), Is.EqualTo(expected));
         Assert.That(binding.GetProperty("providerId").GetString(), Is.EqualTo(CustomButtonIntegration.PluginId));
-        Assert.That(binding.GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("widget-a"));
+        Assert.That(binding.GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("$self"));
         Assert.That(binding.GetProperty("parameters")[0].GetProperty("operator").GetString(), Is.EqualTo("=="));
     }
 

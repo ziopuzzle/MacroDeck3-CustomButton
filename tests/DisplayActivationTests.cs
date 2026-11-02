@@ -43,6 +43,23 @@ public class DisplayActivationTests
         clock.Time = 2100; using var returned = service.Acquire("one"); returned.Ready();
         Assert.That(context.Events.Published.Count, Is.EqualTo(2));
     }
+    [TestCase("$self")]
+    [TestCase(" $SELF ")]
+    [TestCase("{{vars.target_widget}}")]
+    [TestCase("")]
+    public void RelativeAndDynamicBindingsAreConsideredPotentialMatches(string target)
+    {
+        var context = new FakeIntegrationContext();
+        using var service = new DisplayActivation(context.Events);
+        using var first = service.Acquire("one");
+        using var second = service.Acquire("two");
+        first.Ready(); second.Ready();
+        Assert.That(context.Events.Published, Is.Empty);
+        context.Events.SetBindings([Binding(target)]);
+        Assert.That(context.Events.Published.Select(e => e.Parameters!.Value.GetProperty("widgetId").GetString()), Is.EquivalentTo(new[] { "one", "two" }));
+        context.Events.SetBindings([Binding(target)]);
+        Assert.That(context.Events.Published.Count, Is.EqualTo(2));
+    }
     [Test] public void ClosingBeforeBindingAndShutdownCannotPublishLater()
     {
         var context = new FakeIntegrationContext(); using var service = new DisplayActivation(context.Events);
@@ -67,10 +84,21 @@ public class DisplayActivationTests
         Assert.That(context.Events.Published.Count(e => e.EventId == ButtonEvents.Activated), Is.EqualTo(count));
         await integration.ShutdownAsync();
     }
+    [Test] public async Task RealWidgetSnapshotPublishesForSelfTarget()
+    {
+        var integration = new CustomButtonIntegration(); var context = new FakeIntegrationContext();
+        context.Events.SetBindings([Binding("$self")]); await integration.InitializeAsync(context);
+        await using var session = (await integration.CreateSessionAsync(new() { Surface = ButtonTests.Surface("widget"), UiModelVersion = 1 }, default))!;
+        session.BuildTree(); session.BuildTree();
+        var activation = context.Events.Published.Where(e => e.EventId == ButtonEvents.Activated).ToArray();
+        Assert.That(activation, Has.Length.EqualTo(1));
+        Assert.That(activation[0].Parameters!.Value.GetProperty("widgetId").GetString(), Is.EqualTo("test-widget"));
+        await integration.ShutdownAsync();
+    }
     [TestCase(ButtonEvents.Activated)]
     [TestCase(ButtonEvents.ModalOpened)]
     [TestCase(ButtonEvents.ModalClosed)]
-    public async Task ShortcutAddsOneEditableFlowWithConcreteTarget(string eventId)
+    public async Task ShortcutAddsOneEditableFlowWithRelativeTarget(string eventId)
     {
         await using var session = new ConfigurationSession(ButtonTests.Surface("config"), TestLayouts.Sample);
         session.Dispatch(new UiEvent { NodeId = "inputTarget", Name = "change", Data = JsonSerializer.SerializeToElement("$other") });
@@ -79,7 +107,7 @@ public class DisplayActivationTests
         Assert.That(flows.GetArrayLength(), Is.EqualTo(1));
         var binding = flows[0].GetProperty("event");
         Assert.That(binding.GetProperty("eventId").GetString(), Is.EqualTo(eventId));
-        Assert.That(binding.GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("test-widget"));
+        Assert.That(binding.GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("$self"));
     }
 }
 

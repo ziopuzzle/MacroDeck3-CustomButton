@@ -8,7 +8,7 @@ Open **Drawing > Open editor** to launch the separate Avalonia editor. The templ
 - Use Add component to insert a component, or a container's add control to append inside it.
 - Drag the left handle to reorder. The upper/lower edges insert before/after; a container's center inserts inside it.
 - Blue insertion lines show ordering; a blue frame shows a nesting target. Cycles and invalid leaf targets are rejected. The root only accepts insertions inside itself.
-- Use the row menu to duplicate, delete or wrap in a stack. Collapse containers to hide their children in the editor without changing the drawing.
+- Use the row menu to duplicate, delete or wrap in a stack or layer. Collapse containers to hide their children in the editor without changing the drawing.
 - Undo/Redo tracks up to 100 layout changes. Continuous edits to the same field (including color picker changes) form one step; changing fields or pausing for at least 800 ms starts another. It does not include host-side actions, initial JSON or template selection.
 - Undo discards incomplete property input first, keeping the last valid layout. A further Undo reverts the preceding valid edit. Unavailable history buttons are disabled. Keyboard shortcuts outside text inputs are Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z and Ctrl/Cmd+Y; text inputs retain their own text-editing undo.
 
@@ -19,6 +19,8 @@ This edits order and parent/child structure, rather than directly dragging rende
 Valid property edits update the drawing automatically. Incomplete input keeps the last valid layout. A color swatch opens the picker; alpha uses CSS hex order. Data-key suggestions come from the initial JSON captured when opening the editor.
 
 Use `{{value}}`, `{{value:F1}}` or arithmetic expressions in supported fields. A chart/slider key is a literal data key. Host variables must be evaluated in update actions first. Conditional styles override attributes when their expression matches. The editor selection frame does not recolor the actual widget.
+
+The **{ }** control opens a searchable editor for display-data names and functions. Edit the value directly or use **Insert**; changes update the main editor as you type, and closing the window keeps them. Data-name-only fields use a plain-name selector instead. See [inserting data and functions](expressions.md#inserting-data-and-functions-in-the-gui).
 
 ## XML and saving
 

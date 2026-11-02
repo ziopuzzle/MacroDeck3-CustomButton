@@ -16,11 +16,11 @@ Set `imageUrl` in Initial JSON or with a display-data action to an absolute loca
 
 - Local/HTTP images and inline SVG: a sampled, alpha-weighted RGB mean of the original image, before tint, opacity, crop, brightness or saturation. Transparent pixels do not darken the result; a fully transparent image returns `#00000000`. Animated images use their first frame. Analysis is serialized and limited to 16 megapixels per decoded image; analysis failures do not prevent an otherwise supported image from displaying.
 - Artwork: uses the selected player's host album-color API. This may return the current or last-known album color rather than the exact historical artwork ID requested by the image. Host cache limitations still apply.
-- Icon Packs: **not supported for color analysis in SDK beta.17**. The host returns a resource handle, not image bytes or a palette. Setting `averageColorKey` on such a source produces an explicit layout error; normal image display remains supported without that attribute.
+- Icon Packs: **not supported for color analysis**. The host API returns a resource handle, not image bytes or a palette. Setting `averageColorKey` on such a source produces an explicit layout error; normal image display remains supported without that attribute.
 
 A live widget or modal writes the result to its Channel under the output name. **Write display value to variable**, **Copy display value** and **Copy display data** can read it normally; no direct write to a Macro Deck variable is performed. Missing keys are initialized with the fallback. Existing Channel data is not replaced by an initial fallback while waiting for the first result. Only changed values are written. Settings previews and picker samples do not publish generated colors, so editing an unsaved preview cannot overwrite live data. After closing the live display, the last published Channel value remains until replaced. Use a dedicated output name: multiple live elements sharing a Channel and output name can overwrite one another.
 
-Results appear asynchronously. The fallback is available for the initial frame; failed image loads retain the last successful image/color. Source changes trigger loading; unchanged URLs reuse the existing 30-second image recheck and content hash, avoiding a second download or repeated analysis of unchanged bytes. Artwork color is checked separately approximately once per second while visible. Queries for the same player are shared across widget, modal and preview sessions; color checks do not re-download or re-register images. SDK beta.17 exposes no artwork/color-change subscription, so this is demand-driven polling, not a change hook. Host state/cache refresh may add latency. Hidden/unopened elements do not promise refreshes. Do not make an image's source depend on its own generated color, which can create a feedback loop.
+Results appear asynchronously. The fallback is available for the initial frame; failed image loads retain the last successful image/color. Source changes trigger loading; unchanged URLs reuse the existing 30-second image recheck and content hash, avoiding a second download or repeated analysis of unchanged bytes. Artwork color is checked separately approximately once per second while visible. Queries for the same player are shared across widget, modal and preview sessions; color checks do not re-download or re-register images. The 3.0.0 SDK exposes no artwork/color-change subscription, so this is demand-driven polling, not a change hook. Host state/cache refresh may add latency. Hidden/unopened elements do not promise refreshes. Do not make an image's source depend on its own generated color, which can create a feedback loop.
 
 ## Image sources
 
@@ -31,8 +31,8 @@ music-player artwork path. In JSON, escape Windows backslashes, for example
 `"localFilePath": "C:\\Pictures\\cover.png"`. Empty values show a hint instead of
 loading an image. Update `artworkUrl` with a display-data action to follow track changes.
 
-Requires Macro Deck **3.0.0-beta.15 or later**. Installed icons and music-player
-artwork now use supported SDK resource APIs instead of unauthenticated HTTP.
+Installed icons and music-player artwork use SDK resource APIs instead of
+unauthenticated HTTP. See the [current requirements](../README.md#requirements-and-installation).
 
 Add **Image** in the external editor, then enter **Image source (file / URL / Icon Pack)**.
 **Browse…** selects a local file. Paths refer to the computer running Macro Deck,
@@ -74,7 +74,7 @@ or an HTTP/HTTPS URL. Escape XML special characters such as `&` as `&amp;` in li
 Place an image inside an interactive stack to make it clickable, or inside a layer
 to put text and controls over it. Image itself does not emit input events.
 
-For a monochrome Icon Pack image, add `color="{{iconColor}}"` (for example `#54dfcc80`). Tint uses the host's native image mask and does not download/re-upload the image. It also works on the `svg` component, recolouring all SVG parts together. On beta.15, clients without CSS mask support show the original colours, and tinted artwork does not crossfade. Brightness and saturation are applied to the tint too. Tint uses the selected image frame.
+For a monochrome Icon Pack image, add `color="{{iconColor}}"` (for example `#54dfcc80`). Tint uses the host's native image mask and does not download/re-upload the image. It also works on the `svg` component, recolouring all SVG parts together. Clients without CSS mask support show the original colours, and tinted artwork does not crossfade. Brightness and saturation are applied to the tint too. Tint uses the selected image frame.
 
 ## Fit a rectangular widget (0.47.3)
 
@@ -109,7 +109,7 @@ The display checks completed loads at its normal 100 ms maintenance interval.
 
 Successful sources are checked every 30 seconds for changed content. Images are also
 loaded again after session replacement.
-There is no Icon Pack browser in the external editor yet. SVG conversion is not part of this release.
+There is no Icon Pack browser in the external editor yet. SVG file paths are not supported by Image; use the [inline SVG component](svg.md) for supported variable-bound SVG markup.
 
 ## Installed Icon Packs (0.24.0)
 
@@ -170,7 +170,7 @@ SDK player API rather than HTTP:
 If a player is available, its `GetArtworkAsync` result is registered as a UI resource.
 There is no HTTP fallback. The former experimental `sdk-artwork:` prefix is no longer used.
 
-The host resolves the other integration's player through the beta.15 SDK API.
+The host resolves the other integration's player through its SDK resource API.
 The player must be enabled and the artwork ID must still be available. An unavailable
 image retains the previous image and retries. No music player is registered by Custom Button.
 Host resources have no pixel dimensions in their handles, so Cover, zoom and offsets

@@ -106,6 +106,24 @@ public sealed class CopyDisplayDataAction(DataHub hub, Func<string, Cancellation
     });
 }
 
+internal static class VariableDestination
+{
+    internal static ActionParameter Scope() => ActionParameter.Choice("scope", [new() { Value = "owner", Label = "Prefer this widget's variable; otherwise use global" },
+        new() { Value = "flow", Label = "Prefer the current script or automation's variable" },
+        new() { Value = "global", Label = "Use the global variable (ignore this widget's variable)" }],
+        label: "Which variable to write", defaultValue: "owner",
+        description: "Variables are created in Macro Deck, not in Custom Button JSON. The script/automation option first checks that flow's variables, then the running widget's variables, then global variables. The widget option checks widget then global. Global ignores local variables. None searches other widgets.");
+
+    internal static Task<UserVariableWriteResult> Set(IUserVariableApi api, ActionExecutionContext context, string name, string? value)
+    {
+        var scope = TransferData.Read(context, "scope");
+        if (scope is not ("" or "owner" or "global" or "flow")) throw new FormatException("Unknown variable scope.");
+        return scope == "flow"
+            ? api.ApplyInContextAsync(name, UserVariableContext.From(context), UserVariableOperation.Set, value, context.CancellationToken)
+            : api.ApplyAsync(name, scope == "global" ? null : context.OwnerWidgetId, UserVariableOperation.Set, value, context.CancellationToken);
+    }
+}
+
 public sealed class WriteDisplayVariableAction(DataHub hub, Func<IUserVariableApi?> variables, Func<string, CancellationToken, Task<WidgetDataSnapshot?>>? readWidget = null) : IActionDefinition
 {
     public string Id => "write-variable";
@@ -117,10 +135,7 @@ public sealed class WriteDisplayVariableAction(DataHub hub, Func<IUserVariableAp
         ActionParameter.Text("key", label: "Source target", required: true, description: DataTarget.Help),
         ActionParameter.Autocomplete("variable", label: "Destination variable", optionsSourceId: "macrodeck.user-variables", required: true,
             description: "Select a variable name, not a value binding. Create the variable in Macro Deck first."),
-        ActionParameter.Choice("scope", [new() { Value = "owner", Label = "Prefer this widget's variable; otherwise use global" },
-            new() { Value = "global", Label = "Use the global variable (ignore this widget's variable)" }],
-            label: "Which variable to write", defaultValue: "owner",
-            description: "Local variables are created using Variables in the action editor; they are not Custom Button JSON data. Neither option searches other widgets. Both options set the value. This only selects the destination when local and global variables have the same name. 'This widget' is the widget running this action, not the source Channel. If there is no local variable, both options use the global variable.")
+        VariableDestination.Scope()
     ];
     public IActionExecutor CreateExecutor() => new Executor(hub, variables, readWidget);
     private sealed class Executor(DataHub hub, Func<IUserVariableApi?> variables, Func<string, CancellationToken, Task<WidgetDataSnapshot?>>? readWidget) : IActionExecutor
@@ -133,8 +148,6 @@ public sealed class WriteDisplayVariableAction(DataHub hub, Func<IUserVariableAp
                 var value = await TransferData.Value(hub, context, readWidget, detailedTarget: true);
                 var name = TransferData.Read(context, "variable");
                 if (name.Length == 0) throw new FormatException("Select a destination variable.");
-                var scope = TransferData.Read(context, "scope");
-                if (scope is not ("" or "owner" or "global")) throw new FormatException("Unknown variable scope.");
                 var api = variables();
                 if (api == null) return ActionResult.Failed(ActionErrorCodes.Unavailable, "The variable service is unavailable.");
                 // The host API accepts strings and applies the destination's type and precision.
@@ -144,8 +157,7 @@ public sealed class WriteDisplayVariableAction(DataHub hub, Func<IUserVariableAp
                     JsonValueKind.Null => "",
                     _ => value.GetRawText()
                 };
-                var result = await api.ApplyAsync(name, scope == "global" ? null : context.OwnerWidgetId,
-                    UserVariableOperation.Set, text, context.CancellationToken);
+                var result = await VariableDestination.Set(api, context, name, text);
                 if (result.Status == UserVariableWriteStatus.Applied) return ActionResult.Success();
                 var code = result.Status switch
                 {

@@ -51,9 +51,7 @@ Use `result="{{choice}}"` to return display data instead of a fixed label. The r
 
 ## Opening a modal
 
-Version 0.42.0 adds **Show modal** to Custom Button's actions.
-This proves that the plugin can serve arbitrary XML content in a native Macro Deck dialog.
-Since 0.44.0, Show modal includes an Open editor control through its action-configuration UI. Custom Button events can open the modal when a destination device is selected.
+**Show modal** displays Custom Button XML in a native Macro Deck dialog. Its action settings include an Open editor control. Custom Button events can open the modal when a destination device is selected.
 
 1. Create a **standard Macro Deck button** and add Custom Button's **Show modal** to its Short Press actions.
 2. Leave the sample XML and empty initial JSON (`{}`) in place for the first test.
@@ -66,7 +64,7 @@ XML and initial JSON are literal action parameters: `{{value}}` is expanded by C
 No channel data is overwritten when opening the dialog. Close it with the host's close button or an [XML close control](#close-controls).
 Interactive elements publish the existing Custom Button element events. **Event target widget** defaults to the button running Show modal; select another widget explicitly if needed. In the receiving event, select the same Target widget and the element's XML ID. Slider/control events include value, previousValue and other normal payload fields. Input also updates the dialog's Channel, just as it does in a widget.
 Use distinct element IDs if the target widget itself has interactive elements and you want to distinguish them from dialog elements. Events deliberately share the same event types and target identity.
-Whole-dialog presses and display-activated/tick events are not emitted. Modal opened is a separate initialization event (see below). If you tested the unreleased Show details action, remove it and add Show modal again: its action ID changed from `show-details` to `show-modal`, and its view ID is now `custom-button-modal`. Existing dialogs should be closed and reopened.
+Whole-dialog presses and display-activated/tick events are not emitted. Modal opened is a separate initialization event (see below).
 Lengths use the dialog's available area; a layout designed for a square tile may need different proportions.
 The dialog has a transparent root and a transparent, noninteractive button surface with square corners. Set a background in XML if needed. Text with `shadow="true"` uses the host's text shadow, including inside transparent stacks; shadows remain off by default. The content surface clips at its rectangular bounds; use a scroll container for overflowing content. GUI editing is available from the action settings; see below.
 
@@ -75,10 +73,10 @@ The dialog has a transparent root and a transparent, noninteractive button surfa
 Expand Show modal and click **Open editor**. The same native layout editor used for widgets opens with this action's XML and initial JSON. This action-level configuration does not require the owner to be a Custom Button; standard buttons can use it too. Clients without action configuration trees retain the ordinary parameter fields.
 
 1. Edit the layout in the external editor.
-2. Return to the action settings and click **Apply edited XML** under **Editor changes**. This explicit client change is necessary: the beta.16 action editor does not persist server-side value patches alone.
+2. Return to the action settings and click **Apply edited XML** under **Editor changes**. This explicit client change writes the edited XML into the action draft.
 3. Save in Macro Deck, close the displayed modal and open it again.
 
-Apply and Discard are matching side-by-side buttons. A warning above them explains that pending changes are temporary; after applying, a reminder asks you to save in Macro Deck. The reminder does not track the host Save button. Until step 2, changes are pending only. Apply them before collapsing the action or leaving the settings; closing a configuration session discards its pending edits. The **Edited XML (recovery copy)** field lets you keep a copy, and **Discard editor changes** restores the previous XML. Manual XML editing remains available after applying/discarding. If another edit changes the editor's base XML, its existing conflict protection stops overwrites.
+The side-by-side **Apply edited XML** and **Discard editor changes** choices appear while edits are pending. A warning explains that pending changes are temporary; after applying, a reminder asks you to save in Macro Deck. The reminder does not track the host Save button. Until step 2, changes are pending only. Apply them before collapsing the action or leaving the settings; closing a configuration session discards its pending edits. The **Edited XML (recovery copy)** field lets you keep a copy, and **Discard editor changes** restores the previous XML. Manual XML editing remains available after applying/discarding. If another edit changes the editor's base XML, its existing conflict protection stops overwrites.
 
 There is no modal rendering preview in the external editor. Opening the editor does not open a modal or execute its events. Changing shared Channel data still refreshes an already open modal, but changing its action XML does not.
 
@@ -163,7 +161,7 @@ For an interaction check, use initial JSON `{"value":42}` and this XML. Add Cust
 </stack>
 ```
 
-## Destination selection in beta.16
+## Destination selection
 
 Custom Button publishes custom events for its presses. Host event flows do not retain an originating client ID.
 The public modal API needs a client ID, but that ID can be supplied explicitly. Like the host's Change Folder action, Show modal resolves the selected device through the public `Deck.GetClients()` API and passes its current ClientId to the modal API.

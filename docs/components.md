@@ -50,7 +50,7 @@ The GUI shows this scope explanation on Repeat. Data-name fields (control keys, 
 </scroll>
 ```
 
-- `items` accepts a data name (`tracks`), a single binding (`{{tracks}}`), or an array expression such as `{{= split(text, ',')}}` / `{{= slice(tracks, 0, 10)}}`. It does not parse a JSON string into an array. Initial JSON and **Set display data from JSON** accept arrays and objects; [structured editing actions](actions.md#edit-arrays-and-objects-0490) can modify individual items without replacing the Channel. Set display data from JSON still replaces all Channel data.
+- `items` accepts a data name (`tracks`), a single binding (`{{tracks}}`), or an array expression such as `{{= split(text, ',')}}` / `{{= slice(tracks, 0, 10)}}`. It does not parse a JSON string into an array. Initial JSON and **Set display data from JSON** accept arrays and objects; [structured editing actions](actions.md#edit-arrays-and-objects-0482) can modify individual items without replacing the Channel. Set display data from JSON still replaces all Channel data.
 - With the default aliases, inside the template, `item` is the current value, `item.title` / `item.metadata.title` access object fields, `index` is zero-based, and `itemKey` is the resolved key as text. Global display data remains available. These local aliases also work in conditions, calculations and SVG content. Primitive arrays use `{{item}}`. Nested repeats can use `items="{{item.tracks}}"`; reused aliases and event metadata refer to the nearest repeat.
 - Optional `itemKey="id"` reads a literal item property path. Its values must be unique, nonempty strings or numbers (a string and number with the same spelling count as duplicates). Explicit keys retain internal drawing identities across reordering. Without itemKey, identity follows the array index instead. This does not implement automatic scrolling or guarantee preservation of scroll position when the list changes shape.
 - Repeat arranges generated children like a stack: `direction="vertical|horizontal"`, `justify`, `align`, `gap`, `padding`, `background`, and common visibility/layout attributes. Wrap each item's multiple elements in a stack/layer if they should move as one row. Use matching scroll/repeat directions for horizontal lists. The usual scroll sizing rules apply.
@@ -83,7 +83,7 @@ This is a display component, not an input control.
 <icon id="symbol" name="{{symbol}}" size="25%" color="#54dfcc80" />
 ```
 
-`name` selects a glyph from the beta.14 SDK's built-in catalogue, such as `play`,
+`name` selects a glyph from the SDK's built-in catalogue, such as `play`,
 `pause`, `music-note`, `arrow-up` or `star`. The editor lists the supported names.
 Omitting `name` uses `star`; an unknown name shows a validation error.
 The default `size` is 20%. By default the icon occupies a square of that size,
@@ -258,10 +258,15 @@ Without `interactive="true"`, or in a non-interactive preview, the field is read
 | UiRangeBar / UiChart | bar / chart |
 | UiButton | Outer press target and stack borders |
 | UiClockDial / UiProgressBar / UiSlider | clock / progress-bar / slider |
+| UiDial / UiToggle / UiSegmented | dial / toggle / segmented |
+| UiList | scroll |
+| UiDynamicText | dynamic-text |
+| UiTransform / UiResponsive | transform / responsive and variant |
+| UiImage and image resources | image / rasterized svg |
 | UiShape | rect / circle / capsule / line / polygon / sector / path |
 | UiModifier | Alpha, opacity and shape frames |
 
-Dynamic/progress text can be composed with text and values. Text input, lists, toggles, dials, segmented controls and grids are not exposed in this XML schema. Images use registered host resources. The `svg` component renders inline variable-bound SVG to these same resources. See [shapes](shapes.md), [images](images.md) and [variable SVG](svg.md).
+Progress text can be composed with text and values; Grid is not exposed as a separate XML component. Scroll uses the host list component internally, and Repeat expands array data into child elements. Trackpad composes native pointer interactions and shapes. These mappings do not expose every host component property. See [controls](controls.md), [shapes](shapes.md), [images](images.md) and [variable SVG](svg.md).
 
 ## Layout limits
 
@@ -274,7 +279,7 @@ fallbacks, 56 KiB of root JSON, and JSON depth 26. Effects, wrappers, arrays and
 properties contribute to the output independently of XML nesting. A limit failure
 shows a drawing error with the exceeded limit instead of sending an invalid tree.
 
-The beta.15 protocol permits a 192 KiB tree but only a 64 KiB update patch and JSON
+The host protocol permits a 192 KiB tree but only a 64 KiB update patch and JSON
 depth 32. The plugin deliberately reserves space for patch and session envelopes.
 If a property diff exceeds 60 KiB, a bounded root replacement is used instead; this
 can reset in-progress controls or animations for that unusually large update.

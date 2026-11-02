@@ -10,12 +10,14 @@ add a new guide to that list when it is ready for publication.
 | `tests/`, `editor.tests/` | Regression tests and project files |
 | All four `packages.lock.json` files | Reproducible dependency restore |
 | `examples/` | XML/JSON templates embedded into the plugin at build time |
+| `experiments/scroll-anchor/` | Reproducible scroll-follow experiments linked from the component guide |
 | `localization/` | Editable text catalogue and resource generator |
 | `scripts/`, `build.ps1`, `build.bat` | Build, packaging and third-party notice generation |
 | `.config/dotnet-tools.json`, `NuGet.Config`, `Ziopuzzle.CustomButton.slnx` | Tool versions, package source and solution |
 | `.github/workflows/release.yml` | Release packaging workflow |
 | `licenses/`, `LICENSE` | Shared dependency license texts and the project's own license |
 | `README.md`, `CHANGELOG.md`, the explicitly allowed `docs/` guides | Installation, release history, usage, limits, privacy and distribution disclosures |
+| `DEVELOPMENT-NOTES.md` | Historical test observations and deferred development ideas |
 | `screenshot_buttons.png` | Public product screenshot; review its contents before publishing |
 
 Keep `work/`, `artifacts/`, `bin/`, `obj/`, logs, crash dumps, local credentials,
@@ -28,7 +30,6 @@ The generated dependency inventory is packaged as `ThirdParty/INDEX.md`; the loc
 development secret store. It is not an API key and does not include the stored values.
 Keep the identifier in source; never commit `secrets.json` or exported credentials.
 
-Ignore rules do not remove already staged/tracked files. Before the first commit,
-inspect both `git status --short` and `git diff --cached --name-status` and re-stage
-updated public files. Remove any ignored, previously staged notes from the index
-with `git rm --cached -- <path>`; this keeps the local file.
+Ignore rules do not remove already tracked files. Before committing, inspect both
+`git status --short` and `git diff --cached` so that staged files include the intended
+updates and local investigation notes are not accidentally published.

@@ -31,13 +31,13 @@ This uses the host's [gradient background and clipping API](https://docs.macro-d
 
 See [the combined example](../examples/basic_gradation.xml). In the editor, Add component has subcategories; the component menu offers both Wrap in stack and Wrap in layer. Wrapping preserves the selected subtree and IDs, and supports undo/redo.
 
-Requires Macro Deck **3.0.0-beta.11 or later**. Shapes use the public `UiShape` component added after [issue #777](https://github.com/Macro-Deck-App/Macro-Deck/issues/777). Sectors and polygons now use paths instead of stacks of horizontal bands. See the [official shape contract](https://docs.macro-deck.app/ui/components/shape/).
+Shapes use the public `UiShape` component. Sectors and polygons use paths. See the [official shape contract](https://docs.macro-deck.app/ui/components/shape/) and the [current requirements](../README.md#requirements-and-installation).
 
 Add shapes in the editor, or select **Shapes (BASIC)**. Selecting a template replaces both XML and initial JSON with that example; it preserves the channel and action flows. Templates embed the files in `examples/` directly at build time.
 
 ## Placement
 
-Translucent stack backgrounds retain a noninteractive, invisible sizing copy so automatic rows keep their natural height. This works around the beta.11 layer renderer's absolute-positioned children; foreground text keeps its own alpha. It adds rendering nodes and remains subject to the output-size limit. Version 0.17.0 includes a regression case for an auto-sized row of interactive media controls. On-device confirmation is still required.
+Translucent stack backgrounds retain a noninteractive, invisible sizing copy so automatic rows keep their natural height. This compensates for the layer renderer's absolute-positioned children; foreground text keeps its own alpha. It adds rendering nodes and remains subject to the output-size limit.
 
 Use a `layer` to overlap shapes. For `rect`, `circle`, `capsule`, `path` and `line`, positions and dimensions use the widget sizing basis. `10%` and `0.1` mean the same length. They are not percentages of a nested parent's remaining space.
 
@@ -53,7 +53,7 @@ Use a `layer` to overlap shapes. For `rect`, `circle`, `capsule`, `path` and `li
 
 All shapes accept `color`. All except `line` also accept `strokeColor` and `strokeWidth` (1% when a stroke color is supplied). Use `color="transparent"` for an outline only. Use line's `thickness` for its width. No stroke is drawn when `strokeColor` is absent.
 
-Sector and polygon coordinates cover their own box (0–1 horizontally and vertically). Their default main-axis extent is one widget basis unit; the cross axis follows the parent. A square canvas gives equal X/Y scales. Sectors use 0 degrees at the right and positive angles clockwise. A sweep of 360 or -360 draws a complete circle without a radial seam; zero sweep draws nothing. The sector's full circle must fit within its coordinate box. Self-intersecting polygons follow SVG's default nonzero fill rule.
+Sector and polygon coordinates cover their own box (0–1 horizontally and vertically). Their default main-axis extent is one widget basis unit; the cross axis follows the parent. A square canvas gives equal X/Y scales. Sectors use 0 degrees at the right and positive angles clockwise. A sweep of 360 or -360 draws a complete circle without a radial seam; zero sweep draws nothing. The visible arc and center must fit within the coordinate box; unused portions of the circle may extend outside it. Self-intersecting polygons follow SVG's default nonzero fill rule.
 
 ```xml
 <layer id="canvas">
@@ -78,7 +78,7 @@ This does not add SVG file loading, uploaded images or a JavaScript renderer.
 
 Colors accept **CSS order**: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`, or `transparent`. Alpha is last: `#ff000080` is red at approximately 50% opacity; `00` is transparent and `ff` is opaque. The picker supports alpha and writes the same format.
 
-The beta.11 reader accepts only RGB strings. The plugin sends six-digit RGB and `UiModifier.Opacity` instead. Backgrounds, text, static borders, shape fills and strokes are separated so one paint's transparency does not fade another. Transparency reveals underlying layers; the outer button still has its base background.
+The plugin sends six-digit RGB and `UiModifier.Opacity` to the host. Backgrounds, text, static borders, shape fills and strokes are separated so one paint's transparency does not fade another. Transparency reveals underlying layers. The root uses its default background unless explicitly made transparent; see [widget backgrounds](backgrounds.md).
 
 - Text, chart, clock, slider, shapes, stack backgrounds and static borders support alpha.
 - Bar and progress-bar require equal alpha at both ends. Omitting `endColor` inherits `color`, including alpha.

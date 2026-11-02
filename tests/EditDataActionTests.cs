@@ -148,6 +148,32 @@ public class EditDataActionTests
         Assert.That(hub.Read("test")["playlist"][0].GetString(), Is.EqualTo("replacement"));
     }
 
+    [TestCase("owner", "owner", null, null)]
+    [TestCase("global", null, null, null)]
+    [TestCase("flow", "owner", "script-id", null)]
+    [TestCase("flow", "owner", null, "automation-id")]
+    public async Task PopSupportsVariableScopes(string scope, string? expectedOwner, string? scriptId, string? automationId)
+    {
+        var hub = Hub(); var api = new Variables();
+        var input = Context(("key", "playlist[-1]"), ("variable", "output"), ("scope", scope));
+        var result = await new EditDisplayDataAction(hub, "remove", () => api).CreateExecutor().ExecuteAsync(new()
+        { Parameters = input.Parameters, OwnerWidgetId = "owner", ScriptId = scriptId, AutomationId = automationId });
+        Assert.That(result.Status, Is.EqualTo(ActionResultStatus.Succeeded));
+        Assert.That(api.Owner, Is.EqualTo(expectedOwner));
+        Assert.That(api.Context, Is.EqualTo(scope == "flow" ? new UserVariableContext("owner", scriptId, automationId) : null));
+        Assert.That(hub.Read("test")["playlist"].GetArrayLength(), Is.EqualTo(1));
+    }
+
+    [TestCase("flow")][TestCase("invalid")]
+    public async Task FailedScopedPopDoesNotRemoveData(string scope)
+    {
+        var hub = Hub(); var api = new Variables { Status = UserVariableWriteStatus.NotFound };
+        var result = await new EditDisplayDataAction(hub, "remove", () => api).CreateExecutor()
+            .ExecuteAsync(Context(("key", "playlist[-1]"), ("variable", "output"), ("scope", scope)));
+        Assert.That(result.Status, Is.EqualTo(ActionResultStatus.Failed));
+        Assert.That(hub.Read("test")["playlist"].GetArrayLength(), Is.EqualTo(2));
+    }
+
     [Test]
     public void ActionCatalogGroupsEditingThenTransfersAndModalWithoutRedundantSet()
     {
@@ -163,12 +189,18 @@ public class EditDataActionTests
     private sealed class Variables : IUserVariableApi
     {
         public string? Value, Owner;
+        public UserVariableContext? Context;
         public Action? DuringWrite;
         public UserVariableWriteStatus Status = UserVariableWriteStatus.Applied;
         public Task<UserVariableWriteResult> ApplyAsync(string name, string? ownerWidgetId, UserVariableOperation operation, string? value, CancellationToken cancellationToken = default)
         {
             Value = value; Owner = ownerWidgetId; DuringWrite?.Invoke();
             return Task.FromResult(new UserVariableWriteResult(Status, "Host detail"));
+        }
+        public Task<UserVariableWriteResult> ApplyInContextAsync(string name, UserVariableContext context, UserVariableOperation operation, string? value, CancellationToken cancellationToken = default)
+        {
+            Context = context;
+            return ApplyAsync(name, context.OwnerWidgetId, operation, value, cancellationToken);
         }
     }
 }

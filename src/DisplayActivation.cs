@@ -1,5 +1,6 @@
 using System.Text.Json;
 using MacroDeck.Sdk.Events;
+using MacroDeck.Sdk.Widgets;
 
 namespace Ziopuzzle.CustomButton;
 
@@ -35,8 +36,11 @@ public sealed class DisplayActivation : IDisposable
     {
         if (binding.EventId != ButtonEvents.Activated) return false;
         if (!binding.Parameters.TryGetValue("widgetId", out var target) || target.Value is not { } value || value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined) return true;
-        // Dynamic references and non-equality filters are evaluated by the host, never locally.
-        return target.Operator != "==" || value.ValueKind != JsonValueKind.String || value.GetString() == widgetId;
+        // The SDK does not expose the binding's owner: $self and variable templates can
+        // potentially match any visible widget. The host performs the actual filtering.
+        if (target.Operator != "==" || value.ValueKind != JsonValueKind.String) return true;
+        var text = value.GetString();
+        return string.IsNullOrEmpty(text) || WidgetTargets.IsSelf(text) || text.Contains("{{", StringComparison.Ordinal) || text == widgetId;
     });
     private void Check()
     {

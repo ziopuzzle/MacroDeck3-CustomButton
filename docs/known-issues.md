@@ -1,22 +1,19 @@
 # Known issues and limitations
 
-Reviewed: 2026-10-17 against the current implementation and SDK beta.17. This is a source review, not a new full device test.
+Reviewed: 2026-11-02 against the current implementation and SDK 3.0.0. This is a source review, not a new full device test.
 
 ## Copying event targets
 
-Custom Button currently saves concrete widget IDs in its custom-event conditions
-and disables the self-target option for those conditions. An explicit `$self` value
-is converted to the current widget ID when the plugin normalizes the configuration.
-Opening copied/imported widget settings remaps targets matching the stored source
-widget ID; save to apply. Other-widget targets remain unchanged.
+Custom Button event shortcuts now use the host's `$self` widget target, which follows
+copies. Opening and saving settings converts existing Custom Button events that target
+the current widget ID; other concrete IDs remain unchanged. For a legacy copied/imported widget,
+opening settings remaps targets matching the recorded source widget ID; save to apply.
+Other-widget targets remain unchanged. Copies without a recorded source ID require
+manual correction. See [event targets](actions.md#event-targets).
 Since 0.41.3, ID-only edits through the GUI or XML also update this widget's matching
 element-ID filters. Structural edits, simultaneous content/property changes, reused
 IDs and template replacement are not treated as renames. Review the reference
 warnings in Drawing/Actions and update unresolved filters manually in those cases.
-
-This implementation was introduced because beta.13 treated `$self` as a literal
-string in custom-event matching. That historical finding is not a verification of
-the beta.15 host's handling of `$self`; the plugin still uses concrete IDs.
 
 ## Image availability
 
@@ -24,7 +21,7 @@ Installed icons must still be installed, and the selected music player and artwo
 
 ## Scrolling to a repeated item
 
-Checked against the host source tag `v3.0.0-beta.17` and the plugin's beta.17 SDK reference. Scroll cannot currently be directed to an XML element ID or Repeat item key. The host's `UiList` exposes direction and start/end anchoring, but no target item, offset or alignment request. Its `reveal` event reports which child became visible; it does not move the viewport. UI patch operations and the public UI interaction API offer no scroll command either.
+Checked against the host source tag `v3.0.0` and the plugin's 3.0.0 SDK reference. Scroll cannot currently be directed to an XML element ID or Repeat item key. The host's `UiList` exposes direction and start/end anchoring, but no target item, offset or alignment request. Its `reveal` event reports which child became visible; it does not move the viewport. UI patch operations and the public UI interaction API offer no scroll command either.
 
 Since 0.48.1, Custom Button exposes optional vertical `anchor="start|end"`. End-following alone cannot target an arbitrary playing track. The separate [scroll anchor experiment](../experiments/scroll-anchor/README.md) stages row creation, follows the end, disables following, then restores remaining rows. This workaround needs client verification and is sensitive to timing and layout; it is not a guaranteed arbitrary-scroll API. Replacing the list can discard the user's position.
 

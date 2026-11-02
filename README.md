@@ -10,7 +10,7 @@ An independent plugin by ziopuzzle, not an official Macro Deck product. See [pri
 - Development requires **.NET 10 SDK** and **PowerShell 7**.
 - Packaged builds require .NET 10 and ASP.NET Core 10 shared runtimes. The native editor and NuGet dependencies are included, but Microsoft runtimes are not. See [distribution details](docs/distribution.md).
 
-In Macro Deck, use **Integrations > Install from file** and select `artifacts/net.ziopuzzle.custombutton-0.32.0-win-x64.macroDeckPlugin`.
+Install Custom Button from the Macro Deck Store, or use **Integrations > Install from file** and select the `.macroDeckPlugin` package for your platform. Local builds are written to `artifacts/`.
 
 Plugin ID: `net.ziopuzzle.custombutton`. Widget type: `net.ziopuzzle.custombutton::custom-button`.
 
@@ -18,7 +18,7 @@ Windows x64 is the current verification target. macOS and Linux builds are suppo
 
 ## Get started
 
-1. Add a Custom Button. Set a **Channel** in the sidebar. Widgets with the same channel share received data.
+1. Add a Custom Button. Its sidebar **Channel** defaults to its widget ID; change it if you want multiple widgets to share data.
 2. Open **Drawing**. Use **Open editor** for block editing, or the separate full-width **Choose a template** dropdown. Selecting a template replaces the drawing XML and initial JSON; it keeps the channel and action flows.
 3. Open **Actions**. Select the whole button, an interactive component, or **Other (updates and variables)**, then choose an event to create it.
 4. Add actions inside that event and save in Macro Deck. Test gestures on the actual client; the configuration preview does not execute press events.
@@ -33,16 +33,16 @@ For live values, add Display update (1 second) or the standard Variable changed 
 </stack>
 ```
 
-Initial data: `{"title":"CPU","value":42}`. Initial data supplies values until updates arrive. The sidebar keeps these keys visible while editing actions.
+Initial data: `{"title":"CPU","value":42}`. Initial data supplies fallback values for top-level keys missing from the live Channel; it does not initialize the Channel. The sidebar keeps these keys visible while editing actions.
 
 ## Drawing and interaction
 
-- Layout: `stack`, `layer`, text, conditional visibility/styles, expressions and numeric formatting.
+- Layout: `stack`, `layer`, `scroll`, `repeat`, modifiers and responsive layouts, with conditional styles, expressions and numeric formatting.
 - Data: range bars, History Graph, clocks and time-based progress bars.
-- Images: local files and HTTP/HTTPS URLs with data bindings, opacity and crossfade. See [images](docs/images.md).
+- Images: local files, HTTP/HTTPS URLs, installed Icon Packs and music-player artwork, with data bindings, opacity and crossfade. See [images](docs/images.md).
 - SVG: inline shapes, paths, text and gradients with XML-safe variable bindings, rendered as cached transparent images. See [variable SVG](docs/svg.md).
 - Geometry: rectangles, circles, capsules, lines, paths, sectors and polygons.
-- Input: independent press targets and sliders, with target IDs filled in by the event shortcuts.
+- Input: independent press targets, sliders, dials, toggles, segmented controls, text fields and trackpads, with event shortcuts.
 - Color: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA` (alpha last), plus component opacity.
 
 Lengths are fractions of the widget sizing basis: `0.2` and `20%` are equivalent. IDs start with a letter and contain at most 32 letters, digits, underscores or hyphens. IDs must be unique. Data text is not reinterpreted as XML. Escape literal XML characters such as `&` and `<`.
@@ -59,6 +59,7 @@ XML accepts up to 65,536 characters, 512 elements (including styles), and 32 lev
 - [Calculations and duration formats](docs/expressions.md)
 - [Value-change animation](docs/animation.md)
 - [Interactive components and shortcuts](docs/controls.md)
+- [Trackpad](docs/trackpad.md)
 - [Native block editor](docs/block-editor.md)
 - [Additional components](docs/components.md)
 - [Shapes, expressions and alpha](docs/shapes.md)

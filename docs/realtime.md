@@ -1,6 +1,6 @@
 # Event-driven display updates
 
-Version 0.18.0 separates data arrival from periodic acquisition. **Set display value**, **Set display values (JSON)** and native slider input notify open views on the same channel immediately. No drawing setting or XML change is required. The configuration preview receives the same notifications.
+Data arrival is separate from periodic acquisition. **Set display value**, **Set display data from JSON** and native slider input notify open views on the same channel immediately. No drawing setting or XML change is required. The configuration preview receives the same notifications.
 
 After an idle period, rendering starts when the notification is handled. During continuous traffic, the background worker waits 16 ms after each render, coalescing intermediate readings into the latest snapshot. This is a throughput limit, not a guaranteed 60 FPS or end-to-end latency. Complex layouts, host action execution, transport and the client add latency. Native input refreshes its own view directly after dispatch.
 

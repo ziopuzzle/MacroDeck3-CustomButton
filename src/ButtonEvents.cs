@@ -34,15 +34,15 @@ public static class ButtonEvents
             ? "Initialize channel data when a modal session opens. Uses the modal's Event target widget and includes its Channel."
             : p.Key == Activated
             ? "Read current values when the saved button becomes visible. Shared across clients; reopening within 2 seconds counts as the same activation. Does not run for editor previews."
-            : "Runs while the target button is displayed or interacted with. Check the target after duplicating a button."),
-        ConfigurationParameters = [ActionParameter.WidgetTarget("widgetId", new WidgetTargetOptions { Label = TextCatalog.Reference("Target widget"), Required = true, AllowSelf = false })],
+            : "Runs while the target button is displayed or interacted with."),
+        ConfigurationParameters = [ActionParameter.WidgetTarget("widgetId", new WidgetTargetOptions { Label = TextCatalog.Reference("Target widget"), Required = true, AllowSelf = true })],
         PayloadParameters = new[] { ActionParameter.Text("widgetId", label: TextCatalog.Reference("Target widget ID"), required: true) }
             .Concat(p.Key is ModalOpened or ModalClosed ? new[] { ActionParameter.Text("channel", label: TextCatalog.Reference("Channel"), required: true) } : []).Concat(p.Key == ModalClosed ? new[] { ActionParameter.Toggle("cancelled", label: TextCatalog.Reference("Cancelled")), ActionParameter.Text("result", label: TextCatalog.Reference("Modal result")), ActionParameter.Text("elementId", label: TextCatalog.Reference("Closing element ID")) } : []).ToArray()
     }).Concat(ControlNames.Select(p => new EventDefinition
     {
         Id = ControlEventId(p.Key), Name = TextCatalog.Reference(p.Value),
         Description = TextCatalog.Reference("Select an interactive component by its XML id. Slider and dial values use min-max; toggles report 0/1; segmented controls report a zero-based index."),
-        ConfigurationParameters = [ActionParameter.WidgetTarget("widgetId", new WidgetTargetOptions { Label = TextCatalog.Reference("Target widget"), Required = true, AllowSelf = false }),
+        ConfigurationParameters = [ActionParameter.WidgetTarget("widgetId", new WidgetTargetOptions { Label = TextCatalog.Reference("Target widget"), Required = true, AllowSelf = true }),
             ActionParameter.Text("elementId", label: TextCatalog.Reference("Element ID (XML id)"), required: true)],
         PayloadParameters = new[] { ActionParameter.Text("widgetId", label: TextCatalog.Reference("Target widget ID"), required: true),
             ActionParameter.Text("elementId", label: TextCatalog.Reference("Element ID (XML id)"), required: true) }.Concat(p.Key is "text-changing" or "text-changed"
@@ -116,7 +116,7 @@ public static class ButtonEvents
         var definition = Definitions.SingleOrDefault(d => d.Id == eventId) ?? throw new FormatException("Invalid event type.");
         var parameters = new JsonArray(new JsonObject { ["name"] = "widgetId", ["type"] = "widget-target",
             ["label"] = JsonSerializer.SerializeToNode(TextCatalog.Reference("Target widget")), ["required"] = true,
-            ["optionsSourceId"] = "macrodeck.widgets", ["allowSelf"] = false, ["value"] = widgetId, ["operator"] = "==" });
+            ["optionsSourceId"] = "macrodeck.widgets", ["allowSelf"] = true, ["value"] = "$self", ["operator"] = "==" });
         if (IsControlEvent(eventId))
         {
             if (!InputEvents(layout, elementId).Any(d => d.Id == eventId)) throw new FormatException("Select an input component supported by this event.");
@@ -155,8 +155,10 @@ public static class ButtonEvents
     {
         var normalized = Normalize(value, widgetId);
         var flows = JsonNode.Parse(normalized.GetRawText())!.AsArray();
-        static string[] Conditions(JsonObject e) => (e["parameters"] as JsonArray ?? []).OfType<JsonObject>()
-            .Select(p => new JsonArray(p["name"]?.DeepClone(), JsonValue.Create(p["operator"]?.ToString() ?? "=="), p["value"]?.DeepClone()).ToJsonString()).Order(StringComparer.Ordinal).ToArray();
+        string[] Conditions(JsonObject e) => (e["parameters"] as JsonArray ?? []).OfType<JsonObject>()
+            .Select(p => new JsonArray(p["name"]?.DeepClone(), JsonValue.Create(p["operator"]?.ToString() ?? "=="),
+                e["providerId"]?.ToString() == CustomButtonIntegration.PluginId && p["name"]?.ToString() == "widgetId" && p["value"]?.ToString() == widgetId
+                    ? JsonValue.Create("$self") : p["value"]?.DeepClone()).ToJsonString()).Order(StringComparer.Ordinal).ToArray();
         if (flows.OfType<JsonObject>().Any(f => f["event"] is JsonObject e
             && e["providerId"]?.ToString() == binding["providerId"]?.ToString() && e["eventId"]?.ToString() == binding["eventId"]?.ToString()
             && Conditions(e).SequenceEqual(Conditions(binding)))) return normalized;
@@ -179,7 +181,7 @@ public static class ButtonEvents
     private static JsonObject Binding(string id, string widgetId) => new()
     {
         ["providerId"] = CustomButtonIntegration.PluginId, ["eventId"] = id, ["eventName"] = JsonSerializer.SerializeToNode(TextCatalog.Reference(Names[id])),
-        ["parameters"] = new JsonArray(new JsonObject { ["name"] = "widgetId", ["value"] = widgetId, ["operator"] = "==" })
+        ["parameters"] = new JsonArray(new JsonObject { ["name"] = "widgetId", ["value"] = "$self", ["operator"] = "==" })
     };
     public static JsonElement Normalize(JsonElement value, string? widgetId)
     {
@@ -195,23 +197,40 @@ public static class ButtonEvents
                 flow["triggerType"] = "onEvent"; flow["triggerLabel"] = Names[id]; flow["event"] = Binding(id, widgetId);
             }
             else if (trigger != "onEvent") throw new FormatException("This button supports short press, long press, touch start/end and Events triggers.");
-            // Event filters compare payload values. Resolve the widget-target sentinel here,
-            // rather than depending on the host to interpret it in a custom event condition.
+            // Macro Deck 3.0 resolves WidgetTarget $self relative to the flow owner.
             if (flow["event"] is JsonObject binding && binding["providerId"]?.ToString() == CustomButtonIntegration.PluginId
                 && binding["parameters"] is JsonArray parameters)
-            {
-                foreach (var parameter in parameters.OfType<JsonObject>())
-                {
-                    if (parameter["name"]?.ToString() == "widgetId" && parameter["value"]?.ToString() == "$self")
-                    {
-                        if (string.IsNullOrWhiteSpace(widgetId)) throw new FormatException("Save the button before configuring actions.");
-                        parameter["value"] = widgetId;
-                    }
-                }
-            }
+                foreach (var parameter in parameters.OfType<JsonObject>().Where(p => p["name"]?.ToString() == "widgetId" && p["type"]?.ToString() == "widget-target"))
+                    parameter["allowSelf"] = true;
             if (flow["event"] is JsonObject namedBinding) DescribeEvent(namedBinding);
         }
         return JsonSerializer.SerializeToElement(flows);
+    }
+
+    // Existing concrete references to this owner can safely follow future copies.
+    // Do not infer targets for other providers, unknown events, or other operators.
+    internal static (JsonElement Flows, bool Changed) MigrateOwnTargets(JsonElement value, string? widgetId)
+    {
+        if (string.IsNullOrWhiteSpace(widgetId)) return (value, false);
+        var flows = JsonNode.Parse(value.GetRawText())!.AsArray();
+        var changed = false;
+        foreach (var flow in flows.OfType<JsonObject>())
+        {
+            if (flow["event"] is not JsonObject binding || binding["providerId"]?.ToString() != CustomButtonIntegration.PluginId
+                || !Definitions.Any(d => d.Id == binding["eventId"]?.ToString()) || binding["parameters"] is not JsonArray parameters) continue;
+            foreach (var parameter in parameters.OfType<JsonObject>())
+            {
+                if (parameter["name"]?.ToString() != "widgetId" || parameter["operator"]?.ToString() is not (null or "" or "==" or "!=")) continue;
+                var target = parameter["value"]?.ToString();
+                if (!string.Equals(target, widgetId, StringComparison.OrdinalIgnoreCase)
+                    && !(Guid.TryParse(target, out var targetGuid) && Guid.TryParse(widgetId, out var ownerGuid) && targetGuid == ownerGuid)) continue;
+                parameter["value"] = "$self";
+                parameter.Remove("valueLabel");
+                if (parameter["type"]?.ToString() == "widget-target") parameter["allowSelf"] = true;
+                changed = true;
+            }
+        }
+        return changed ? (JsonSerializer.SerializeToElement(flows), true) : (value, false);
     }
 
     public static string ElementTargetHelp(JsonElement flows, string layout, string? widgetId)

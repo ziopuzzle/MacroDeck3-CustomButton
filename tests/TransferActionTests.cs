@@ -162,6 +162,23 @@ public class TransferActionTests
         Assert.That(api.Last.Value, Is.EqualTo(expected));
     }
 
+    [TestCase("script-id", null)]
+    [TestCase(null, "automation-id")]
+    [TestCase(null, null)]
+    public async Task FlowScopePassesExecutionContextToHost(string? scriptId, string? automationId)
+    {
+        var hub = new DataHub(); hub.Update("source", DataHub.ParseValues("{\"v\":42}"));
+        var api = new Variables();
+        var inputs = Context(("channel", "source"), ("key", "v"), ("variable", "destination"), ("scope", "flow"));
+        var result = await new WriteDisplayVariableAction(hub, () => api).CreateExecutor().ExecuteAsync(new()
+        {
+            Parameters = inputs.Parameters, OwnerWidgetId = "owner", ScriptId = scriptId, AutomationId = automationId
+        });
+        Assert.That(result.Status, Is.EqualTo(ActionResultStatus.Succeeded));
+        Assert.That(api.Context, Is.EqualTo(new UserVariableContext("owner", scriptId, automationId)));
+        Assert.That(api.Last, Is.EqualTo(("destination", "owner", "42")));
+    }
+
     [Test]
     public async Task WriteVariableReadsInitialNestedValuesAndHonorsLiteralDottedNames()
     {
@@ -206,6 +223,7 @@ public class TransferActionTests
     private sealed class Variables : IUserVariableApi
     {
         public (string Name, string? Owner, string? Value) Last;
+        public UserVariableContext? Context;
         public int Calls;
         public UserVariableWriteStatus Status = UserVariableWriteStatus.Applied;
         public Task<UserVariableWriteResult> ApplyAsync(string name, string? ownerWidgetId, UserVariableOperation operation, string? value, CancellationToken cancellationToken = default)
@@ -213,6 +231,11 @@ public class TransferActionTests
             Assert.That(operation, Is.EqualTo(UserVariableOperation.Set));
             Last = (name, ownerWidgetId, value); Calls++;
             return Task.FromResult(new UserVariableWriteResult(Status, "Host detail"));
+        }
+        public Task<UserVariableWriteResult> ApplyInContextAsync(string name, UserVariableContext context, UserVariableOperation operation, string? value, CancellationToken cancellationToken = default)
+        {
+            Context = context;
+            return ApplyAsync(name, context.OwnerWidgetId, operation, value, cancellationToken);
         }
     }
 }

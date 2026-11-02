@@ -1,6 +1,6 @@
 # Runtime requirements and included dependencies
 
-Custom Button 0.32.0 uses framework-dependent deployment. The package does not include
+Custom Button uses framework-dependent deployment. The package does not include
 the Microsoft .NET or ASP.NET Core runtime. It requires an accessible .NET 10 runtime
 and ASP.NET Core 10 shared framework of the target architecture. Macro Deck selects a
 compatible dotnet host from the entrypoint runtime requirements and runtimeconfig.json;

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.48.5 — relative event targets
+
+- Use Macro Deck 3.0's native `$self` matching for new Custom Button events and copied self-targets, so those targets follow duplicated widgets. Preserve explicit targets and existing saved events; source-ID repair remains available for legacy copies.
+- Add an opt-in script/automation-local scope to Write display value to variable. Existing widget-first and global options keep their previous behavior.
+- Convert existing Custom Button event filters targeting the current widget to `$self` when configuration is opened and saved; preserve other targets and providers.
+- Offer the same variable scope choices when saving a removed display value. Existing actions retain their widget-first default.
+- Fix Display activated readiness checks so `$self` and dynamic widget targets can publish an activation for the host to match.
+
 ## 0.48.4 — Macro Deck 3.0.0
 
 - Update Macro Deck SDK, UI, hosting, analyzers, testing helpers and local/release CLI to the stable 3.0.0 release; regenerate all NuGet lock files.

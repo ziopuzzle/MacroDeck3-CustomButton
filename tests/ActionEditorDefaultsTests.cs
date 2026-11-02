@@ -81,7 +81,7 @@ public class ActionEditorDefaultsTests
         await using var session = new ConfigurationSession(ButtonTests.Surface("config"), TestLayouts.Sample with { Flows = JsonSerializer.SerializeToElement(input) });
         session.Dispatch(new UiEvent { NodeId = ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Id.EndsWith("retargetEvents")).Id, Name = "activate" });
         var result = ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Id == "flows").Properties["value"];
-        Assert.That(result[0].GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("test-widget"));
+        Assert.That(result[0].GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("$self"));
         Assert.That(result[0].GetProperty("event").GetProperty("parameters")[1].GetProperty("value").GetString(), Is.EqualTo("play"));
         Assert.That(Channel(result), Is.EqualTo("demo"));
         Assert.That(result[1].GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("test-widget"));

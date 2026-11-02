@@ -35,6 +35,17 @@ public class CopiedWidgetTests
         Assert.That(operations.Single(p => p.NodeId == "channel").Properties!["value"].GetString(), Is.EqualTo("test-widget"));
         Assert.That(operations.Single(p => p.NodeId == "configurationWidgetId").Properties!["value"].GetString(), Is.EqualTo("test-widget"));
     }
+
+    [Test] public async Task RelativeTargetsNeedNoCopyRetargetNotice()
+    {
+        var input = JsonNode.Parse(Flows().GetRawText())!.AsArray();
+        input.RemoveAt(2);
+        input[0]!["event"]!["parameters"]![0]!["value"] = "$self";
+        await using var session = new ConfigurationSession(ButtonTests.Surface("config"), TestLayouts.Sample with
+            { Channel = "music", ConfigurationWidgetId = "source", Flows = JsonSerializer.SerializeToElement(input) });
+        Assert.That(Value(session, "flows")[0].GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("$self"));
+        Assert.That(ButtonTests.Nodes(session.BuildTree().Root).Any(n => n.Id.EndsWith("copiedWidgetNotice")), Is.False);
+    }
     private static JsonElement Flows() => JsonSerializer.SerializeToElement(JsonNode.Parse("""
     [{"triggerType":"onEvent","event":{"providerId":"net.ziopuzzle.custombutton","eventId":"element-press","parameters":[{"name":"widgetId","value":"source"},{"name":"elementId","value":"play"}]},"children":[{"id":"loop","children":[{"id":"a","integrationId":"net.ziopuzzle.custombutton","actionId":"set-value","parameters":[{"name":"channel","value":"music"}]}],"branches":[{"children":[{"id":"b","integrationId":"net.ziopuzzle.custombutton","actionId":"set-data","parameters":[{"name":"channel","value":"music"}]},{"id":"c","integrationId":"net.ziopuzzle.custombutton","actionId":"set-value","parameters":[{"name":"channel","value":"other"}]},{"id":"d","integrationId":"other","actionId":"set-value","parameters":[{"name":"channel","value":"music"}]}]}]}]},
     {"triggerType":"onEvent","event":{"providerId":"net.ziopuzzle.custombutton","eventId":"short-press","parameters":[{"name":"widgetId","value":"other-widget"}]},"children":[]},
@@ -56,7 +67,7 @@ public class CopiedWidgetTests
         Assert.That(patches[0].FromRevision, Is.EqualTo(initial.Revision));
         Assert.That(patches[0].ToRevision, Is.EqualTo(initial.Revision + 1));
         var flows = patches[0].Operations.Single(p => p.NodeId == "flows").Properties!["value"];
-        Assert.That(flows[0].GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("test-widget"));
+        Assert.That(flows[0].GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("$self"));
         Assert.That(session.BuildTree().Revision, Is.EqualTo(patches[0].ToRevision));
         Assert.That(session.DrainPatches(), Is.Empty);
         session.Dispatch(new UiEvent { NodeId = "channel", Name = "change", Revision = patches[0].ToRevision, Data = JsonSerializer.SerializeToElement("next") });
@@ -75,7 +86,7 @@ public class CopiedWidgetTests
         await Task.Delay(600);
         Assert.That(notifications, Is.Zero);
     }
-    [TestCase("source", "test-widget")]
+    [TestCase("source", "$self")]
     [TestCase("", "source")]
     [TestCase("test-widget", "source")]
     public async Task ReopeningOnlyRemapsKnownSourceTargets(string storedOwner, string expectedTarget)
@@ -86,7 +97,7 @@ public class CopiedWidgetTests
         Assert.That(next[0].GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo(expectedTarget));
         Assert.That(next[0].GetProperty("event").GetProperty("parameters")[1].GetProperty("value").GetString(), Is.EqualTo("play"));
         Assert.That(next[1].GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("other-widget"));
-        Assert.That(next[2].GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo(expectedTarget));
+        Assert.That(next[2].GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo(storedOwner == "source" ? "test-widget" : expectedTarget));
         Assert.That(next[2].GetProperty("event").GetProperty("parameters")[1].GetProperty("value").GetString(), Is.EqualTo("source"));
         Assert.That(next[0].GetProperty("children").GetRawText(), Is.EqualTo(original[0].GetProperty("children").GetRawText()));
         Assert.That(Value(session, "configurationWidgetId").GetString(), Is.EqualTo("test-widget"));

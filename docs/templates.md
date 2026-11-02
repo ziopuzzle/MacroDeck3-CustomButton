@@ -6,17 +6,32 @@ The gallery is built directly from `examples/*.xml`. A same-stem `.json` provide
 
 | Category | Template | File stem |
 | --- | --- | --- |
-| BASIC | Animation | basic_animation |
-| BASIC | Text | basic_text |
-| BASIC | Bar | basic_bar |
 | BASIC | Border | basic_border |
-| BASIC | Calculated sector | basic_calculation |
-| BASIC | Conditional styles | basic_conditional |
-| BASIC | Gradients | basic_gradation |
-| BASIC | Playback progress | basic_progress |
+| BASIC | Text | basic_text |
+| BASIC | Client time and date | basic_dynamic-text |
+| BASIC | Built-in icons | basic_icon |
+| BASIC | Image sources | basic_image |
 | BASIC | Shapes | basic_shape |
-| BASIC | Slider | basic_slider |
+| BASIC | Gradients | basic_gradation |
+| BASIC | SVG | basic_svg |
+| BASIC | Bar | basic_bar |
+| BASIC | Range and marker | basic_range |
+| BASIC | Arc gauge | basic_gauge |
+| BASIC | Playback progress | basic_progress |
+| BASIC | Conditional styles | basic_conditional |
+| BASIC | Calculated sector | basic_calculation |
+| BASIC | Animation | basic_animation |
+| BASIC | Scroll | basic_scroll |
 | BASIC | Repeat array | basic_repeat |
+| BASIC | Modifier | basic_modifier |
+| BASIC | Transform a group | basic_transform |
+| BASIC | Responsive layouts | basic_responsive |
+| BASIC | Toggle | basic_toggle |
+| BASIC | Slider | basic_slider |
+| BASIC | Dial | basic_dial |
+| BASIC | Segmented | basic_segmented |
+| BASIC | Text field | basic_text-field |
+| BASIC | Trackpad | basic_trackpad |
 | ADVANCED | Clock | widget_clock |
 | ADVANCED | History Graph | widget_history-chart |
 | ADVANCED | Meter | widget_meter |

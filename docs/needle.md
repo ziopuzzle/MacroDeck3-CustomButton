@@ -17,6 +17,6 @@ Positions and length use the normalized drawing box. Use a square box for a circ
 
 # Renaming elements in the GUI
 
-Edit **Element ID** just like any other field; valid input applies automatically. IDs must be unique, start with an ASCII letter, and contain at most 32 letters, digits, underscores or hyphens. Invalid input keeps the last valid layout. Selection follows the renamed element without rebuilding its input field; Undo restores the previous editing state. If an action event filters on that ID, update its filter separately in Macro Deck.
+Edit **Element ID** just like any other field; valid input applies automatically. IDs must be unique, start with an ASCII letter, and contain at most 32 letters, digits, underscores or hyphens. Invalid input keeps the last valid layout. Selection follows the renamed element without rebuilding its input field; Undo restores the previous editing state. ID-only edits update matching local Custom Button event filters; structural or simultaneous property edits may not be recognized as renames. Review the warnings in Actions and update unresolved filters manually. See [known limitations](known-issues.md#copying-event-targets).
 
 Sector bounds use the visible arc and center rather than the full parent circle. For example, `cx="50%" cy="100%" radius="50%" startAngle="180" sweepAngle="180"` draws the upper semicircle without requiring empty space below its center. This fixes geometry validation; it does not automatically crop or resize the allocated box, and stroke thickness can still extend beyond its edge.

@@ -6,9 +6,9 @@
 
 ## Manual phase variant
 
-Development experiment, not a built-in template or an arbitrary-scroll guarantee. Requires Custom Button 0.48.1 and a client supporting native List version 3 (host beta.17).
+Development experiment, not a built-in template or an arbitrary-scroll guarantee. See the [current requirements](../../README.md#requirements-and-installation).
 
-Paste `widget.json` as the settings JSON of a new, disposable Custom Button. Open its settings and save so the event's `$self` target is resolved. This uses the isolated Channel `scroll-anchor-probe`; use only one test widget, or change the Channel and matching action parameters together. No music-player or external actions are configured.
+Paste `widget.json` as the settings JSON of a new, disposable Custom Button, then save it. The event uses `$self` to target the widget that owns the flow. This uses the isolated Channel `scroll-anchor-probe`; use only one test widget, or change the Channel and matching action parameters together. No music-player or external actions are configured.
 
 Press **Run probe** once and wait about four seconds. Do not touch the list during the sequence. The viewport is three fixed-height rows tall:
 

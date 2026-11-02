@@ -154,9 +154,13 @@ public sealed class EditDisplayDataAction : IActionDefinition
             parameters.Add(ActionParameter.Text("index", label: "Insert before index (optional)",
                 description: "Leave empty to add at the end. 0 inserts at the beginning."));
         }
-        else parameters.Add(ActionParameter.Autocomplete("variable", label: "Store removed value in variable (optional)",
-            optionsSourceId: "macrodeck.user-variables",
-            description: "Leave empty to discard. Select an existing writable variable name. This widget's variable takes precedence over global. Failed writes leave the data intact."));
+        else
+        {
+            parameters.Add(ActionParameter.Autocomplete("variable", label: "Store removed value in variable (optional)",
+                optionsSourceId: "macrodeck.user-variables",
+                description: "Leave empty to discard. Select an existing writable variable name. Failed writes leave the data intact."));
+            parameters.Add(VariableDestination.Scope());
+        }
         Parameters = parameters;
     }
     public string Id => operation == "add" ? "add-array-item" : "remove-data-part";
@@ -183,7 +187,7 @@ public sealed class EditDisplayDataAction : IActionDefinition
             expectedRoot = snapshot[rootKey].GetRawText();
             var api = variables() ?? throw new FormatException("The variable service is unavailable.");
             var text = removed.ValueKind switch { JsonValueKind.String => removed.GetString(), JsonValueKind.Null => "", _ => removed.GetRawText() };
-            var result = await api.ApplyAsync(destination, context.OwnerWidgetId, UserVariableOperation.Set, text, context.CancellationToken);
+            var result = await VariableDestination.Set(api, context, destination, text);
             if (result.Status != UserVariableWriteStatus.Applied)
                 throw new FormatException(result.Message ?? $"Variable write failed: {result.Status}. Data was not removed.");
         }

@@ -1,6 +1,6 @@
 # Product language
 
-Version 0.17.0 uses English for plugin-authored configuration, actions, events, templates, validation messages and the native editor, regardless of host/OS language. The manifest advertises English only. There is no per-widget language setting.
+Custom Button uses English for plugin-authored configuration, actions, events, templates, validation messages and the native editor, regardless of host/OS language. The manifest advertises English only. There is no per-widget language setting.
 
 User-authored XML text, data values/keys and saved action captions are not translated. Existing saved host captions can retain their previous language; newly created plugin events use English. OS/library exception details may also use the OS language.
 

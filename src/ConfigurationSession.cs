@@ -64,13 +64,13 @@ public sealed class ConfigurationSession : IUiSession
                 + "\n\nOlder preview errors are cleared when this widget's preview renders successfully. Other closed-session errors remain as last-observed reports. Action execution logs remain available in Macro Deck.";
         }
         var errorReport = new UiState<string>(ReadDiagnostics());
-        publishInitialCorrection = !string.IsNullOrWhiteSpace(widgetId) && (settings.ConfigurationWidgetId != widgetId || settings.Channel != channel.Value);
         var flows = new UiState<JsonElement>(settings.Flows);
         currentFlows = () => flows.Value;
         var orderTarget = new UiState<string>("");
         var flowMessage = new UiState<string>("");
         string? copiedWidgetMessage = null;
-        // Repair existing self-target filters when reopening, as well as on editor changes.
+        var migratedTargets = false;
+        // Normalize action flows, retaining the host's self-target sentinel.
         try
         {
             flows.Value = ButtonEvents.Normalize(flows.Value, widgetId);
@@ -78,13 +78,22 @@ public sealed class ConfigurationSession : IUiSession
             if (!string.IsNullOrWhiteSpace(widgetId) && !string.IsNullOrWhiteSpace(settings.ConfigurationWidgetId)
                 && settings.ConfigurationWidgetId != widgetId)
             {
+                var beforeRetarget = flows.Value.GetRawText();
                 flows.Value = ActionEditorDefaults.RetargetEvents(flows.Value, widgetId, settings.ConfigurationWidgetId);
-                copiedWidgetMessage = "Copied/imported widget detected. Event targets matching the source widget have been updated. Save to apply.";
-                if (channel.Value != settings.Channel)
+                var targetsChanged = flows.Value.GetRawText() != beforeRetarget;
+                if (targetsChanged && channel.Value != settings.Channel)
                     copiedWidgetMessage = "Copied/imported widget detected. Event targets, the automatic channel and matching display-data actions have been updated. Save to apply.";
+                else if (targetsChanged)
+                    copiedWidgetMessage = "Copied/imported widget detected. Event targets matching the source widget have been updated. Save to apply.";
+                else if (channel.Value != settings.Channel)
+                    copiedWidgetMessage = "Copied/imported widget detected. The automatic channel and matching display-data actions have been updated. Save to apply.";
             }
+            (flows.Value, migratedTargets) = ButtonEvents.MigrateOwnTargets(flows.Value, widgetId);
+            if (migratedTargets && copiedWidgetMessage == null)
+                copiedWidgetMessage = "Event targets referring to this widget have been updated to This widget. Save to apply.";
         }
         catch (FormatException e) { flowMessage.Value = e.Message; }
+        publishInitialCorrection = !string.IsNullOrWhiteSpace(widgetId) && (settings.ConfigurationWidgetId != widgetId || settings.Channel != channel.Value || migratedTargets);
         var mode = new UiState<string>(settings.Design?.Preset ?? "xml");
         var editorStatus = new UiState<string>("Build the layout in a separate editor window. The preview remains on this screen.");
         var inputTarget = new UiState<string>("");
@@ -169,7 +178,7 @@ public sealed class ConfigurationSession : IUiSession
                             }
                             catch (FormatException e) { flowMessage.Value = e.Message; }
                         })] },
-                        new UiProse { Key = "flowHelp", Text = TextCatalog.Reference("Configure actions for each event and save before testing. Check event targets after duplicating a button.") },
+                        new UiProse { Key = "flowHelp", Text = TextCatalog.Reference("Configure actions for each event and save before testing. This widget targets follow copies; check explicit widget targets after duplicating.") },
                         new UiProse { Key = "controlHelp", Text = TextCatalog.Reference("Select a target, then choose + Add event. Modal opened, Display activated, Display update and Variable changed are under Other (updates and variables). Use Display activated to read current values when the saved button becomes visible. Select the watched variable after adding Variable changed.") },
                         new UiConfigStack { Key = "eventShortcuts", Direction = "horizontal", Wrap = true, Children =
                         [

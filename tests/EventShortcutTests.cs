@@ -9,7 +9,7 @@ namespace Ziopuzzle.CustomButton.Tests;
 public class EventShortcutTests
 {
     private const string Layout = "<stack id='panel'><stack id='play' interactive='true'><text id='label'>Play</text></stack><slider id='volume' interactive='true' key='volume'/><stack id='conditional'><style when='value > 0' interactive='true'/></stack></stack>";
-    [Test] public async Task DropdownScopesEventsAndSavesConcreteTargets()
+    [Test] public async Task DropdownScopesEventsAndSavesRelativeTargets()
     {
         await using var config = new ConfigurationSession(ButtonTests.Surface("config"), TestLayouts.Sample with { Layout = Layout });
         JsonElement Property(string id, string property) => ButtonTests.Nodes(config.BuildTree().Root).Single(n => n.Id == id).Properties[property];
@@ -29,7 +29,7 @@ public class EventShortcutTests
         Select("addInputEvent", "element-change");
         var saved = Property("flows", "value");
         Assert.That(saved.GetArrayLength(), Is.EqualTo(3));
-        foreach (var flow in saved.EnumerateArray()) Assert.That(flow.GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("test-widget"));
+        foreach (var flow in saved.EnumerateArray()) Assert.That(flow.GetProperty("event").GetProperty("parameters")[0].GetProperty("value").GetString(), Is.EqualTo("$self"));
         Assert.That(saved[2].GetProperty("event").GetProperty("parameters")[1].GetProperty("value").GetString(), Is.EqualTo("volume"));
         Select("layout", "<text id='plain'>plain</text>");
         Assert.That(Property("inputTarget", "value").GetString(), Is.Empty);

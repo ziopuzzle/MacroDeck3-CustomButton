@@ -45,7 +45,7 @@ Choose the target widget and element ID in the event's configuration filters. Th
 
 Since 0.48.0, controls inside [Repeat](components.md#repeat-array-0480) also report `repeatId`, `itemKey`, `itemIndex` (zero-based) and `itemJson` (JSON text). Element ID remains the template's XML ID, so one configured event can handle all rows. These additional fields are absent outside Repeat. Item metadata comes from the render snapshot used by the event handler.
 
-If the host offers **This widget** (`$self`), the plugin resolves it to the actual widget ID when editing or reopening the configuration. Save the configuration once after upgrading to 0.15.1 to repair existing self-target filters. Explicit targets and other providers' events are preserved.
+**This widget** (`$self`) is resolved by Macro Deck to the widget owning the flow. New Custom Button event shortcuts use it automatically, so these targets follow copied widgets. Existing own-widget targets are converted when settings are opened and saved; other concrete IDs remain valid. See [event targets](actions.md#event-targets) for legacy copies and explicit targets.
 
 Use the interactive container's ID, not the ID of its text: in the media template these are `previous`, `playPause`, and `next`, not `previousLabel`, `playLabel`, or `nextLabel`. The Actions tab lists input target IDs and explains invalid local targets. Two labels inside the same container share its event; use an If/Else action for state-dependent play/pause behavior.
 
@@ -74,7 +74,7 @@ Press targets, sliders, dials, toggles, segmented controls, text fields and [two
 
 ## Dial, toggle and segmented controls
 
-The BASIC Dial, Toggle and Segmented templates provide working starting points. These components require a beta.15-capable client. Set `interactive="true"` and a `key` to enable input. Without interaction enabled they only display data. Use either `key` or `value`, never both. External data updates redraw the controls; user input updates the shared channel before publishing its event.
+The BASIC Dial, Toggle and Segmented templates provide working starting points. Set `interactive="true"` and a `key` to enable input. Without interaction enabled they only display data. Use either `key` or `value`, never both. External data updates redraw the controls; user input updates the shared channel before publishing its event.
 
 ```xml
 <dial id="volume" key="volume" min="0" max="100" step="1"

@@ -1,6 +1,6 @@
 # Variable-driven SVG
 
-The `svg` component renders self-contained SVG markup to a transparent PNG on the plugin machine. It uses the existing host image-resource API; clients do not execute SVG. Requires Macro Deck beta.15 or later.
+The `svg` component renders self-contained SVG markup to a transparent PNG on the plugin machine. It uses the host image-resource API; clients do not execute SVG. See the [README](../README.md#requirements-and-installation) for the current minimum Macro Deck version.
 
 Choose **BASIC → Variable SVG**, or add **Text and images → SVG** in the editor. The SVG markup field is multiline and applies valid edits automatically. In layout XML, put the SVG document inside CDATA:
 

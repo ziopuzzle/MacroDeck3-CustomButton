@@ -13,7 +13,7 @@ The action list groups data editing first, then copying/export, and finally Show
 | **Set display value** | Channel, Target, Value, Input format. Set a whole value, object property or array item. This extends the existing action; there is no separate Update data value action. |
 | **Set display data from JSON** | Initialize or replace the entire Channel with a JSON object. |
 | **Insert array item** | Channel, Target array, Item to insert, Input format, optional Insert before index. Empty index appends; 0 inserts at the beginning. |
-| **Remove display value** | Channel, Target, optional Store removed value in variable. Remove a value, object property or array item. |
+| **Remove display value** | Channel, Target, optional Store removed value in variable and variable scope. Remove a value, object property or array item. |
 
 Actions created with the earlier experimental multi-field editor must be removed and added again. Old parameters are rejected to prevent editing the wrong target.
 
@@ -44,7 +44,7 @@ Changes notify renderers automatically and keep unrelated values. Missing target
 
 ### Remove and store (pop)
 
-Choose an existing writable Macro Deck variable in **Store removed value in variable**, or leave it empty to discard. The action owner's widget-local variable takes precedence over a global variable. Strings remain text; arrays/objects become JSON text; null becomes empty text. The host converts to the destination variable's type.
+Choose an existing writable Macro Deck variable in **Store removed value in variable**, or leave it empty to discard. **Which variable to write** selects widget-first, current script/automation-first or global scope; widget-first is the default. Strings remain text; arrays/objects become JSON text; null becomes empty text. The host converts to the destination variable's type.
 
 For a stack, remove `playlist[-1]`; for a queue, remove `playlist[0]`. Write the removed value to a text variable, then reference that variable in following actions.
 
@@ -65,15 +65,17 @@ Repeat aliases remain read-only; controls still need separate Channel keys for t
 
 ## Event targets
 
-After copying a widget, choose **Target this widget in all events** to overwrite every event widget-target field with the current widget ID, then save. Element IDs, variable filters and action parameters remain unchanged; events without widget targets are unaffected.
+New Custom Button events use **This widget** (`$self`), resolved by Macro Deck relative to the widget that owns the flow. Such event targets follow a copy or import without opening its configuration. When an existing button's settings are opened, its known Custom Button event targets matching its own ID are also converted to `$self`. Save the settings to apply the conversion; other widgets, other providers and unrelated conditions are preserved.
 
-From 0.37.0, saving configuration records its owning widget ID in `configurationWidgetId`. After copying or importing such a widget, **open the destination configuration and save it**: event targets matching the recorded source ID are automatically replaced with the destination ID. References to other widgets remain unchanged. Save the source once with this version before copying or exporting it. Older data without this ID cannot be safely inferred; use the bulk button or edit targets manually. This is a configuration-time correction, not a copy/import hook: until the destination is saved, its stored event filters still refer to the source. References between multiple separately imported widgets are not remapped as a group.
+Use **Target this widget in all events** to retarget event widget-target fields, then save. Custom Button events use `$self`; other providers' widget targets use the current widget ID. Element IDs, variable filters and action parameters remain unchanged; events without widget targets are unaffected.
+
+For older flows with concrete IDs, saving configuration records its owning widget ID in `configurationWidgetId`. After copying or importing such a widget, **open the destination configuration and save it**: event targets matching the recorded source ID are automatically retargeted. Custom Button targets become `$self`; other providers' targets receive the destination ID. References to other widgets remain unchanged. Older data without an owner ID cannot be safely inferred; use the bulk button or edit targets manually. This is a configuration-time correction: until the destination is saved, old concrete filters still refer to the source. References between multiple separately imported widgets are not remapped as a group.
 
 An initial correction is published shortly after opening configuration, making the corrected draft available to the host's Save button without editing another field. The saved JSON is only changed when you save. Opening older data without an owner ID also makes the new ownership metadata available for saving.
 
-Choose an input target, then select an event in **+ Add event**. Target widget/component IDs are inserted automatically. Select **Other (updates and variables)** for Display update (1 second) or the standard Variable changed event. For the latter, select the variable to watch in the created flow. Identical event conditions are not added twice; existing actions are preserved.
+Choose an input target, then select an event in **+ Add event**. The widget target is `$self` and component IDs are inserted automatically. Select **Other (updates and variables)** for Display update (1 second) or the standard Variable changed event. For the latter, select the variable to watch in the created flow. Identical event conditions are not added twice; existing actions are preserved.
 
-Native Short Press, Long Press, Touch Start and Touch End flows are converted to scoped Custom Button events. Saved `$self` targets are resolved to the widget ID when opening/editing configuration. Save before testing and review targets after duplicating a widget. Previews do not publish press events.
+Native Short Press, Long Press, Touch Start and Touch End flows are converted to Custom Button events targeting `$self`. Existing concrete self IDs are converted when settings are opened and saved; other concrete IDs remain unchanged unless copy correction or bulk retarget is applied. Save before testing. Previews do not publish press events. In automations without a widget owner, the host treats `$self` as an unset widget filter; select a concrete widget to restrict the event.
 
 ## Copy and export display data
 
@@ -91,7 +93,7 @@ Channel copies preserve JSON strings, numbers, booleans, arrays, objects and nul
 
 New actions added inside Custom Button use the widget's Channel as the source. Set the destination explicitly. Changing the sidebar Channel or adopting a copied widget's automatic Channel updates matching source and destination references in that widget's transfer actions; unrelated channels are kept.
 
-For variable writes, **Which variable to write** selects the destination, not the write operation: both options set the value. **Prefer this widget's variable; otherwise use global** follows the standard Set Variable action: a variable belonging to the action's owner widget takes precedence over a global variable with the same name. Widget-less runs use global variables. **Use the global variable (ignore this widget's variable)** bypasses widget-local variables. If there is no local variable, both choices reach the same global variable. This scope refers to the action owner, not the source Channel. Widget-local variables are created through Variables in the host action editor; they are separate from Custom Button initial JSON. Neither option searches other widgets. Variables must already exist; the action never creates them.
+For variable writes, **Which variable to write** selects the destination; all options set the value. **Prefer this widget's variable; otherwise use global** checks the action owner's widget and then global variables. **Prefer the current script or automation's variable** checks the running script or automation first, then the owner widget, then global; this uses Macro Deck's execution context, including the called script for nested runs. **Use the global variable** bypasses local variables. Existing actions keep the widget-first default. These scopes refer to the action owner, not the source Channel. Local variables are created through Variables in the host action editor; they are separate from Custom Button initial JSON. No option searches other widgets. Variables must already exist; the action never creates them. Remove display value offers the same choices for its optional variable output; the scope is ignored if no output variable is selected.
 
 To verify a copy independently of the drawing, open the receiving Custom Button's **Diagnostics**, press **Refresh diagnostics**, and check **Current display data**. Copied values appear as `live`; the sidebar's Initial JSON remains unchanged. The receiving XML must use the copied names (for example `{{volume}}`), and its Channel must match Destination channel exactly. Copies run once; they do not keep two channels synchronized automatically. A later data-update action can overwrite a copied value.
 
@@ -103,7 +105,7 @@ Example: after a slider changes `volume` on Channel `player`, use Copy display v
 
 To obtain color directly from an Image/SVG element, use [averageColorKey](images.md#average-color-in-xml). To share artwork color through Channel data or other widgets, use the host variable below.
 
-Macro Deck beta.17 already exposes an album-color variable for each player (`music_player_<player key>_album_color`). Select the actual variable from Macro Deck's variable picker; player keys depend on player names and name collisions.
+Macro Deck exposes an album-color variable for each player (`music_player_<player key>_album_color`). Select the actual variable from Macro Deck's variable picker; player keys depend on player names and name collisions.
 
 To follow color changes without configuring a periodic Custom Button action:
 
@@ -126,7 +128,7 @@ Both the variable and XML artwork color extraction use the host's artwork-ID cac
 
 The update event runs approximately once per second while the real widget or its preview is displayed. Both views share a timer; closing the last view stops it. Avoid long-running work in frequent event flows because host action execution can overlap later events.
 
-History records the latest numeric value each second, including unchanged values. It does not invent values for periods when the widget was hidden. Non-numeric/removed values clear the affected history. Initial JSON supplies defaults until live data arrives. Data and history are transient.
+History records the latest numeric value each second, including unchanged values. It does not invent values for periods when the widget was hidden. Non-numeric/removed values clear the affected history. Initial JSON supplies fallback values for missing top-level live keys. Data and history are transient.
 
 The old per-button script selectors are retired. Run scripts through a normal action inside the desired event.
 

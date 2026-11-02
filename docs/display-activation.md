@@ -8,7 +8,7 @@ Version 0.22.0 adds **Display activated** (`display-activated`). Use it to read 
 4. Keep the corresponding reads in your Variable changed flows and save the button.
 5. Leave its page so no client displays it, wait more than two seconds, change a watched variable, and return. The activation flow should refresh the value without waiting for another variable change.
 
-The event is also available under **Events → Custom Button**. The shortcut sets a concrete target widget ID; verify that target when duplicating the button. Activation does not automatically infer which variables to copy from your XML or other flows.
+The event is also available under **Events → Custom Button**. The shortcut targets **This widget** (`$self`), which follows copies. Activation does not automatically infer which variables to copy from your XML or other flows.
 
 ## Lifecycle
 
@@ -16,7 +16,7 @@ The event is also available under **Events → Custom Button**. The shortcut set
 - One occurrence is published per active widget, shared across clients. Repeated snapshots, a second client and immediate session replacement do not generate extra occurrences.
 - When the last real view closes, a two-second grace period preserves the activation state. Returning within that interval does not run it again, even if the user deliberately switched pages; use the periodic display-update event if that short absence must also be synchronized.
 - Preview, sample and drag-ghost views do not activate the event. The saved button must be displayed on a real widget surface. Draft flows are not executed through this event.
-- A newly saved activation binding can run while the widget is already visible if that activation has not published yet. After publication, editing a flow does not replay it until a later activation.
+- A newly saved activation binding can run while the widget is already visible if that activation has not published yet. The SDK binding list does not identify which widget owns a `$self` or dynamic target, so these are treated as potential matches for every visible widget; the host filters the published events. An occurrence may therefore have already been published even if no action ran on that widget. After publication, adding or editing a flow does not replay it until a later activation.
 - Initial values or cached data may appear briefly before the actions finish. This event refreshes data asynchronously; it does not block the first paint or replay changes that happened while hidden.
 - Shutdown releases the binding subscription and clears state. Idle widget records are bounded to 128 and expired on subsequent acquisition; no per-widget background timer is added.
 
