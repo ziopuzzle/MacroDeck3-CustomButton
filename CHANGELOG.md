@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.48.6 — large rotation values
+
+- Normalize rendered transform angles after interpolation to keep continuously rotating elements responsive on clients when using large values such as Unix timestamps. Multi-turn animations and rotation direction are preserved.
+- Normalize large SVG rotation and skew transforms before rasterization, and large arc rotation angles in supported absolute paths, to avoid the same precision loss.
+
 ## 0.48.5 — relative event targets
 
 - Use Macro Deck 3.0's native `$self` matching for new Custom Button events and copied self-targets, so those targets follow duplicated widgets. Preserve explicit targets and existing saved events; source-ID repair remains available for legacy copies.

@@ -40,6 +40,32 @@ public class SvgTests
         }
     }
 
+    [Test] public async Task LargeRotationInSvgMatchesTheEquivalentSmallAngle()
+    {
+        static async Task<SKBitmap> Render(string angle)
+        {
+            var xml = $"<svg width='100' height='100'><rect x='45' y='5' width='10' height='40' fill='#ffffff' transform='rotate({angle} 50 50)'/></svg>";
+            var image = await SvgRasterizer.RenderAsync(SvgTemplate.Source(xml, s => s, 128), 2 * 1024 * 1024, default);
+            return SKBitmap.Decode(image.Bytes);
+        }
+        using var large = await Render("10762153800");
+        using var small = await Render("240");
+        Assert.That(large.Pixels, Is.EqualTo(small.Pixels));
+    }
+
+    [Test] public void LargeSvgAnglesAreNormalizedAfterVariableExpansion()
+    {
+        const string svg = "<svg><g transform='translate(4 5) rotate({{angle}}, 1, 2) skewX(-10762153800) skewY(3.6e2)'/><linearGradient gradientTransform='rotate(10762153800)'/><path d='M0 0 A.2 .3 10762153800 0 1 1 1'/><path d='m0 0 a.2 .3 10762153800 0 1 1 1'/></svg>";
+        var source = SvgTemplate.Source(svg, s => LayoutRenderer.Expand(s, DataHub.ParseValues("{\"angle\":10762153800}")), 128);
+        var xml = XDocument.Parse(source[(source.IndexOf('\n') + 1)..]);
+        Assert.That(xml.Descendants().Single(n => n.Name.LocalName == "g").Attribute("transform")!.Value,
+            Is.EqualTo("translate(4 5) rotate(240, 1, 2) skewX(-240) skewY(0)"));
+        Assert.That(xml.Descendants().Single(n => n.Name.LocalName == "linearGradient").Attribute("gradientTransform")!.Value, Is.EqualTo("rotate(240)"));
+        var paths = xml.Descendants().Where(n => n.Name.LocalName == "path").Select(n => n.Attribute("d")!.Value).ToArray();
+        Assert.That(paths[0], Is.EqualTo("M0 0 A.2 .3 240 0 1 1 1"));
+        Assert.That(paths[1], Is.EqualTo("m0 0 a.2 .3 240 0 1 1 1"));
+    }
+
     [Test] public async Task SvgResourcesAreReplacedOnlyWhenValuesChange()
     {
         var context = new FakeIntegrationContext(); using var http = new HttpClient();

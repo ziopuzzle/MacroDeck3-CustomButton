@@ -66,7 +66,7 @@ Sector and polygon coordinates cover their own box (0–1 horizontally and verti
 
 ## Path data
 
-`data` accepts absolute `M L H V C Q A Z` commands, SVG numbers and implicit repetition. Coordinates use 0–1 across the path box, not `%` suffixes. Relative/lowercase commands and complete SVG documents are not supported. Invalid commands, argument counts and arc flags are reported before sending to the host. Limit: 4096 expanded path characters.
+`data` accepts absolute `M L H V C Q A Z` commands, SVG numbers and implicit repetition. Coordinates use 0–1 across the path box, not `%` suffixes. Relative/lowercase commands and complete SVG documents are not supported. Invalid commands, argument counts and arc flags are reported before sending to the host. Arc rotation angles are normalized before drawing to avoid precision loss with large values. Limit: 4096 expanded path characters.
 
 ```xml
 <path id="curve" x="10%" y="50%" width="80%" height="30%" data="M0 1 C0.2 0 0.8 0 1 1" color="transparent" strokeColor="#54dfcc" strokeWidth="3%" />

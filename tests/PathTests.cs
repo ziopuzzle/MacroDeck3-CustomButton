@@ -22,6 +22,30 @@ public class PathTests
     public void SectorUsesExactSvgArcs(double sweep, string expected) => Assert.That(ShapePaths.Sector(.5, .5, .4, 0, sweep), Is.EqualTo(expected));
     [TestCase("M0 0 C0 1 1 0 1 1 Q0.5 1 0 0 Z")][TestCase("M0,0 H1 V.5 L1e-1 0 Z")]
     public void SupportedAbsolutePathsAreAccepted(string path) => Assert.That(ShapePaths.Validate(path), Is.EqualTo(path));
+    [Test] public void LargeArcRotationsAreNormalizedWithoutChangingOtherNumbersOrCommands()
+    {
+        const string path = "M0,0 A.2 .3 10762153800 0 1 1 1 .2 .3 -10762153800 1 0 0 0 L1e2 0";
+        Assert.That(ShapePaths.Validate(path), Is.EqualTo("M0,0 A.2 .3 240 0 1 1 1 .2 .3 -240 1 0 0 0 L1e2 0"));
+        Assert.That(LocalShapePath.Build("path", 0, 0, 1, 1, 0, path), Does.Contain("A0.2 0.3 240 0 1"));
+    }
+    [TestCase("m0 0 c0 0 1 1 1 1 s1 1 1 1 a1 2 10762153800 0 1 2 3z", "m0 0 c0 0 1 1 1 1 s1 1 1 1 a1 2 240 0 1 2 3z")]
+    [TestCase("M0 0 A1 2 10762153800 011 3", "M0 0 A1 2 10762153800 011 3")]
+    [TestCase("M0 0 A1 2 10762153800 0 1 2", "M0 0 A1 2 10762153800 0 1 2")]
+    public void SvgArcNormalizationSafelyHandlesRelativeAndAmbiguousPaths(string input, string expected)
+        => Assert.That(ShapePaths.NormalizeSvgArcRotations(input), Is.EqualTo(expected));
+    [TestCase("widget")]
+    [TestCase("local")]
+    public void BoundArcAnglesKeepChangingAtUnixTimestampScale(string coordinates)
+    {
+        var renderer = new LayoutRenderer($"<path id='p' coordinates='{coordinates}' width='50%' height='50%' data='M0 0 A.2 .3 {{{{=t * 6}}}} 0 1 1 1'/>");
+        string Render(long t)
+        {
+            var tree = new MacroDeck.Ui.Runtime.UiView(ButtonTests.Surface(), renderer.Render(DataHub.ParseValues($"{{\"t\":{t}}}"))).Tree.Root;
+            return ButtonTests.Nodes(tree).Single(n => n.Type == "ui.shape").Properties["path"].GetString()!;
+        }
+        Assert.That(Render(1793692300), Does.Contain(" 240 0 1"));
+        Assert.That(Render(1793692301), Does.Contain(" 246 0 1"));
+    }
     [TestCase("m0 0 l1 1")][TestCase("M0 0 L1")][TestCase("M0 0 A1 1 0 2 0 1 1")][TestCase("M1e999 0")][TestCase("<svg/>")]
     public void InvalidPathsAreExplainedBeforeSendingToHost(string path) => Assert.Throws<FormatException>(() => ShapePaths.Validate(path));
     [TestCase("1%,2%;3%,4%")][TestCase("0%,0%;200%,50%;50%,50%")]

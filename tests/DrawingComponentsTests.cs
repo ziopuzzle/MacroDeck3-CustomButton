@@ -56,6 +56,22 @@ public class DrawingComponentsTests
         Assert.That(Find(session, "group").Properties["rotation"].GetDouble(), Is.EqualTo(90));
     }
 
+    [TestCase("bar", "end")]
+    [TestCase("gauge", "level")]
+    [TestCase("slider", "level")]
+    [TestCase("dial", "level")]
+    public void LargeInputValuesAreNormalizedBeforeTheyReachTheClient(string element, string property)
+    {
+        var renderer = new LayoutRenderer($"<{element} id='control' min='1793692300' max='1793692320' value='{{{{t}}}}'/>");
+        double Render(long t)
+        {
+            var root = new MacroDeck.Ui.Runtime.UiView(ButtonTests.Surface(), renderer.Render(DataHub.ParseValues($"{{\"t\":{t}}}"))).Tree.Root;
+            return ButtonTests.Nodes(root).Single(n => n.Properties.ContainsKey(property)).Properties[property].GetDouble();
+        }
+        Assert.That(Render(1793692305), Is.EqualTo(.25).Within(1e-12));
+        Assert.That(Render(1793692306), Is.EqualTo(.30).Within(1e-12));
+    }
+
     [TestCase("<gauge id='g' min='50' max='50'/>", "max")]
     [TestCase("<icon id='i' name='not-an-icon'/>", "name")]
     [TestCase("<transform id='t' zoom='-1'/>", "zoom")]

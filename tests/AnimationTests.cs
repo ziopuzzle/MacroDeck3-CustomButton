@@ -25,6 +25,31 @@ public class AnimationTests
         public override long TimestampFrequency => 1000;
         public override long GetTimestamp() => Milliseconds;
     }
+    [TestCase(1)]
+    [TestCase(-1)]
+    public void TransformNormalizesLargeAnglesAfterAnimatingWithoutLosingTurns(int direction)
+    {
+        var clock = new Clock(); var animation = new DisplayAnimation(clock);
+        var renderer = new LayoutRenderer("<transform id='spin' rotation='{{=t * 6}}' transitionMs='1000' transitionProperties='rotation' easing='linear'><rect id='bar'/></transform>");
+        const long timestamp = 1793692300;
+        double Render(long t)
+        {
+            animation.BeginFrame();
+            var root = new UiView(ButtonTests.Surface(), renderer.Render(DataHub.ParseValues($"{{\"t\":{t}}}"), animation: animation)).Tree.Root;
+            animation.EndFrame();
+            return ButtonTests.Nodes(root).Single(n => n.Type == "ui.transform").Properties["rotation"].GetDouble();
+        }
+        var start = direction * timestamp;
+        Assert.That(Render(start), Is.EqualTo((start * 6) % 360));
+        Render(start + direction * 60); // A full turn must remain animated, not collapse to zero.
+        clock.Milliseconds = 500;
+        Assert.That(Render(start + direction * 60), Is.EqualTo((start * 6 + direction * 180) % 360));
+        clock.Milliseconds = 1000;
+        Assert.That(Render(start + direction * 60), Is.EqualTo((start * 6 + direction * 360) % 360));
+        Render(start + direction * 61);
+        clock.Milliseconds = 1500;
+        Assert.That(Render(start + direction * 61), Is.EqualTo((start * 6 + direction * 363) % 360));
+    }
     [TestCase("linear", .25)][TestCase("ease-in", .0625)]
     [TestCase("ease-out", .4375)][TestCase("ease-in-out", .15625)]
     public void EasingUsesElapsedTime(string easing, double expected)

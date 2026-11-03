@@ -6,6 +6,7 @@ namespace Ziopuzzle.CustomButton;
 /// <summary>Normalized absolute SVG paths accepted by the public ui.shape component.</summary>
 public static class ShapePaths
 {
+    private static readonly Regex SvgPathToken = new(@"\G[\s,]*(?:(?<number>[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)|(?<command>[MmLlHhVvCcSsQqTtAaZz]))", RegexOptions.CultureInvariant);
     private static string F(double value) => value.ToString("0.########", CultureInfo.InvariantCulture);
     public static string Polygon(string text) => "M" + string.Join(" L", ParsePoints(text).Select(p => F(p.X) + " " + F(p.Y))) + " Z";
     public static (double X, double Y)[] ParsePoints(string text)
@@ -62,6 +63,48 @@ public static class ShapePaths
             if (command == 'A') for (int i = 0; i < numbers.Count; i += 7)
                 if (numbers[i] < 0 || numbers[i + 1] < 0 || numbers[i + 3] is not (0 or 1) || numbers[i + 4] is not (0 or 1)) Invalid();
         }
-        return path;
+        return NormalizeSvgArcRotations(path);
+    }
+
+    // Only rewrite paths whose entire command stream can be safely tokenized.
+    // Compact, unseparated arc flags and unsupported syntax are left untouched.
+    public static string NormalizeSvgArcRotations(string path)
+    {
+        if (!path.Contains('A') && !path.Contains('a')) return path;
+        var changes = new List<(int Start, int Length, string Value)>();
+        char command = '\0'; var count = 0; var arity = 0; var position = 0;
+        bool Complete() => command != '\0' && (arity == 0 ? count == 0 : count > 0 && count % arity == 0);
+        while (position < path.Length)
+        {
+            var match = SvgPathToken.Match(path, position);
+            if (!match.Success || match.Length == 0)
+            {
+                if (string.IsNullOrWhiteSpace(path[position..])) break;
+                return path;
+            }
+            position += match.Length;
+            if (match.Groups["command"] is { Success: true } cmd)
+            {
+                if (command == '\0' ? cmd.Value is not ("M" or "m") : !Complete()) return path;
+                command = cmd.Value[0]; count = 0;
+                arity = char.ToUpperInvariant(command) switch { 'M' or 'L' or 'T' => 2, 'H' or 'V' => 1, 'C' => 6, 'S' or 'Q' => 4, 'A' => 7, 'Z' => 0, _ => 0 };
+                continue;
+            }
+            if (command == '\0' || arity == 0) return path;
+            var number = match.Groups["number"];
+            if (!double.TryParse(number.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) || !double.IsFinite(value)) return path;
+            if (char.ToUpperInvariant(command) == 'A')
+            {
+                var i = count % 7;
+                if ((i is 0 or 1) && value < 0 || (i is 3 or 4) && number.Value is not ("0" or "1")) return path;
+                if (i == 2 && Math.Abs(value) >= 360)
+                    changes.Add((number.Index, number.Length, (value % 360).ToString("R", CultureInfo.InvariantCulture)));
+            }
+            count++;
+        }
+        if (!Complete() || changes.Count == 0) return path;
+        var result = new System.Text.StringBuilder(path);
+        foreach (var change in changes.AsEnumerable().Reverse()) result.Remove(change.Start, change.Length).Insert(change.Start, change.Value);
+        return result.ToString();
     }
 }

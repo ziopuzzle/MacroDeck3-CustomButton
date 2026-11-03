@@ -39,3 +39,7 @@ Stylesheets and `style` attributes, scripts, event handlers, DTDs, external refe
 Fonts are resolved on the plugin machine, not from the Macro Deck font catalogue or the client. Results can vary across operating systems. Use paths for lettering that must look identical everywhere. Rasterization uses Svg.Skia 2.0.0 with SkiaSharp 2.88.9, aligned with the native editor's Skia libraries; dependency notices are included in packages.
 
 This component accepts inline SVG markup. The existing image file/URL loader still accepts raster images only. Icon Pack images imported from SVG continue to use `image` with `icon-pack:UUID`.
+
+## Large angles
+
+SVG `rotate`, `skewX` and `skewY` transforms, including gradient transforms, are normalized before rasterization so large values retain their visible angle. Arc rotations in tokenizable SVG paths are also normalized. For compact path syntax with unseparated arc flags, use a bounded angle such as `{{=angle % 360}}` yourself; the original path is retained when it cannot be safely tokenized.

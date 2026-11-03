@@ -376,7 +376,9 @@ public sealed partial class LayoutRenderer
                         Role = Choice("role", "primary"), Color = attributes.ContainsKey("color") ? UiValue.Of(Color("color", "#ffffff")) : default };
                 case "transform":
                     return new UiTransform { Key = key, Fill = fill, MainSize = mainSize, Children = children,
-                        Rotation = N("rotation", 0, -1e12, 1e12), OriginX = N("originX", .5, -1e12, 1e12), OriginY = N("originY", .5, -1e12, 1e12),
+                        // Normalize only the rendered angle: the animation must retain the full
+                        // unwrapped target to preserve direction and multi-turn transitions.
+                        Rotation = N("rotation", 0, -1e12, 1e12) % 360, OriginX = N("originX", .5, -1e12, 1e12), OriginY = N("originY", .5, -1e12, 1e12),
                         Zoom = N("zoom", 1, 0.001, 1e12), OffsetX = N("offsetX", 0, -1e12, 1e12), OffsetY = N("offsetY", 0, -1e12, 1e12) };
                 case "icon":
                     var iconSize = Length("size", .2);

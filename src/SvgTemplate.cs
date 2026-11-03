@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Ziopuzzle.CustomButton;
 
@@ -19,13 +21,28 @@ public static class SvgTemplate
         foreach (var node in root.DescendantsAndSelf())
         {
             foreach (var attribute in node.Attributes().Where(a => !a.IsNamespaceDeclaration).ToArray())
-                attribute.Value = expand(attribute.Value);
+            {
+                var value = expand(attribute.Value);
+                if (attribute.Name.LocalName is "transform" or "gradientTransform") value = NormalizeTransforms(value);
+                if (attribute.Name.LocalName == "d") value = ShapePaths.NormalizeSvgArcRotations(value);
+                attribute.Value = value;
+            }
             foreach (var text in node.Nodes().OfType<XText>().ToArray()) text.Value = expand(text.Value);
         }
         var xml = root.ToString(SaveOptions.DisableFormatting);
         _ = Parse(xml); // Validate values after expansion, including local-only paint references.
         return Prefix + pixels.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\n" + xml;
     }
+    private static string NormalizeTransforms(string value) => Regex.Replace(value,
+        @"(?<![A-Za-z0-9_-])(?:rotate|skewX|skewY)\s*\(\s*(?<angle>[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)(?=[\s,)])",
+        match =>
+        {
+            var part = match.Groups["angle"];
+            if (!double.TryParse(part.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var angle)
+                || !double.IsFinite(angle) || Math.Abs(angle) < 360) return match.Value;
+            var offset = part.Index - match.Index;
+            return match.Value[..offset] + (angle % 360).ToString("R", CultureInfo.InvariantCulture) + match.Value[(offset + part.Length)..];
+        });
     public static XElement Parse(string xml)
     {
         if (xml.Length > MaxCharacters) throw new FormatException("SVG must not exceed 32,768 characters.");
