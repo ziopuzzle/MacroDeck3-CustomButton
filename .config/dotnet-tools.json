@@ -3,7 +3,7 @@
   "isRoot": true,
   "tools": {
     "macrodeck.plugin.cli": {
-      "version": "3.0.0",
+      "version": "3.0.1",
       "commands": [
         "macrodeck-plugin"
       ],

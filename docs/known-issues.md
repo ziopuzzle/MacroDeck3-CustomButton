@@ -1,6 +1,6 @@
 # Known issues and limitations
 
-Reviewed: 2026-11-02 against the current implementation and SDK 3.0.0. This is a source review, not a new full device test.
+Reviewed: 2026-11-02 against SDK 3.0.0; the relevant SDK and UI source files were unchanged in 3.0.1. This is a source review, not a new full device test.
 
 ## Copying event targets
 
@@ -21,7 +21,7 @@ Installed icons must still be installed, and the selected music player and artwo
 
 ## Scrolling to a repeated item
 
-Checked against the host source tag `v3.0.0` and the plugin's 3.0.0 SDK reference. Scroll cannot currently be directed to an XML element ID or Repeat item key. The host's `UiList` exposes direction and start/end anchoring, but no target item, offset or alignment request. Its `reveal` event reports which child became visible; it does not move the viewport. UI patch operations and the public UI interaction API offer no scroll command either.
+Checked against the host source tag `v3.0.0`; the relevant SDK and UI source files were unchanged in `v3.0.1`. Scroll cannot currently be directed to an XML element ID or Repeat item key. The host's `UiList` exposes direction and start/end anchoring, but no target item, offset or alignment request. Its `reveal` event reports which child became visible; it does not move the viewport. UI patch operations and the public UI interaction API offer no scroll command either.
 
 Since 0.48.1, Custom Button exposes optional vertical `anchor="start|end"`. End-following alone cannot target an arbitrary playing track. The separate [scroll anchor experiment](../experiments/scroll-anchor/README.md) stages row creation, follows the end, disables following, then restores remaining rows. This workaround needs client verification and is sensitive to timing and layout; it is not a guaranteed arbitrary-scroll API. Replacing the list can discard the user's position.
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.48.7 — Macro Deck SDK 3.0.1
+
+- Update the Macro Deck SDK, UI, hosting, analyzers, testing helpers and local/release CLI to 3.0.1.
+
 ## 0.48.6 — large rotation values
 
 - Normalize rendered transform angles after interpolation to keep continuously rotating elements responsive on clients when using large values such as Unix timestamps. Multi-turn animations and rotation direction are preserved.
