@@ -1,7 +1,4 @@
 using MacroDeck.Sdk.Ui;
-using MacroDeck.Ui.Config;
-using MacroDeck.Ui.Config.Options;
-using MacroDeck.Ui.Dsl;
 using MacroDeck.Ui.Model.Events;
 using MacroDeck.Ui.Model.Nodes;
 using MacroDeck.Ui.Model.Patches;
@@ -11,274 +8,35 @@ using System.Text.Json;
 
 namespace Ziopuzzle.CustomButton;
 
-public sealed class ConfigurationSession : IUiSession
+public sealed partial class ConfigurationSession : IUiSession
 {
     private readonly UiView view;
     private readonly NativeEditorSession nativeEditor = new();
     private bool disposed;
     private bool echoFlows;
     private int revisionOffset;
-    private readonly Func<JsonElement> currentFlows;
     private readonly bool publishInitialCorrection;
     private Timer? initialCorrectionTimer;
     private int initialCorrectionStarted, initialCorrectionReady;
     public ConfigurationSession(UiSurface surface, ButtonSettings settings, DisplayDiagnostics? diagnostics = null, DataHub? hub = null)
     {
-        var channel = new UiState<string>(settings.Channel);
-        var layout = new UiState<string>(settings.Layout);
-        var values = new UiState<string>(settings.InitialValues);
-        var wholeButtonInteraction = new UiState<bool>(settings.WholeButtonInteraction);
-        var widgetId = surface.Attributes.TryGetValue("widgetId", out var owner) && owner.ValueKind == JsonValueKind.String ? owner.GetString() : null;
+        this.diagnostics = diagnostics;
+        this.hub = hub;
+        channel = new(settings.Channel);
+        layout = new(settings.Layout);
+        values = new(settings.InitialValues);
+        wholeButtonInteraction = new(settings.WholeButtonInteraction);
+        widgetId = surface.Attributes.TryGetValue("widgetId", out var owner) && owner.ValueKind == JsonValueKind.String ? owner.GetString() : null;
+        configurationWidgetId = widgetId ?? settings.ConfigurationWidgetId;
         if (!string.IsNullOrWhiteSpace(widgetId) && (settings.Channel.Length == 0
             || settings.Channel == settings.ConfigurationWidgetId)) channel.Value = widgetId;
-        var draftHasError = new UiState<bool>(false);
-        var diagnosticErrors = new UiState<IReadOnlyList<string>>([]);
-        var dataRows = new UiState<IReadOnlyList<KeyValuePair<string, string>>>([]);
-        string ReadDiagnostics()
-        {
-            var report = $"Custom Button diagnostics\nWidget: {widgetId ?? "unsaved"}\nChannel: {channel.Value}\nChecked: {DateTimeOffset.UtcNow:O}\n\n";
-            draftHasError.Value = false;
-            dataRows.Value = [];
-            string? draftError = null;
-            try
-            {
-                DataHub.ValidateName(channel.Value);
-                var data = DataHub.ParseValues(values.Value);
-                var snapshot = hub?.Snapshot(channel.Value) ?? DataSnapshot.Empty;
-                foreach (var pair in snapshot.Values) data[pair.Key] = pair.Value;
-                dataRows.Value = data.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p =>
-                {
-                    var raw = p.Value.GetRawText();
-                    var origin = snapshot.Values.ContainsKey(p.Key) ? "live" : "initial";
-                    return new KeyValuePair<string, string>(p.Key, $"{p.Key} [{DisplayData.TypeOf(p.Value)}, {origin}] = " + (raw.Length > 500 ? raw[..500] + "…" : raw));
-                }).ToArray();
-                _ = new LayoutRenderer(layout.Value).Render(data, snapshot.ReadHistory);
-                report += "Current draft: XML and data rendering check passed. Image downloads and host rendering are not checked here.";
-            }
-            catch (Exception e) when (e is FormatException or System.Xml.XmlException or JsonException or ArgumentException)
-            { draftHasError.Value = true; draftError = e.Message; report += "Current draft: rendering check failed."; }
-            var snapshotReport = (diagnostics ?? new DisplayDiagnostics()).ReadSnapshot(widgetId, draftError);
-            diagnosticErrors.Value = snapshotReport.Errors;
-            var observed = snapshotReport.Report;
-            return report + "\n\n" + (string.IsNullOrEmpty(observed) ? "No runtime rendering errors recorded for this widget in this plugin process." : observed)
-                + "\n\nOlder preview errors are cleared when this widget's preview renders successfully. Other closed-session errors remain as last-observed reports. Action execution logs remain available in Macro Deck.";
-        }
-        var errorReport = new UiState<string>(ReadDiagnostics());
-        var flows = new UiState<JsonElement>(settings.Flows);
-        currentFlows = () => flows.Value;
-        var orderTarget = new UiState<string>("");
-        var flowMessage = new UiState<string>("");
-        string? copiedWidgetMessage = null;
-        var migratedTargets = false;
-        // Normalize action flows, retaining the host's self-target sentinel.
-        try
-        {
-            flows.Value = ButtonEvents.Normalize(flows.Value, widgetId);
-            flows.Value = ActionEditorDefaults.ChangeChannel(flows.Value, settings.Channel, channel.Value);
-            if (!string.IsNullOrWhiteSpace(widgetId) && !string.IsNullOrWhiteSpace(settings.ConfigurationWidgetId)
-                && settings.ConfigurationWidgetId != widgetId)
-            {
-                var beforeRetarget = flows.Value.GetRawText();
-                flows.Value = ActionEditorDefaults.RetargetEvents(flows.Value, widgetId, settings.ConfigurationWidgetId);
-                var targetsChanged = flows.Value.GetRawText() != beforeRetarget;
-                if (targetsChanged && channel.Value != settings.Channel)
-                    copiedWidgetMessage = "Copied/imported widget detected. Event targets, the automatic channel and matching display-data actions have been updated. Save to apply.";
-                else if (targetsChanged)
-                    copiedWidgetMessage = "Copied/imported widget detected. Event targets matching the source widget have been updated. Save to apply.";
-                else if (channel.Value != settings.Channel)
-                    copiedWidgetMessage = "Copied/imported widget detected. The automatic channel and matching display-data actions have been updated. Save to apply.";
-            }
-            (flows.Value, migratedTargets) = ButtonEvents.MigrateOwnTargets(flows.Value, widgetId);
-            if (migratedTargets && copiedWidgetMessage == null)
-                copiedWidgetMessage = "Event targets referring to this widget have been updated to This widget. Save to apply.";
-        }
-        catch (FormatException e) { flowMessage.Value = e.Message; }
-        publishInitialCorrection = !string.IsNullOrWhiteSpace(widgetId) && (settings.ConfigurationWidgetId != widgetId || settings.Channel != channel.Value || migratedTargets);
-        var mode = new UiState<string>(settings.Design?.Preset ?? "xml");
-        var editorStatus = new UiState<string>("Build the layout in a separate editor window. The preview remains on this screen.");
-        var inputTarget = new UiState<string>("");
-        void AddEvent(Func<JsonElement> create)
-        {
-            try
-            {
-                var next = create();
-                flowMessage.Value = next.GetArrayLength() == flows.Value.GetArrayLength() ? "An event with these conditions already exists." : "Event added. Configure its actions and save.";
-                flows.Value = next;
-            }
-            catch (FormatException e) { flowMessage.Value = e.Message; }
-        }
-        LayoutDocument? lastValidLayout = null;
+        errorReport = new(ReadDiagnostics());
+        flows = new(settings.Flows);
+        publishInitialCorrection = InitializeFlows(settings);
+        mode = new(settings.Design?.Preset ?? "xml");
         try { lastValidLayout = new LayoutDocument(layout.Value); }
         catch (Exception e) when (e is FormatException or System.Xml.XmlException or ArgumentException) { }
-        void SetXml(string xml)
-        {
-            try
-            {
-                var next = new LayoutDocument(xml);
-                if (lastValidLayout != null)
-                {
-                    var renames = ElementEventReferences.Renames(lastValidLayout, next);
-                    flows.Value = ElementEventReferences.Retarget(flows.Value, widgetId, renames);
-                    if (renames.TryGetValue(inputTarget.Value, out var renamedTarget)) inputTarget.Value = renamedTarget;
-                }
-                lastValidLayout = next;
-            }
-            catch (Exception e) when (e is FormatException or System.Xml.XmlException or ArgumentException) { }
-            layout.Value = xml; mode.Value = "xml";
-            if (inputTarget.Value != "$other" && !ButtonEvents.InputTargets(xml).Any(t => t.Id == inputTarget.Value)) inputTarget.Value = "";
-        }
-        void OpenEditor()
-        {
-            try { _ = new LayoutDocument(layout.Value); nativeEditor.Open(layout.Value, values.Value, () => layout.Value, SetXml, text => editorStatus.Value = text); }
-            catch (Exception e) when (e is FormatException or System.Xml.XmlException or IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception or InvalidOperationException)
-            { editorStatus.Value = "Cannot open editor: " + e.Message; }
-        }
-        view = new(surface, new UiWidgetConfiguration
-        {
-            Key = "root",
-            Properties = new UiWidgetProperties
-            {
-                Key = "properties", Children =
-                [
-                    new UiStringInput { Key = "channel", Label = TextCatalog.Reference("Channel"), Description = "Changing this also updates matching channels in this widget's display-data actions. Buttons on the same channel share data.", LiteralOnly = true,
-                        Binding = Bind.Custom(() => channel.Value, value =>
-                        {
-                            flows.Value = ActionEditorDefaults.ChangeChannel(flows.Value, channel.Value, value);
-                            channel.Value = value;
-                        }) },
-                    // Persist provenance through the normal configuration transaction, not a runtime write.
-                    new UiStringInput { Key = "configurationWidgetId", LiteralOnly = true,
-                        Binding = Bind.Custom(() => widgetId ?? settings.ConfigurationWidgetId, _ => { }),
-                        VisibleWhen = new UiVisibleWhen { ParameterName = "channel", Values = [], SiblingValue = () => channel.Value } },
-                    new UiBooleanInput { Key = "wholeButtonInteraction", Label = "Whole button interaction", Description = "Disable whole-button gestures and their press effect. Interactive elements and sliders remain available.", Binding = Bind.To(wholeButtonInteraction) },
-                    new UiJsonInput { Key = "initialValues", Label = "Initial data JSON",
-                        Description = "Defaults for top-level data names missing from the Channel. Removing a Channel value makes its default apply again. These defaults do not initialize live Channel data.",
-                        LiteralOnly = true, Binding = Bind.To(values) },
-                    new UiProse { Key = "hint", Text = TextCatalog.Reference("Use matching data names in your update actions and display layout.") }
-                ]
-            },
-            Editor = new UiWidgetEditor
-            {
-                Key = "editor", Children =
-                [
-                    new UiTabs { Key = "configurationTabs", Children =
-                    [
-                    new UiTab { Key = "actionsTab", Label = TextCatalog.Reference("Actions"), Children =
-                    [
-                        ..(copiedWidgetMessage == null ? Array.Empty<UiElement>() : new UiElement[]
-                        {
-                            new UiBanner { Key = "copiedWidgetNotice", Text = copiedWidgetMessage, Severity = "error" }
-                        }),
-                        new UiConfigButton { Key = "retargetEvents", Label = "Target this widget in all events", Events = [UiEventHandler.On(UiConfigEvents.Activate, () =>
-                        {
-                            try
-                            {
-                                flows.Value = ActionEditorDefaults.RetargetEvents(flows.Value, widgetId);
-                                flowMessage.Value = "All event widget targets now refer to this widget. Save to apply.";
-                            }
-                            catch (FormatException e) { flowMessage.Value = e.Message; }
-                        })] },
-                        new UiProse { Key = "flowHelp", Text = TextCatalog.Reference("Configure actions for each event and save before testing. This widget targets follow copies; check explicit widget targets after duplicating.") },
-                        new UiProse { Key = "controlHelp", Text = TextCatalog.Reference("Select a target, then choose + Add event. Modal opened, Display activated, Display update and Variable changed are under Other (updates and variables). Use Display activated to read current values when the saved button becomes visible. Select the watched variable after adding Variable changed.") },
-                        new UiConfigStack { Key = "eventShortcuts", Direction = "horizontal", Wrap = true, Children =
-                        [
-                            new UiChoiceInput { Key = "inputTarget", Searchable = true, Label = TextCatalog.Reference("Input target"), HideLabel = true, Transient = true, LiteralOnly = true,
-                                Options = UiValue.From<IReadOnlyList<UiOption>>(() => new[] { new UiOption { Value = "", Label = TextCatalog.Reference("Whole button") } }
-                                    .Concat(ButtonEvents.InputTargets(layout.Value).Select(t => new UiOption { Value = t.Id, Label = t.Id + " (" + t.Kind + ")" }))
-                                    .Append(new UiOption { Value = "$other", Label = TextCatalog.Reference("Other (updates and variables)") }).ToArray()),
-                                Binding = Bind.To(inputTarget) },
-                            new UiChoiceInput { Key = "addInputEvent", Label = TextCatalog.Reference("Add event"), HideLabel = true, Transient = true, LiteralOnly = true,
-                                Options = UiValue.From<IReadOnlyList<UiOption>>(() => new[] { new UiOption { Value = "", Label = TextCatalog.Reference("+ Add event") } }
-                                    .Concat(inputTarget.Value == "$other"
-                                        ? new[] { new UiOption { Value = ButtonEvents.Activated, Label = TextCatalog.Reference("Display activated") }, new UiOption { Value = ButtonEvents.ModalOpened, Label = TextCatalog.Reference("Modal opened") }, new UiOption { Value = ButtonEvents.ModalClosed, Label = TextCatalog.Reference("Modal closed") }, new UiOption { Value = ButtonEvents.Tick, Label = TextCatalog.Reference("Display update (1 second)") }, new UiOption { Value = "variable-changed", Label = TextCatalog.Reference("Variable changed") } }
-                                        : ButtonEvents.InputEvents(layout.Value, inputTarget.Value).Select(d => new UiOption { Value = d.Id, Label = d.Name })).ToArray()),
-                                Binding = Bind.Custom(() => "", id =>
-                                {
-                                    if (id.Length == 0) return;
-                                    if (inputTarget.Value == "$other")
-                                    {
-                                        if (id == ButtonEvents.Tick) AddEvent(() => ButtonEvents.AddDisplayTick(flows.Value, widgetId));
-                                        else if (id is ButtonEvents.Activated or ButtonEvents.ModalOpened or ButtonEvents.ModalClosed) AddEvent(() => ButtonEvents.AddElementEvent(flows.Value, widgetId, id, null, ""));
-                                        else if (id == "variable-changed") AddEvent(() => ButtonEvents.AddVariableChanged(flows.Value, widgetId));
-                                    }
-                                    else AddEvent(() => ButtonEvents.AddElementEvent(flows.Value, widgetId, id, inputTarget.Value, layout.Value));
-                                }) }
-                        ] },
-                        new UiProse { Key = "flowMessage", Text = UiText.Optional(() => TextCatalog.Reference(flowMessage.Value)) },
-                        new UiProse { Key = "elementTargets", Text = UiText.Optional(() => ButtonEvents.ElementTargetHelp(flows.Value, layout.Value, widgetId)) },
-                        new UiConfigStack { Key = "eventOrder", Direction = "vertical", Children =
-                        [
-                            new UiChoiceInput { Key = "eventOrderTarget", Searchable = true, Label = "Event order", Transient = true, LiteralOnly = true,
-                                Options = UiValue.From<IReadOnlyList<UiOption>>(() => new[] { new UiOption { Value = "", Label = "Choose an event to reorder" } }
-                                    .Concat(flows.Value.EnumerateArray().Select((flow, index) => new UiOption {
-                                        Value = flow.TryGetProperty("triggerId", out var id) ? id.GetString() ?? "" : "",
-                                        Label = ButtonEvents.FlowLabel(flow, index) })).ToArray()), Binding = Bind.To(orderTarget) },
-                            new UiConfigStack { Key = "eventOrderButtons", Direction = "horizontal", Wrap = true, Children =
-                            [
-                                new UiConfigButton { Key = "moveEventUp", Label = "Move up", Events = [UiEventHandler.On(UiConfigEvents.Activate, () => flows.Value = ButtonEvents.MoveFlow(flows.Value, orderTarget.Value, -1))] },
-                                new UiConfigButton { Key = "moveEventDown", Label = "Move down", Events = [UiEventHandler.On(UiConfigEvents.Activate, () => flows.Value = ButtonEvents.MoveFlow(flows.Value, orderTarget.Value, 1))] }
-                            ] }
-                        ] },
-                        new UiActionsListEditor { Key = "flows", CanRun = true, LiteralOnly = true,
-                            Binding = Bind.Custom(() => flows.Value, value =>
-                            {
-                                try
-                                {
-                                    var normalized = ActionEditorDefaults.ApplyChannel(flows.Value, ButtonEvents.Normalize(value, widgetId), channel.Value, widgetId);
-                                    // The editor updates optimistically. Even if our canonical value
-                                    // is unchanged, it must receive the corrected value again.
-                                    echoFlows |= normalized.GetRawText() != value.GetRawText();
-                                    flows.Value = normalized; flowMessage.Value = "";
-                                }
-                                catch (Exception e) when (e is FormatException or JsonException or InvalidOperationException) { flowMessage.Value = e.Message; }
-                            }) }
-                    ] },
-                    new UiTab { Key = "drawingTab", Label = TextCatalog.Reference("Drawing"), Children =
-                    [
-                    // Keep the legacy discriminator in submitted drafts without a visible selector.
-                    new UiStringInput { Key = "designPreset", LiteralOnly = true, Binding = Bind.To(mode),
-                        VisibleWhen = new UiVisibleWhen { ParameterName = "channel", Values = [], SiblingValue = () => channel.Value } },
-                    new UiConfigStack { Key = "templateToolbar", Direction = "vertical", Children =
-                    [
-                        new UiProse { Key = "layoutHeading", Text = TextCatalog.Reference("Drawing XML") },
-                        new UiConfigButton { Key = "openNativeEditor", Label = "Open editor",
-                            Events = [UiEventHandler.On(UiConfigEvents.Activate, OpenEditor)] },
-                        new UiChoiceInput { Key = "templatePicker", Searchable = true, Label = "Templates", HideLabel = true, Transient = true, LiteralOnly = true,
-                            Options = UiValue.Of<IReadOnlyList<UiOption>>(new[] { new UiOption { Value = "", Label = "Choose a template" } }
-                                .Concat(LayoutTemplates.All.Select(t => new UiOption { Value = t.Id, Label = $"[{t.Category}] {t.Name}" })).ToArray()),
-                            Binding = Bind.Custom(() => "", id => { if (LayoutTemplates.All.Any(t => t.Id == id)) { var selected = LayoutTemplates.Get(id); lastValidLayout = null; SetXml(selected.Xml); values.Value = selected.InitialValues; } }) }
-                    ] },
-                    new UiCodeInput { Key = "layout", Label = TextCatalog.Reference("Drawing XML"), HideLabel = true, Language = "xml", LiteralOnly = true, MaxLength = LayoutLimits.XmlCharacters, Binding = Bind.Custom(() => layout.Value, SetXml) },
-                        new UiProse { Key = "elementReferenceWarnings", Text = UiText.Optional(() => string.Join("\n",
-                            ButtonEvents.ElementTargetHelp(flows.Value, layout.Value, widgetId).Split('\n').Where(line => line.StartsWith("'", StringComparison.Ordinal)))) },
-                        new UiProse { Key = "nativeStatusText", Text = UiText.Optional(() => TextCatalog.Reference(editorStatus.Value)) },
-                        new UiProse { Key = "historyHelp", Text = TextCatalog.Reference("While displayed, the current value is sampled every second. To fetch new variable values, add a data update action to the display update event under Actions.") }
-                    ] },
-                    new UiTab { Key = "diagnosticsTab", Label = "Diagnostics", Children =
-                    [
-                        new UiProse { Key = "diagnosticsHelp", Text = "Refresh after reproducing an error or editing the layout. Use the copy button below to copy the report from this settings screen." },
-                        new UiConfigButton { Key = "refreshDiagnostics", Label = "Refresh diagnostics", Events = [UiEventHandler.On(UiConfigEvents.Activate, () => errorReport.Value = ReadDiagnostics())] },
-                        new UiProse { Key = "diagnosticsStatus",
-                            Severity = UiValue.From(() => draftHasError.Value ? "error" : "success"),
-                            Text = UiText.Optional(() => draftHasError.Value ? "Current draft: rendering check failed." : "Current draft: XML and data rendering check passed.") },
-                        new UiRepeat<string> {
-                            Key = "diagnosticErrors", Items = UiValue.From(() => diagnosticErrors.Value),
-                            KeySelector = message => "error" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(message))),
-                            Template = (message, key) => new UiProse { Key = key, Text = message }
-                        },
-                        new UiCopyValue { Key = "errorReport", Label = "Diagnostic report", Value = UiValue.From(() => errorReport.Value) },
-                        new UiHeading { Key = "displayDataHeading", Text = "Current display data" },
-                        new UiProse { Key = "displayDataHelp", Text = "Snapshot at the last refresh: live channel values override initial JSON. Missing keys are not listed. Values are truncated after 500 characters." },
-                        new UiRepeat<KeyValuePair<string, string>> {
-                            Key = "displayDataRows", Items = UiValue.From(() => dataRows.Value),
-                            KeySelector = row => "data" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(row.Key))),
-                            Template = (row, key) => new UiProse { Key = key, Text = row.Value }
-                        }
-                    ] }
-                    ] }
-                ]
-            }
-        });
+        view = new(surface, BuildConfiguration());
         view.Changed += OnChanged;
         view.HandlerFaulted += OnHandlerFaulted;
     }
@@ -310,7 +68,7 @@ public sealed class ConfigurationSession : IUiSession
         if (!echoFlows) return patches;
         echoFlows = false;
         var operation = new UiPatchOperation { Op = UiPatchOperations.SetProperties, NodeId = "flows",
-            Properties = new Dictionary<string, JsonElement> { ["value"] = currentFlows() } };
+            Properties = new Dictionary<string, JsonElement> { ["value"] = flows.Value } };
         var operations = new List<UiPatchOperation> { operation };
         if (initialCorrection)
         {
@@ -345,7 +103,3 @@ public sealed class ConfigurationSession : IUiSession
         await nativeEditor.DisposeAsync();
     }
 }
-
-
-
-

@@ -82,14 +82,47 @@ public class ModalConfigurationTests
         Assert.That(Node(session, "layout").Properties["value"].GetString(), Is.EqualTo(ShowModalAction.SampleLayout));
     }
 
+    [TestCase("The XML was changed elsewhere, so editor updates were stopped. Copy your work before reopening the editor.")]
+    [TestCase("Editor communication failed: Connection closed.")]
+    [TestCase("The editor exited with code 1. Check OS dependencies and the installed package.")]
+    public async Task PendingEditsKeepEditorErrorsVisibleAndRetainTheRecoveryCopy(string message)
+    {
+        var editor = new Editor();
+        await using var session = new ModalConfigurationSession(Request(), editor);
+        session.Dispatch(new() { NodeId = ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Id.EndsWith(".openModalEditor")).Id, Name = "activate" });
+        const string xml = "<text id='draft'>Recover me</text>";
+        editor.Apply!(xml);
+        editor.Status!(message);
+
+        Assert.That(ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Id.EndsWith(".editorStatus")).Properties["text"].GetString(), Is.EqualTo(message));
+        Assert.That(Node(session, "layout").Properties["options"][0].GetProperty("value").GetString(), Is.EqualTo(xml));
+        Assert.That(ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Id.EndsWith(".editedXml")).Properties["value"].GetString(), Is.EqualTo(xml));
+    }
+
+    [Test]
+    public async Task ReturningToOriginalXmlDoesNotRequestAnUnavailableApplyStep()
+    {
+        var editor = new Editor();
+        await using var session = new ModalConfigurationSession(Request(), editor);
+        session.Dispatch(new() { NodeId = ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Id.EndsWith(".openModalEditor")).Id, Name = "activate" });
+        editor.Apply!("<text id='draft'>Changed</text>");
+        editor.Apply!(ShowModalAction.SampleLayout);
+        editor.Status!("Editor changes applied to the draft. Save in Macro Deck to finish.");
+
+        Assert.That(Node(session, "layout").Type, Is.EqualTo("code"));
+        Assert.That(ButtonTests.Nodes(session.BuildTree().Root).Single(n => n.Id.EndsWith(".editorStatus")).Properties["text"].GetString(), Does.Contain("no editor changes to apply"));
+        Assert.That(ButtonTests.Nodes(session.BuildTree().Root).Any(n => n.Id.EndsWith(".pendingWarning")), Is.False);
+    }
+
     private sealed class Editor : ILayoutEditorSession
     {
         public string? Layout;
         public Func<string>? Current;
         public Action<string>? Apply;
+        public Action<string>? Status;
         public bool Disposed;
         public void Open(string layout, string values, Func<string> currentLayout, Action<string> apply, Action<string> status)
-        { Layout = layout; Current = currentLayout; Apply = apply; }
+        { Layout = layout; Current = currentLayout; Apply = apply; Status = status; }
         public ValueTask DisposeAsync() { Disposed = true; return ValueTask.CompletedTask; }
     }
 }

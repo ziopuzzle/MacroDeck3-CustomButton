@@ -153,15 +153,14 @@ public static class ButtonEvents
 
     internal static JsonElement AddFlow(JsonElement value, string? widgetId, JsonObject binding)
     {
-        var normalized = Normalize(value, widgetId);
-        var flows = JsonNode.Parse(normalized.GetRawText())!.AsArray();
+        var flows = NormalizeFlows(value, widgetId);
         string[] Conditions(JsonObject e) => (e["parameters"] as JsonArray ?? []).OfType<JsonObject>()
             .Select(p => new JsonArray(p["name"]?.DeepClone(), JsonValue.Create(p["operator"]?.ToString() ?? "=="),
                 e["providerId"]?.ToString() == CustomButtonIntegration.PluginId && p["name"]?.ToString() == "widgetId" && p["value"]?.ToString() == widgetId
                     ? JsonValue.Create("$self") : p["value"]?.DeepClone()).ToJsonString()).Order(StringComparer.Ordinal).ToArray();
         if (flows.OfType<JsonObject>().Any(f => f["event"] is JsonObject e
             && e["providerId"]?.ToString() == binding["providerId"]?.ToString() && e["eventId"]?.ToString() == binding["eventId"]?.ToString()
-            && Conditions(e).SequenceEqual(Conditions(binding)))) return normalized;
+            && Conditions(e).SequenceEqual(Conditions(binding)))) return JsonSerializer.SerializeToElement(flows);
         if (flows.Count >= 64) throw new FormatException("You can add up to 64 event flows.");
         flows.Add(new JsonObject { ["triggerId"] = Guid.NewGuid().ToString(), ["triggerType"] = "onEvent", ["event"] = binding, ["children"] = new JsonArray() });
         return Normalize(JsonSerializer.SerializeToElement(flows), widgetId);
@@ -171,19 +170,32 @@ public static class ButtonEvents
     public static IReadOnlyList<InputTarget> InputTargets(string layout)
     {
         try { return XDocument.Parse(layout).Descendants().Where(e => CanInteract(e) && e.Attribute("id") != null
-            && !e.Ancestors("segmented").Any() && e.Name.LocalName is "stack" or "layer" or "slider" or "dial" or "toggle" or "segmented" or "trackpad" or "text-field")
+            && e.Name.LocalName is "stack" or "layer" or "slider" or "dial" or "toggle" or "segmented" or "trackpad" or "text-field")
             .Select(e => new InputTarget((string)e.Attribute("id")!, e.Name.LocalName is "slider" or "dial" or "toggle" or "segmented" or "trackpad" or "text-field" ? e.Name.LocalName : "press")).Distinct().ToArray(); }
         catch (System.Xml.XmlException) { return []; }
     }
-    private static bool CanInteract(XElement e) => (string?)e.Attribute("interactive") == "true"
-        || e.Elements("style").Any(s => (string?)s.Attribute("interactive") == "true" || ((string?)s.Attribute("interactive"))?.Contains("{{", StringComparison.Ordinal) == true)
-        || ((string?)e.Attribute("interactive"))?.Contains("{{", StringComparison.Ordinal) == true;
+    // A segmented control owns input for its choices, including nested press targets.
+    private static bool CanInteract(XElement e) => !e.Ancestors("segmented").Any()
+        && (MayEnableInteraction((string?)e.Attribute("interactive"))
+            || e.Elements("style").Any(s => MayEnableInteraction((string?)s.Attribute("interactive"))));
+
+    private static bool MayEnableInteraction(string? raw)
+    {
+        if (raw == null) return false;
+        var value = raw.Trim();
+        return value == "1" || bool.TryParse(value, out var enabled) && enabled
+            || value.Contains("{{", StringComparison.Ordinal);
+    }
     private static JsonObject Binding(string id, string widgetId) => new()
     {
         ["providerId"] = CustomButtonIntegration.PluginId, ["eventId"] = id, ["eventName"] = JsonSerializer.SerializeToNode(TextCatalog.Reference(Names[id])),
         ["parameters"] = new JsonArray(new JsonObject { ["name"] = "widgetId", ["value"] = "$self", ["operator"] = "==" })
     };
     public static JsonElement Normalize(JsonElement value, string? widgetId)
+        => JsonSerializer.SerializeToElement(NormalizeFlows(value, widgetId));
+
+    // Mutation workflows can keep the normalized array until their final serialization.
+    internal static JsonArray NormalizeFlows(JsonElement value, string? widgetId)
     {
         if (value.ValueKind != JsonValueKind.Array || value.GetArrayLength() > 64 || value.GetRawText().Length > 200000) throw new FormatException("Actions must be an array with up to 64 flows and 200000 characters.");
         var flows = JsonNode.Parse(value.GetRawText())!.AsArray();
@@ -204,7 +216,7 @@ public static class ButtonEvents
                     parameter["allowSelf"] = true;
             if (flow["event"] is JsonObject namedBinding) DescribeEvent(namedBinding);
         }
-        return JsonSerializer.SerializeToElement(flows);
+        return flows;
     }
 
     // Existing concrete references to this owner can safely follow future copies.
@@ -240,7 +252,7 @@ public static class ButtonEvents
         catch (System.Xml.XmlException) { return ""; }
         var elements = document.Descendants().Where(e => e.Attribute("id") != null).ToArray();
         var pressTargets = elements.Where(e => (e.Name.LocalName is "stack" or "layer") && CanInteract(e)).ToArray();
-        var sliders = elements.Where(e => (e.Name.LocalName is "slider" or "dial" or "toggle" or "segmented" or "trackpad" or "text-field") && CanInteract(e) && !e.Ancestors("segmented").Any()).ToArray();
+        var sliders = elements.Where(e => (e.Name.LocalName is "slider" or "dial" or "toggle" or "segmented" or "trackpad" or "text-field") && CanInteract(e)).ToArray();
         var notes = new List<string>();
         if (pressTargets.Length > 0) notes.Add("Press target IDs: " + string.Join(", ", pressTargets.Select(e => (string)e.Attribute("id")!)));
         if (sliders.Length > 0) notes.Add("Value control target IDs: " + string.Join(", ", sliders.Select(e => (string)e.Attribute("id")!)));

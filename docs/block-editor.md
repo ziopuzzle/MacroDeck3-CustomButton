@@ -18,17 +18,21 @@ This edits order and parent/child structure, rather than directly dragging rende
 
 Valid property edits update the drawing automatically. Incomplete input keeps the last valid layout. A color swatch opens the picker; alpha uses CSS hex order. Data-key suggestions come from the initial JSON captured when opening the editor.
 
+**Discard incomplete input** restores fields to the last valid layout without reverting applied changes or adding a history step. Use **Undo** to revert valid edits.
+
 Use `{{value}}`, `{{value:F1}}` or arithmetic expressions in supported fields. A chart/slider key is a literal data key. Host variables must be evaluated in update actions first. Conditional styles override attributes when their expression matches. The editor selection frame does not recolor the actual widget.
 
 The **{ }** control opens a searchable editor for display-data names and functions. Edit the value directly or use **Insert**; changes update the main editor as you type, and closing the window keeps them. Data-name-only fields use a plain-name selector instead. See [inserting data and functions](expressions.md#inserting-data-and-functions-in-the-gui).
 
 ## XML and saving
 
-The XML tab supports validation and formatting. Container whitespace is normalized with two-space indentation, while text contents and mixed text/style whitespace are preserved. Invalid drafts are not applied. Input must be resolved before switching contexts; closing can offer apply/discard/cancel.
+The XML tab supports validation and formatting. **Format** changes only the text in the XML editor; use **Apply XML** to validate and apply it. Container whitespace is normalized with two-space indentation, while text contents and mixed text/style whitespace are preserved. **Discard XML changes** restores the last applied XML without changing layout history. Invalid drafts are not applied. Input must be resolved before switching contexts; closing can offer apply/discard/cancel.
 
 Validation messages identify the component and its XML line and column. Duplicate IDs include the first definition's location as well as the conflicting definition. Applying invalid XML selects the offending line. Rendering errors also identify the originating component; conditional content that is not currently rendered may require different preview data to validate its values.
 
-Edits are sent to the host configuration draft. Save in Macro Deck to persist them. If the host XML changes while this editor is open, conflict detection stops overwriting it; copy any needed draft, close and reopen. Closing the host configuration closes its editor.
+Edits are sent to the host configuration draft. Save in Macro Deck to persist them. If the host XML changes while this editor is open, conflict detection stops overwriting it. Closing the host configuration disconnects the editor but keeps its window and work available.
+
+While disconnected or in conflict, further edits remain in this editor and the status keeps that warning visible. **Copy XML** is available from either tab. It copies unapplied XML edits too; incomplete GUI property input is excluded, so correct or discard those fields first. Closing with unsent or rejected changes offers **Copy XML and close**, **Discard and close**, or **Cancel**. The recovery prompt is skipped if that same applied layout was already copied; unapplied input still requires a decision. Reopen the editor from Macro Deck to resume connected editing.
 
 Input limits: 512 elements including styles, 32 levels including the root, and 65,536 XML characters. Generated drawing data must also fit the output limits described in [Components](components.md#layout-limits). Legacy saved forms still render, but editing XML or selecting a template switches to XML mode.
 

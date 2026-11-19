@@ -1,12 +1,9 @@
-using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
 using System.Diagnostics;
 using System.Xml;
 using MacroDeck.Sdk.Actions;
 using MacroDeck.Sdk.Ui;
-using MacroDeck.Ui.Components;
-using MacroDeck.Ui.Dsl;
 using MacroDeck.Ui.Model.Events;
 using MacroDeck.Ui.Model.Nodes;
 using MacroDeck.Ui.Model.Patches;
@@ -15,7 +12,7 @@ using MacroDeck.Ui.Runtime;
 
 namespace Ziopuzzle.CustomButton;
 
-public sealed class ButtonSession : IUiSession
+public sealed partial class ButtonSession : IUiSession
 {
     private readonly object gate = new();
     private readonly UiSurface surface;
@@ -23,7 +20,6 @@ public sealed class ButtonSession : IUiSession
     private readonly DataHub? hub;
     private readonly SessionImages? images;
     private readonly bool publishImageColors;
-    private readonly Dictionary<string, string> publishedImageColors = new(StringComparer.Ordinal);
     private long lastImageRevision;
     private long lastInputRevision;
     private readonly Func<CancellationToken, Task<ActionResult>>? press;
@@ -32,7 +28,6 @@ public sealed class ButtonSession : IUiSession
     private readonly Task dataPump;
     private readonly Channel<bool> refreshRequests = Channel.CreateBounded<bool>(new BoundedChannelOptions(1)
     { SingleReader = true, SingleWriter = false, FullMode = BoundedChannelFullMode.DropWrite, AllowSynchronousContinuations = false });
-    private Dictionary<string, (string Type, long Since)> nodeLifetimes = new(StringComparer.Ordinal);
     private readonly Task updatePump;
     private readonly SharedScriptUpdates.Lease? sharedUpdates;
     private readonly SharedScriptUpdates.Lease? displayTicks;
@@ -41,7 +36,6 @@ public sealed class ButtonSession : IUiSession
     private UiView? currentView;
     private UiNode? pendingRoot;
     private readonly bool sampleHistory;
-    private Task pressTask = Task.CompletedTask;
     private UiTree tree;
     private UiPatch? pending;
     private string lastRoot;
@@ -146,78 +140,6 @@ public sealed class ButtonSession : IUiSession
     {
         lock (gate) { if (pending == null) return []; var result = pending; pending = null; pendingRoot = null; renderer?.ScrollDelivered(); return [result]; }
     }
-    private (UiTree Tree, string Json) BuildCurrent(DataSnapshot snapshot, string? selectedId)
-    {
-        (UiTree Tree, string Json) Build(UiElement content, bool hasRootBackground = false)
-        {
-            // A stable native button supplies the tile clip and text-shadow context.
-            // Explicit transparency prevents the host's default accent background.
-            currentView = new UiView(surface, surface.Kind == UiSurfaceKinds.Dialog
-                ? new UiStack { Key = "root", Fill = true, Padding = 0, Gap = 0, Background = "transparent", Children =
-                    // Radius modifiers are ignored on the tree root. Apply one directly to
-                    // a nested, noninteractive button to supply shadows without tile corners.
-                    [new UiModifier { Key = "corners", Radius = 0, Child = new UiButton {
-                        Key = "contentSurface", Fill = true, Padding = 0, Gap = 0,
-                        Background = "transparent", Children = [content] } }] }
-                : new UiButton { Key = "root", Fill = true, Padding = 0, Gap = 0,
-                Background = hasRootBackground ? "transparent" : "#1a1a1a", Children = [content],
-                Events = !settings.WholeButtonInteraction ? [] : onWidgetEvent != null
-                    ? new[] { UiComponentEvents.Press, UiComponentEvents.LongPress, UiComponentEvents.PressStart, UiComponentEvents.PressEnd }
-                        .Select(name => UiEventHandler.On(name, () => { })).ToArray()
-                    : press == null ? [] : [UiEventHandler.On(UiComponentEvents.Press, () => { })] });
-            return (currentView.Tree, LayoutLimits.Validate(currentView.Tree.Root));
-        }
-        try
-        {
-            if (configurationError != null) throw new FormatException(configurationError);
-            if (pressError != null) throw new FormatException(pressError);
-            if (updateError != null) throw new FormatException(updateError);
-            var values = new Dictionary<string, JsonElement>(initial, StringComparer.Ordinal);
-            foreach (var pair in snapshot.Values) values[pair.Key] = pair.Value;
-            if (renderer != null)
-                foreach (var pair in renderer.ImageColorDefaults)
-                    if (publishImageColors) values.TryAdd(pair.Key, pair.Value); else values[pair.Key] = pair.Value;
-            if (images != null)
-                foreach (var pair in publishImageColors ? images.CompletedColors() : images.Colors()) values[pair.Key] = JsonSerializer.SerializeToElement(pair.Value);
-            images?.BeginRender();
-            var imageRatios = new Dictionary<string, double>();
-            MacroDeck.Ui.Model.Resources.UiResource? ResolveImage(string id, string source)
-            {
-                var image = images!.ResolveImage(id, source);
-                imageRatios[id] = image.AspectRatio;
-                return image.Resource;
-            }
-            var content = renderer != null ? renderer.Render(values, snapshot.ReadHistory, selectedId, onControlInput != null ? HandleControlInput : null,
-                animation, images == null ? null : ResolveImage, id => imageRatios.GetValueOrDefault(id, 1), modal: surface.Kind == UiSurfaceKinds.Dialog, modalAnswer: modalAnswer) : settings.Design!.Render(values);
-            var result = Build(content, renderer?.HasRootBackground(values) ?? true);
-            if (publishImageColors && hub != null && renderer != null && images != null)
-            {
-                var outputs = new Dictionary<string, JsonElement>();
-                foreach (var pair in renderer.ImageColorDefaults)
-                    if (!snapshot.Values.ContainsKey(pair.Key)) outputs[pair.Key] = pair.Value;
-                var completedColors = images.CompletedColors();
-                foreach (var pair in completedColors)
-                    if ((!publishedImageColors.TryGetValue(pair.Key, out var published) || published != pair.Value || !snapshot.Values.ContainsKey(pair.Key))
-                        && (!snapshot.Values.TryGetValue(pair.Key, out var current) || current.ValueKind != JsonValueKind.String || current.GetString() != pair.Value))
-                        outputs[pair.Key] = JsonSerializer.SerializeToElement(pair.Value);
-                if (outputs.Count > 0) hub.Update(settings.Channel, outputs);
-                foreach (var pair in completedColors) publishedImageColors[pair.Key] = pair.Value;
-            }
-            lastRenderFailure = null;
-            reportError?.Invoke(null);
-            return result;
-        }
-        catch (Exception e) when (e is FormatException or ArgumentException or UiViewException or JsonException)
-        {
-            if (lastRenderFailure != e.Message) Trace("render error; animation reset: " + e.Message);
-            lastRenderFailure = e.Message;
-            reportError?.Invoke(e.Message);
-            animation.Reset();
-            return Build(new UiStack { Key = "error", Fill = true, Padding = .06, Background = "#401f28", Children =
-            [ new UiTextRun { Key = "errorTitle", Shadow = false, Text = "Custom Button", Size = .12, Color = "#ffb8c3" },
-              new UiTextRun { Key = "message", Shadow = false, Text = TextCatalog.Reference(e.Message), Size = .12, MinSize = .06, Wrap = true, MaxLines = 8, Color = "#ffb8c3" } ] });
-        }
-    }
     private void RequestRefresh(string channel)
     {
         if (channel == settings.Channel) refreshRequests.Writer.TryWrite(true);
@@ -281,7 +203,7 @@ public sealed class ButtonSession : IUiSession
             if (sampleHistory && configurationError == null) hub?.Sample(settings.Channel, initial);
             if (sharedUpdates != null) updateError = sharedUpdates.Error;
             var selection = previewSelection?.Invoke();
-            if (renderer?.ScrollFollowActive != true && (renderer?.InputRevision ?? 0) == lastInputRevision && images?.NeedsRefresh != true && (images?.Revision ?? 0) == lastImageRevision && !animation.IsActive && (hub?.Revision(settings.Channel) ?? 0) == lastDataRevision && pressError == lastPressError && updateError == lastUpdateError && selection == lastSelection) return;
+            if (CanSkipRefresh(selection)) return;
             var now = Stopwatch.GetTimestamp();
             if (animation.IsActive && lastAnimationFrame != 0 && Stopwatch.GetElapsedTime(lastAnimationFrame, now).TotalMilliseconds > 250)
                 Trace($"animation frame gap {Stopwatch.GetElapsedTime(lastAnimationFrame, now).TotalMilliseconds:F0} ms");
@@ -293,103 +215,39 @@ public sealed class ButtonSession : IUiSession
             lastInputRevision = renderer?.InputRevision ?? 0;
             lastDataRevision = snapshot.Revision; lastPressError = pressError; lastUpdateError = updateError;
             if (serialized == lastRoot) return;
-            var previous = pending?.FromRevision ?? tree.Revision;
-            pendingRoot ??= tree.Root;
-            tree = next with { Revision = checked(tree.Revision + 1) };
-            TrackNodes(tree.Root, tree.Revision);
-            var operations = TreeChanges.Between(pendingRoot, tree.Root);
-            // A burst can return to the original appearance. The revision still advanced,
-            // so publish a harmless property update instead of an invalid empty patch.
-            if (operations.Count == 0)
-                operations = [new() { Op = UiPatchOperations.SetProperties, NodeId = tree.Root.Id, Properties = tree.Root.Properties }];
-            pending = new UiPatch { FromRevision = previous, ToRevision = tree.Revision, Operations = operations };
-            if (JsonSerializer.SerializeToUtf8Bytes(pending).Length > LayoutLimits.PatchBytes)
-                pending = pending with { Operations = [new() { Op = UiPatchOperations.ReplaceNode, NodeId = pendingRoot.Id, Node = tree.Root }] };
-            lastRoot = serialized;
+            QueueTree(next, serialized);
         }
         Changed?.Invoke(this, EventArgs.Empty);
     }
-    private void HandleControlInput(ControlInput input)
+    private bool CanSkipRefresh(string? selection)
+        => renderer?.ScrollFollowActive != true
+            && (renderer?.InputRevision ?? 0) == lastInputRevision
+            && images?.NeedsRefresh != true
+            && (images?.Revision ?? 0) == lastImageRevision
+            && !animation.IsActive
+            && (hub?.Revision(settings.Channel) ?? 0) == lastDataRevision
+            && pressError == lastPressError
+            && updateError == lastUpdateError
+            && selection == lastSelection;
+
+    // Called under gate: pending patches always describe the latest tree from one transport baseline.
+    private void QueueTree(UiTree next, string serialized)
     {
-        if (input.DataKey != null && input.TextValue is { } text)
-        {
-            var previous = hub?.UpdateValue(settings.Channel, input.DataKey, JsonSerializer.SerializeToElement(text));
-            if (previous is { } raw) input = input with { PreviousTextValue = raw.ToString() };
-        }
-        if (input.Position is { } position)
-            hub?.Update(settings.Channel, new Dictionary<string, JsonElement>
-            {
-                [position.KeyX] = JsonSerializer.SerializeToElement(position.X),
-                [position.KeyY] = JsonSerializer.SerializeToElement(position.Y)
-            });
-        if (input.DataKey != null && input.Value is { } value)
-        {
-            var previous = hub?.UpdateValue(settings.Channel, input.DataKey, input.BooleanValue is { } on ? JsonSerializer.SerializeToElement(on) : JsonSerializer.SerializeToElement(value));
-            if (previous is { } raw)
-            {
-                if (input.BooleanValue != null && (raw.ToString() == "1" || bool.TryParse(raw.ToString(), out _)))
-                    input = input with { PreviousValue = raw.ToString() == "1" || bool.Parse(raw.ToString()) ? 1 : 0 };
-                else if (double.TryParse(raw.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number) && double.IsFinite(number))
-                    input = input with { PreviousValue = number };
-            }
-        }
-        onControlInput?.Invoke(input);
+        var previous = pending?.FromRevision ?? tree.Revision;
+        pendingRoot ??= tree.Root;
+        tree = next with { Revision = checked(tree.Revision + 1) };
+        TrackNodes(tree.Root, tree.Revision);
+        var operations = TreeChanges.Between(pendingRoot, tree.Root);
+        // A burst can return to the original appearance. The revision still advanced,
+        // so publish a harmless property update instead of an invalid empty patch.
+        if (operations.Count == 0)
+            operations = [new() { Op = UiPatchOperations.SetProperties, NodeId = tree.Root.Id, Properties = tree.Root.Properties }];
+        pending = new UiPatch { FromRevision = previous, ToRevision = tree.Revision, Operations = operations };
+        if (JsonSerializer.SerializeToUtf8Bytes(pending).Length > LayoutLimits.PatchBytes)
+            pending = pending with { Operations = [new() { Op = UiPatchOperations.ReplaceNode, NodeId = pendingRoot.Id, Node = tree.Root }] };
+        lastRoot = serialized;
     }
-    private void TrackNodes(UiNode root, long revision)
-    {
-        var next = new Dictionary<string, (string Type, long Since)>(StringComparer.Ordinal);
-        void Visit(UiNode node)
-        {
-            next[node.Id] = nodeLifetimes.TryGetValue(node.Id, out var old) && old.Type == node.Type
-                ? old : (node.Type, revision);
-            foreach (var child in node.Children) Visit(child);
-        }
-        Visit(root);
-        nodeLifetimes = next;
-    }
-    public void Dispatch(UiEvent uiEvent)
-    {
-        DispatchCore(uiEvent);
-        Refresh();
-    }
-    private void DispatchCore(UiEvent uiEvent)
-    {
-        lock (gate)
-        {
-            if (disposed) return;
-            // A data patch can overtake a user's input in transit. Accept older revisions only
-            // for nodes continuously present since that revision; removed/recreated nodes stay stale.
-            if (uiEvent.Revision is { } revision && (revision > tree.Revision
-                || !nodeLifetimes.TryGetValue(uiEvent.NodeId, out var node) || revision < node.Since)) return;
-            if (uiEvent.NodeId != "root")
-            {
-                // The current SDK view validates node identity and declared event names, including
-                // generated alpha wrappers. Our outer session owns the transport revision.
-                currentView?.Dispatch(uiEvent with { Revision = null });
-                return;
-            }
-            if (!settings.WholeButtonInteraction) return;
-            var eventId = uiEvent.Name switch
-            {
-                UiComponentEvents.Press => "short-press", UiComponentEvents.LongPress => "long-press",
-                UiComponentEvents.PressStart => "touch-start", UiComponentEvents.PressEnd => "touch-end", _ => null
-            };
-            if (eventId != null) onWidgetEvent?.Invoke(eventId);
-            if (press == null || uiEvent.Name != UiComponentEvents.Press || !pressTask.IsCompleted) return;
-            pressTask = Task.Run(async () =>
-            {
-                string? error = null;
-                try
-                {
-                    var result = await press(lifetime.Token);
-                    if (result.Status != ActionResultStatus.Succeeded) error = "Script execution failed: " + result.ErrorCode;
-                }
-                catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { return; }
-                catch (Exception) { error = "Could not run the script. Check the Macro Deck log."; }
-                lock (gate) pressError = error;
-            });
-        }
-    }
+
     public async ValueTask DisposeAsync()
     {
         Task running;

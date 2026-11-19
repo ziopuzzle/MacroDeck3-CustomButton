@@ -73,83 +73,100 @@ public sealed class DisplayMath
         {
             if (Take('+')) return Atom().Numeric(); if (Take('-')) return -Atom();
             if (Take('(')) { var n = Sum(); Require(')'); return n; }
-            Space(); var start = position;
+            Space();
             if (position < text.Length && text[position] is '\'' or '"')
-            {
-                var quote = text[position++]; var literal = new System.Text.StringBuilder();
-                while (position < text.Length)
-                {
-                    var c = text[position++];
-                    if (c == quote) return new(0, literal.ToString());
-                    if (c == '\\')
-                    {
-                        if (position == text.Length || text[position] != quote && text[position] != '\\')
-                            throw new FormatException("Only quote and backslash escapes are supported.");
-                        c = text[position++];
-                    }
-                    literal.Append(c);
-                }
-                throw new FormatException("The expression has an unterminated string.");
-            }
+                return ReadString();
             if (position < text.Length && (char.IsDigit(text[position]) || text[position] == '.'))
-            {
-                while (position < text.Length && (char.IsDigit(text[position]) || text[position] == '.')) position++;
-                if (position < text.Length && text[position] is 'e' or 'E')
-                {
-                    position++;
-                    if (position < text.Length && text[position] is '+' or '-') position++;
-                    while (position < text.Length && char.IsAsciiDigit(text[position])) position++;
-                }
-                if (!double.TryParse(text[start..position], NumberStyles.Float, CultureInfo.InvariantCulture, out var n) || !double.IsFinite(n)) throw new FormatException("Invalid number in the expression.");
-                return n;
-            }
-            while (position < text.Length && (char.IsAsciiLetterOrDigit(text[position]) || text[position] is '_' or '.')) position++;
-            if (start == position) throw new FormatException("The expression needs a number or data name.");
-            var name = text[start..position];
-            if (Take('('))
-            {
-                if (name is "number" or "isNumber" or "isNumeric")
-                {
-                    Space(); var keyStart = position;
-                    while (position < text.Length && (char.IsAsciiLetterOrDigit(text[position]) || text[position] is '_' or '.')) position++;
-                    if (keyStart == position) throw new FormatException("The first argument must be a data name.");
-                    values.TryGetValue(text[keyStart..position], out var raw);
-                    var valid = DisplayData.TryNumber(raw, out var numeric);
-                    if (name == "number")
-                    {
-                        Require(',');
-                        var previousMissing = missing; missing = false;
-                        var fallback = Sum(); var fallbackMissing = missing;
-                        missing = previousMissing || (!valid && fallbackMissing);
-                        Require(')'); return valid ? numeric : fallback.Numeric();
-                    }
-                    Require(')');
-                    return (name == "isNumber" ? raw.ValueKind == JsonValueKind.Number : valid) ? 1 : 0;
-                }
-                var args = new List<Value>();
-                if (!Take(')'))
-                {
-                    do { if (args.Count == 4) throw new FormatException("Functions accept at most four arguments."); args.Add(Sum()); } while (Take(','));
-                    Require(')');
-                }
-                if (ColorFunctions.IsSupported(name))
-                {
-                    // Missing data propagates just as it does in numeric expressions.
-                    if (missing) { ColorFunctions.ValidateCount(name, args.Count); return new(0, "transparent"); }
-                    return new(0, ColorFunctions.Evaluate(name, args.Select(a => a.Text == null ? (object)a.Number : a.Text).ToArray()));
-                }
-                if (DataFunctions.IsSupported(name))
-                {
-                    DataFunctions.ValidateCount(name, args.Count);
-                    if (missing) return Value.From(JsonSerializer.SerializeToElement<object?>(null));
-                    return Value.From(DataFunctions.Evaluate(name, args.Select(a => a.Json()).ToArray()));
-                }
-                return Function(name, args.Select(a => a.Numeric()).ToList());
-            }
+                return ReadNumber();
+            var name = ReadName();
+            if (Take('(')) return ReadFunction(name);
             if (!values.TryGetValue(name, out var value) || value.ValueKind == JsonValueKind.Null) { missing = true; return 0; }
             return Value.From(value, name);
         }
         finally { depth--; }
+    }
+    private Value ReadString()
+    {
+        var quote = text[position++]; var literal = new System.Text.StringBuilder();
+        while (position < text.Length)
+        {
+            var c = text[position++];
+            if (c == quote) return new(0, literal.ToString());
+            if (c == '\\')
+            {
+                if (position == text.Length || text[position] != quote && text[position] != '\\')
+                    throw new FormatException("Only quote and backslash escapes are supported.");
+                c = text[position++];
+            }
+            literal.Append(c);
+        }
+        throw new FormatException("The expression has an unterminated string.");
+    }
+    private Value ReadNumber()
+    {
+        var start = position;
+        while (position < text.Length && (char.IsDigit(text[position]) || text[position] == '.')) position++;
+        if (position < text.Length && text[position] is 'e' or 'E')
+        {
+            position++;
+            if (position < text.Length && text[position] is '+' or '-') position++;
+            while (position < text.Length && char.IsAsciiDigit(text[position])) position++;
+        }
+        if (!double.TryParse(text[start..position], NumberStyles.Float, CultureInfo.InvariantCulture, out var n) || !double.IsFinite(n)) throw new FormatException("Invalid number in the expression.");
+        return n;
+    }
+    private string ReadName()
+    {
+        var start = position;
+        while (position < text.Length && (char.IsAsciiLetterOrDigit(text[position]) || text[position] is '_' or '.')) position++;
+        if (start == position) throw new FormatException("The expression needs a number or data name.");
+        return text[start..position];
+    }
+    private Value ReadFunction(string name)
+    {
+        if (name is "number" or "isNumber" or "isNumeric") return ReadNumericLookup(name);
+        var args = ReadArguments();
+        if (ColorFunctions.IsSupported(name))
+        {
+            // Missing data propagates just as it does in numeric expressions.
+            if (missing) { ColorFunctions.ValidateCount(name, args.Count); return new(0, "transparent"); }
+            return new(0, ColorFunctions.Evaluate(name, args.Select(a => a.Text == null ? (object)a.Number : a.Text).ToArray()));
+        }
+        if (DataFunctions.IsSupported(name))
+        {
+            DataFunctions.ValidateCount(name, args.Count);
+            if (missing) return Value.From(JsonSerializer.SerializeToElement<object?>(null));
+            return Value.From(DataFunctions.Evaluate(name, args.Select(a => a.Json()).ToArray()));
+        }
+        return Function(name, args.Select(a => a.Numeric()).ToList());
+    }
+    private List<Value> ReadArguments()
+    {
+        var args = new List<Value>();
+        if (!Take(')'))
+        {
+            do { if (args.Count == 4) throw new FormatException("Functions accept at most four arguments."); args.Add(Sum()); } while (Take(','));
+            Require(')');
+        }
+        return args;
+    }
+    private Value ReadNumericLookup(string name)
+    {
+        Space(); var keyStart = position;
+        while (position < text.Length && (char.IsAsciiLetterOrDigit(text[position]) || text[position] is '_' or '.')) position++;
+        if (keyStart == position) throw new FormatException("The first argument must be a data name.");
+        values.TryGetValue(text[keyStart..position], out var raw);
+        var valid = DisplayData.TryNumber(raw, out var numeric);
+        if (name == "number")
+        {
+            Require(',');
+            var previousMissing = missing; missing = false;
+            var fallback = Sum(); var fallbackMissing = missing;
+            missing = previousMissing || (!valid && fallbackMissing);
+            Require(')'); return valid ? numeric : fallback.Numeric();
+        }
+        Require(')');
+        return (name == "isNumber" ? raw.ValueKind == JsonValueKind.Number : valid) ? 1 : 0;
     }
     private void Require(char c) { if (!Take(c)) throw new FormatException($"The expression requires {c}."); }
     private static double Function(string name, List<double> a)

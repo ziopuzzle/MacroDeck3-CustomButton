@@ -36,16 +36,11 @@ public sealed class DataHub(TimeProvider? timeProvider = null)
             bool changed = false;
             foreach (var pair in values)
             {
-                var raw = pair.Value.ValueKind == JsonValueKind.String ? pair.Value.GetString() : pair.Value.ToString();
-                if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number)) continue;
-                if (!series.TryGetValue(pair.Key, out var points)) series[pair.Key] = points = [];
-                if (points.Count > 0 && points[^1].Second == second) continue;
-                points.Add((second, number));
-                if (points.Count > HistoryLimit) points.RemoveAt(0);
-                changed = true;
+                if (TryHistoryNumber(pair.Value, out var number))
+                    changed |= RecordHistory(series, pair.Key, second, number, replaceCurrentSecond: false);
             }
             sampledSeconds[channel] = second;
-            if (changed) { revisions[channel] = revisions.GetValueOrDefault(channel) + 1; snapshots.Remove(channel); }
+            if (changed) InvalidateSnapshot(channel);
         }
     }
     public long Revision(string channel) { lock (gate) return revisions.GetValueOrDefault(channel); }
@@ -123,19 +118,45 @@ public sealed class DataHub(TimeProvider? timeProvider = null)
             var second = clock.GetUtcNow().ToUnixTimeSeconds();
             foreach (var pair in values)
             {
-                var raw = pair.Value.ValueKind == JsonValueKind.String ? pair.Value.GetString() : pair.Value.ToString();
-                if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number))
+                if (!TryHistoryNumber(pair.Value, out var number))
                 { series.Remove(pair.Key); continue; }
-                if (!series.TryGetValue(pair.Key, out var points)) series[pair.Key] = points = [];
-                // At most one point per second; repeated readings are still useful history.
-                if (points.Count > 0 && points[^1].Second == second) points[^1] = (second, number);
-                else { points.Add((second, number)); if (points.Count > HistoryLimit) points.RemoveAt(0); }
+                RecordHistory(series, pair.Key, second, number, replaceCurrentSecond: true);
             }
-            revisions[channel] = revisions.GetValueOrDefault(channel) + 1;
-            snapshots.Remove(channel);
+            InvalidateSnapshot(channel);
         }
         Updated?.Invoke(channel);
         return previous;
+    }
+
+    private static bool TryHistoryNumber(JsonElement value, out double number)
+    {
+        var raw = value.ValueKind == JsonValueKind.String ? value.GetString() : value.ToString();
+        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out number) && double.IsFinite(number);
+    }
+
+    private static bool RecordHistory(Dictionary<string, List<(long Second, double Value)>> series,
+        string key, long second, double value, bool replaceCurrentSecond)
+    {
+        if (!series.TryGetValue(key, out var points)) series[key] = points = [];
+        // Sampling preserves this second's reading; an explicit write replaces it.
+        if (points.Count > 0 && points[^1].Second == second)
+        {
+            if (!replaceCurrentSecond) return false;
+            points[^1] = (second, value);
+        }
+        else
+        {
+            points.Add((second, value));
+            if (points.Count > HistoryLimit) points.RemoveAt(0);
+        }
+        return true;
+    }
+
+    // Both callers hold gate, so values, history and cached snapshots advance together.
+    private void InvalidateSnapshot(string channel)
+    {
+        revisions[channel] = revisions.GetValueOrDefault(channel) + 1;
+        snapshots.Remove(channel);
     }
 }
 

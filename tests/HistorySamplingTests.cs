@@ -9,6 +9,21 @@ public class HistorySamplingTests
         public DateTimeOffset Now = DateTimeOffset.UnixEpoch;
         public override DateTimeOffset GetUtcNow() => Now;
     }
+    [Test] public void SamplingAfterAWriteKeepsTheSnapshotUntilAnotherWriteInTheSameSecond()
+    {
+        var clock = new Clock(); var hub = new DataHub(clock);
+        hub.Update("demo", DataHub.ParseValues("""{"value":42}"""));
+        var before = hub.Snapshot("demo");
+        hub.Sample("demo", DataHub.ParseValues("""{"value":5}"""));
+        Assert.That(hub.Snapshot("demo"), Is.SameAs(before));
+
+        hub.Update("demo", DataHub.ParseValues("""{"value":60}"""));
+        var after = hub.Snapshot("demo");
+        Assert.That(after, Is.Not.SameAs(before));
+        Assert.That(before.ReadHistory("value", 60), Is.EqualTo(new[] { 42d }));
+        Assert.That(after.ReadHistory("value", 60), Is.EqualTo(new[] { 60d }));
+    }
+
     [Test] public void UnchangedReadingsAndInitialValuesAdvanceOncePerSecondWithoutNewPackets()
     {
         var clock = new Clock(); var hub = new DataHub(clock); var initial = DataHub.ParseValues("{\"value\":42}");

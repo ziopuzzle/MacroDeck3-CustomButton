@@ -2,6 +2,8 @@
 
 New widgets contain only `<stack id="container"></stack>` and initial data `{}`. Choose a template from Drawing when needed. Selection replaces XML and initial data, while retaining channel, interaction settings and action flows.
 
+After selecting a template, **Restore previous drawing** recovers the XML and initial JSON from immediately before that selection. It keeps the current channel and actions. Recovery is available until you edit either drawing field or close settings; another template selection replaces the recovery point.
+
 The gallery is built directly from `examples/*.xml`. A same-stem `.json` provides initial data; if absent, `{}` is used. There is no second inline copy of the drawing. Add or edit examples and rebuild to change the gallery. Prefix drawing demonstrations with `basic_` for BASIC; other examples, currently prefixed `widget_`, are ADVANCED.
 
 | Category | Template | File stem |

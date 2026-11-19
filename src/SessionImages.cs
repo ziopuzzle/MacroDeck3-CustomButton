@@ -43,9 +43,7 @@ public sealed class SessionImages : IAsyncDisposable
     public long Revision => Interlocked.Read(ref revision);
     public bool NeedsRefresh
     {
-        get { lock (gate) return slots.Values.Any(s => s.Active &&
-            (s.Work.IsCompleted && clock.GetUtcNow().UtcDateTime >= s.RetryAfter && clock.GetUtcNow().UtcDateTime >= s.StartAfter
-            || s.ColorKey.Length > 0 && s.ColorWork.IsCompleted && clock.GetUtcNow().UtcDateTime >= s.ColorAfter)); }
+        get { lock (gate) return slots.Values.Any(s => s.Active && (CanLoadImage(s) || CanReadColor(s))); }
     }
     public SessionImages(IUiResourceRegistry registry, HttpClient http, Action<string>? diagnostic = null, Uri? hostUrl = null, TimeProvider? clock = null, IMusicPlayerApi? players = null,
         Func<string, CancellationToken, Task<string?>>? readArtworkColor = null)
@@ -56,7 +54,7 @@ public sealed class SessionImages : IAsyncDisposable
         lock (gate)
         {
             if (disposed) return;
-            if (!slots.TryGetValue(id, out var slot)) slots[id] = slot = new(prefix + "-" + slots.Count);
+            var slot = GetOrCreateSlot(id);
             var normalized = key.Length == 0 ? "#00000000" : DisplayColor.Parse(fallback).Hex;
             if (slot.ColorKey == key && slot.Fallback == normalized) return;
             slot.ColorKey = key; slot.Fallback = normalized;
@@ -84,17 +82,17 @@ public sealed class SessionImages : IAsyncDisposable
         lock (gate)
         {
             if (disposed) return (null, 1);
-            if (!slots.TryGetValue(id, out var slot)) slots[id] = slot = new(prefix + "-" + slots.Count);
+            var slot = GetOrCreateSlot(id);
             slot.Active = true;
             if (slot.Source != source) { slot.Source = source; slot.RetryAfter = default; slot.Failures = 0; slot.ColorAfter = default; slot.Generation++; }
             if (source is "" or "—") slot.Resource = null;
-            if (slot.Work.IsCompleted && clock.GetUtcNow().UtcDateTime >= slot.RetryAfter && clock.GetUtcNow().UtcDateTime >= slot.StartAfter)
+            if (CanLoadImage(slot))
             {
                 slot.RetryAfter = DateTime.MaxValue;
                 slot.StartAfter = source.StartsWith(SvgTemplate.Prefix, StringComparison.Ordinal) ? clock.GetUtcNow().UtcDateTime.AddMilliseconds(200) : default;
                 slot.Work = Task.Run(() => LoadAsync(slot, source));
             }
-            if (slot.ColorKey.Length > 0 && slot.ColorWork.IsCompleted && clock.GetUtcNow().UtcDateTime >= slot.ColorAfter)
+            if (CanReadColor(slot))
             {
                 slot.ColorAfter = DateTime.MaxValue;
                 if (HostImageSource.Parse(source)?.InstanceId is { } player)
@@ -106,6 +104,20 @@ public sealed class SessionImages : IAsyncDisposable
             return (slot.Resource, slot.AspectRatio);
         }
     }
+
+    // These helpers run under gate; refresh detection and scheduling use the same readiness rules.
+    private Slot GetOrCreateSlot(string id)
+    {
+        if (!slots.TryGetValue(id, out var slot)) slots[id] = slot = new(prefix + "-" + slots.Count);
+        return slot;
+    }
+
+    private bool CanLoadImage(Slot slot) => slot.Work.IsCompleted
+        && clock.GetUtcNow().UtcDateTime >= slot.RetryAfter && clock.GetUtcNow().UtcDateTime >= slot.StartAfter;
+
+    private bool CanReadColor(Slot slot) => slot.ColorKey.Length > 0 && slot.ColorWork.IsCompleted
+        && clock.GetUtcNow().UtcDateTime >= slot.ColorAfter;
+
     private async Task LoadAsync(Slot slot, string source)
     {
         var stage = "download";

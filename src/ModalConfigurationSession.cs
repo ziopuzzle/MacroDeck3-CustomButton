@@ -39,6 +39,21 @@ public sealed class ModalConfigurationSession : IUiSession
             .Concat((widgets?.Invoke()?.GetWidgets() ?? []).Select(w => new UiOption { Value = w.Id, Label = w.Label + " — " + w.Location }))
             .ToArray();
         var targets = new UiState<IReadOnlyList<UiOption>>(Targets());
+        void EditorStatus(string message)
+        {
+            if (disposed) return;
+            // Adapt normal widget-draft progress to this action's explicit Apply step.
+            // Keep all other messages, including conflicts and communication errors, visible.
+            status.Value = message switch
+            {
+                "Editor opened. Changes are applied to this draft. Save in Macro Deck to finish."
+                    => "Editor opened. After editing, click Apply edited XML here, then save in Macro Deck.",
+                "Editor changes applied to the draft. Save in Macro Deck to finish."
+                    => edited.Value != null ? "Edited XML is waiting. Click Apply edited XML below, then save in Macro Deck."
+                        : "The editor matches the current XML. There are no editor changes to apply.",
+                _ => message
+            };
+        }
         void OpenEditor()
         {
             try
@@ -46,9 +61,10 @@ public sealed class ModalConfigurationSession : IUiSession
                 _ = new LayoutDocument(layout.Value);
                 _ = DataHub.ParseValues(initial.Value);
                 this.editor.Open(edited.Value ?? layout.Value, initial.Value, () => edited.Value ?? layout.Value,
-                    xml => { if (!disposed) { edited.Value = xml == layout.Value ? null : xml; status.Value = "Click Apply edited XML below, then save in Macro Deck."; } },
-                    message => { if (!disposed) status.Value = edited.Value != null
-                        ? "Edited XML is waiting. Click Apply edited XML below, then save in Macro Deck." : message; });
+                    xml => { if (!disposed) { edited.Value = xml == layout.Value ? null : xml;
+                        status.Value = edited.Value != null ? "Click Apply edited XML below, then save in Macro Deck."
+                            : "The editor matches the current XML. There are no editor changes to apply."; } },
+                    EditorStatus);
             }
             catch (Exception e) when (e is FormatException or System.Xml.XmlException or JsonException or IOException
                 or UnauthorizedAccessException or System.ComponentModel.Win32Exception or InvalidOperationException)

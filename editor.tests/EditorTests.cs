@@ -19,6 +19,220 @@ public static class TestApp
 }
 public class EditorTests
 {
+    [AvaloniaTest] public void FormattingDoesNotApplyOrPublishAnInvalidXmlDraft()
+    {
+        const string original = "<text id='title'>Original</text>";
+        var messages = new List<string>();
+        var w = new EditorWindow(original, "{}", true, messages.Add); w.Show(); Flush(w);
+        try
+        {
+            var tab = w.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().Single(b => b.Content?.ToString() == "XML");
+            tab.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(w);
+            var input = Find<TextBox>(w, "xml");
+            input.Text = "<text id='title' color='invalid'>Edited</text>";
+            Click(w, w.GetVisualDescendants().OfType<Button>().Single(b => b.Content?.ToString() == "Format"));
+            Assert.That(input.Text, Does.Contain("color=\"invalid\"").And.Contain("Edited"));
+            Assert.That(w.LayoutXml, Is.EqualTo(original));
+            Assert.That(Find<Button>(w, "discardXml").IsEnabled, Is.True);
+            Thread.Sleep(300); Flush(w);
+            Assert.That(messages, Is.Empty);
+            Click(w, w.GetVisualDescendants().OfType<Button>().Single(b => b.Content?.ToString() == "Apply XML"));
+            Assert.That(w.LayoutXml, Is.EqualTo(original));
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Contain("color").IgnoreCase);
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
+    [AvaloniaTest] public void DiscardIncompletePropertiesKeepsValidEditsAndTheirUndoHistory()
+    {
+        const string original = "<text id='title'>Original</text>";
+        var w = new EditorWindow(original, "{}", true); w.Show(); Flush(w);
+        try
+        {
+            Assert.That(Find<Button>(w, "discardProperties").IsEnabled, Is.False);
+            Find<TextBox>(w, "field_text").Text = "Updated"; Flush(w);
+            var applied = w.LayoutXml;
+            Assert.That(Find<Button>(w, "discardProperties").IsEnabled, Is.False);
+            Find<TextBox>(w, "field_color").Text = "invalid"; Flush(w);
+            Assert.That(Find<Button>(w, "discardProperties").IsEnabled, Is.True);
+            Click(w, Find<Button>(w, "discardProperties"));
+            Assert.That(w.LayoutXml, Is.EqualTo(applied));
+            Assert.That(Find<TextBox>(w, "field_color").Text, Is.Empty);
+            Assert.That(Find<Button>(w, "discardProperties").IsEnabled, Is.False);
+            Click(w, Find<Button>(w, "undo"));
+            Assert.That(w.LayoutXml, Is.EqualTo(original), "Discard must not add a second history step.");
+            Click(w, Find<Button>(w, "redo"));
+            Assert.That(w.LayoutXml, Is.EqualTo(applied));
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
+    [AvaloniaTest] public void SentDraftKeepsBothPreviewWarningAndSaveGuidance()
+    {
+        var messages = new List<string>();
+        var w = new EditorWindow("<rect id='shape'/>", """{"cover":"N/A"}""", true, messages.Add); w.Show(); Flush(w);
+        try
+        {
+            Find<TextBox>(w, "field_color").Text = "{{= mixColor(cover, '#000000', 0.5)}}";
+            Thread.Sleep(300); Flush(w);
+            Assert.That(messages, Has.Count.EqualTo(1));
+            Assert.That(Find<TextBlock>(w, "status").Text,
+                Does.Contain("cannot preview").And.Contain("Changes sent to the draft").And.Contain("Save in Macro Deck"));
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
+    [AvaloniaTest] public void UndoAndRedoRecomputeTheWarningForTheRestoredLayout()
+    {
+        const string original = "<rect id='shape'/>";
+        var messages = new List<string>();
+        var w = new EditorWindow(original, "{}", true, messages.Add); w.Show(); Flush(w);
+        try
+        {
+            Find<TextBox>(w, "field_color").Text = "{{missingColor}}"; Flush(w);
+            var bound = w.LayoutXml;
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Contain("cannot preview"));
+            Assert.That(Find<Button>(w, "undo").IsEnabled, Is.True);
+            Find<Button>(w, "undo").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(w);
+            Assert.That(w.LayoutXml, Is.EqualTo(original));
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Not.Contain("cannot preview"));
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Contain("Save in Macro Deck"));
+            Assert.That(Find<Button>(w, "redo").IsEnabled, Is.True);
+            Find<Button>(w, "redo").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(w);
+            Assert.That(w.LayoutXml, Is.EqualTo(bound));
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Contain("cannot preview"));
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
+    [AvaloniaTest] public void UndoCanRestoreALegacyInvalidLayoutAndReportItsPreviewError()
+    {
+        const string original = "<rect id='shape' color='invalid'/>";
+        var messages = new List<string>();
+        var w = new EditorWindow(original, "{}", true, messages.Add); w.Show(); Flush(w);
+        try
+        {
+            Find<TextBox>(w, "field_color").Text = "#ffffff"; Flush(w);
+            Assert.That(Find<Button>(w, "undo").IsEnabled, Is.True);
+            Find<Button>(w, "undo").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(w);
+            Assert.That(w.LayoutXml, Is.EqualTo(original));
+            Assert.That(Find<TextBlock>(w, "status").Text,
+                Does.Contain("Cannot preview this layout").And.Contain("Save in Macro Deck"));
+            Assert.That(Find<Button>(w, "redo").IsEnabled, Is.True);
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
+    [AvaloniaTest] public void InvalidXmlCanBeDiscardedWithoutLeavingTheXmlTab()
+    {
+        const string original = "<stack id='root'/>";
+        var w = new EditorWindow(original, "{}", true); w.Show(); Flush(w);
+        try
+        {
+            var tabs = w.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().ToArray();
+            var xmlTab = tabs.Single(b => b.Content?.ToString() == "XML");
+            var guiTab = tabs.Single(b => b.Content?.ToString() == "GUI");
+            xmlTab.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(w);
+            Find<TextBox>(w, "xml").Text = "<stack";
+            guiTab.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(w);
+            Assert.That(xmlTab.IsChecked, Is.True);
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Contain("Discard XML changes"));
+            Click(w, Find<Button>(w, "discardXml"));
+            Assert.That(Find<TextBox>(w, "xml").Text, Is.EqualTo(original));
+            Assert.That(Find<Button>(w, "discardXml").IsEnabled, Is.False);
+            guiTab.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(w);
+            Assert.That(guiTab.IsChecked, Is.True);
+            Assert.That(Find<Button>(w, "undo").IsEnabled, Is.False);
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
+    [AvaloniaTest] public async Task DisconnectedUnsentDraftRequiresAnExplicitCloseDecision()
+    {
+        var messages = new List<string>();
+        var w = new EditorWindow("<rect id='shape'/>", "{}", true, messages.Add); w.Show(); Flush(w);
+        try
+        {
+            w.Disconnect();
+            Find<TextBox>(w, "field_color").Text = "#123456"; Flush(w);
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Contain("disconnected").And.Contain("not sent"));
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Not.Contain("Save in Macro Deck"));
+            Assert.That(Find<Button>(w, "copyXml").IsVisible, Is.True);
+            w.Close(); Flush(w);
+            Assert.That(w.IsVisible, Is.True);
+            var dialog = w.OwnedWindows.Single();
+            Assert.That(dialog.Title, Is.EqualTo("Recover unsent changes"));
+            PressDialogButton(dialog, "cancelRecovery"); await Task.Yield(); Flush(w);
+            Assert.That(w.IsVisible, Is.True);
+            Assert.That(w.LayoutXml, Does.Contain("#123456"));
+            Assert.That(messages, Is.Empty);
+            w.Close(); Flush(w);
+            PressDialogButton(w.OwnedWindows.Single(), "discardRecovery"); await Task.Yield(); Flush(w);
+            Assert.That(w.IsVisible, Is.False);
+        }
+        finally { CloseEditorAndDialogs(w); }
+    }
+
+    [AvaloniaTest] public async Task ConflictRequiresRecoveryEvenWhenTheLastSendAlreadyUpdatedTheLocalBasis()
+    {
+        var messages = new List<string>();
+        var w = new EditorWindow("<rect id='shape'/>", "{}", true, messages.Add); w.Show(); Flush(w);
+        try
+        {
+            Find<TextBox>(w, "field_color").Text = "#123456";
+            Thread.Sleep(300); Flush(w);
+            Assert.That(messages, Has.Count.EqualTo(1));
+            w.Conflict();
+            w.Close(); Flush(w);
+            Assert.That(w.IsVisible, Is.True);
+            Assert.That(w.OwnedWindows.Single().Title, Is.EqualTo("Recover unsent changes"));
+            PressDialogButton(w.OwnedWindows.Single(), "cancelRecovery"); await Task.Yield(); Flush(w);
+            Find<TextBox>(w, "field_width").Text = "60%"; Flush(w);
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Contain("layout changed").And.Contain("not sent"));
+            Assert.That(w.Title, Does.Contain("Conflict"));
+        }
+        finally { CloseEditorAndDialogs(w); }
+    }
+
+    [AvaloniaTest] public async Task RecoveryRequiresResolvingIncompletePropertiesBeforeCopyingAndClosing()
+    {
+        var w = new EditorWindow("<text id='title'>Original</text>", "{}", true); w.Show(); Flush(w);
+        try
+        {
+            w.Disconnect();
+            Find<TextBox>(w, "field_text").Text = "Updated";
+            Find<TextBox>(w, "field_color").Text = "invalid"; Flush(w);
+            w.Close(); Flush(w);
+            var pending = w.OwnedWindows.Single();
+            Assert.That(pending.Title, Is.EqualTo("Unapplied input"));
+            pending.GetVisualDescendants().OfType<Button>().Single(b => b.Content?.ToString() == "Cancel")
+                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await Task.Yield(); Flush(w);
+            Assert.That(Find<TextBox>(w, "field_color").Text, Is.EqualTo("invalid"));
+            w.Close(); Flush(w);
+            pending = w.OwnedWindows.Single();
+            pending.GetVisualDescendants().OfType<Button>().Single(b => b.Content?.ToString() == "Discard")
+                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await Task.Yield(); Flush(w);
+            var recovery = w.OwnedWindows.Single();
+            Assert.That(recovery.Title, Is.EqualTo("Recover unsent changes"));
+            Assert.That(Find<TextBox>(w, "field_text").Text, Is.EqualTo("Updated"));
+            Assert.That(Find<TextBox>(w, "field_color").Text, Is.Empty);
+            PressDialogButton(recovery, "cancelRecovery"); await Task.Yield(); Flush(w);
+            Assert.That(w.IsVisible, Is.True);
+        }
+        finally { CloseEditorAndDialogs(w); }
+    }
+
+    private static void PressDialogButton(Window dialog, string name)
+        => dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+    private static void CloseEditorAndDialogs(EditorWindow window)
+    {
+        window.HostClosed = true;
+        foreach (var dialog in window.OwnedWindows.ToArray()) dialog.Close();
+        window.Close();
+    }
+
     [AvaloniaTest] public void DataNameSelectionReplacesBindingWithLiteralName()
     {
         var w = new EditorWindow("<scroll id='s' followKey='{{old}}'><repeat id='r' items='rows'/></scroll>", "{\"rows\":[],\"target\":4}", true);

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.48.8 — editor recovery and configuration improvements
+
+- Refactor shared rendering, configuration, input and display-data handling while preserving existing layouts, rendering and history semantics.
+- Keep XML formatting in the editor until applied, preventing invalid drafts from being sent through Format. Add separate discard operations for unapplied XML and incomplete property input without reverting valid edits or adding undo steps.
+- Keep disconnection and conflict warnings visible, make Copy XML available from either editor tab, and offer copy/discard/cancel when closing with unsent or rejected changes. Resolve incomplete input before recovery and refresh preview warnings after Undo/Redo.
+- Reject invalid literal properties even when the same component contains unrelated bindings. Preserve live-data binding support, respect active styles and Repeat scopes, and locate responsive-bound errors on the affected variant.
+- Add Restore previous drawing after template selection to recover the previous XML and initial JSON while keeping current channel and actions. Recovery remains available until either drawing field is edited or settings are closed.
+- Mark diagnostics as stale after XML, channel or initial-data edits, and label the data list as a snapshot of the last check.
+- Restore the last accepted actions when an action edit is rejected. Keep modal-editor communication errors and conflicts visible, and clarify when edited XML still needs to be applied.
+- Match input-target discovery to rendering: exclude controls owned by a Segmented parent and recognize the supported boolean forms for interactive containers.
+
 ## 0.48.7 — Macro Deck SDK 3.0.1
 
 - Update the Macro Deck SDK, UI, hosting, analyzers, testing helpers and local/release CLI to 3.0.1.

@@ -2,6 +2,8 @@
 
 The plugin uses the public native action editor and plugin events; no host patch is required. Actions is the initial configuration tab. Empty flows are not generated automatically.
 
+If an action edit is rejected, the editor restores the last valid actions and shows the reason. In Diagnostics, changing XML, Channel or Initial data JSON marks the previous results as stale. Use **Refresh diagnostics** to check the updated draft; the report and data list remain snapshots of the last check.
+
 New display-data actions (including the structured editing actions below) use the widget's current Channel instead of the default `demo`, including inside loops and branches. Their Channel can still be edited. Pasted or duplicated actions retain explicit non-default channels. Changing the sidebar Channel also updates these actions when their channel exactly matches the previous sidebar value; other channels, variable expressions and other providers' actions remain unchanged.
 
 ## Edit arrays and objects (0.48.2)
@@ -95,7 +97,7 @@ New actions added inside Custom Button use the widget's Channel as the source. S
 
 For variable writes, **Which variable to write** selects the destination; all options set the value. **Prefer this widget's variable; otherwise use global** checks the action owner's widget and then global variables. **Prefer the current script or automation's variable** checks the running script or automation first, then the owner widget, then global; this uses Macro Deck's execution context, including the called script for nested runs. **Use the global variable** bypasses local variables. Existing actions keep the widget-first default. These scopes refer to the action owner, not the source Channel. Local variables are created through Variables in the host action editor; they are separate from Custom Button initial JSON. No option searches other widgets. Variables must already exist; the action never creates them. Remove display value offers the same choices for its optional variable output; the scope is ignored if no output variable is selected.
 
-To verify a copy independently of the drawing, open the receiving Custom Button's **Diagnostics**, press **Refresh diagnostics**, and check **Current display data**. Copied values appear as `live`; the sidebar's Initial JSON remains unchanged. The receiving XML must use the copied names (for example `{{volume}}`), and its Channel must match Destination channel exactly. Copies run once; they do not keep two channels synchronized automatically. A later data-update action can overwrite a copied value.
+To verify a copy independently of the drawing, open the receiving Custom Button's **Diagnostics**, press **Refresh diagnostics**, and check **Display data at last check**. Copied values appear as `live`; the sidebar's Initial JSON remains unchanged. The receiving XML must use the copied names (for example `{{volume}}`), and its Channel must match Destination channel exactly. Copies run once; they do not keep two channels synchronized automatically. A later data-update action can overwrite a copied value.
 
 The host applies the destination variable's type and precision. Strings retain whitespace, numbers use JSON's invariant numeric notation, booleans become `true`/`false`, and JSON null becomes an empty string. Arrays/objects become JSON text; use a text variable for these. Empty or incompatible values may be rejected by a numeric variable. Read-only, missing and unavailable variables return the host's failure rather than reporting success.
 

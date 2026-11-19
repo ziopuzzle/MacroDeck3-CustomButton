@@ -70,15 +70,16 @@ public class HistoryTests
         UiNode Node(string id) => ButtonTests.Nodes(config.BuildTree().Root).Single(n => n.Id == id || n.Id.EndsWith("." + id));
         var picker = Node("templatePicker");
         Assert.That(picker.Properties["transient"].GetBoolean(), Is.True);
-        var originalCount = ButtonTests.Nodes(config.BuildTree().Root).Count();
         config.Dispatch(new UiEvent { NodeId = picker.Id, Name = "change", Data = JsonSerializer.SerializeToElement("widget_history-chart") });
         Assert.That(Node("layout").Properties["value"].GetString(), Is.EqualTo(LayoutTemplates.Get("widget_history-chart").Xml));
+        var selectedCount = ButtonTests.Nodes(config.BuildTree().Root).Count();
         config.Dispatch(new UiEvent { NodeId = picker.Id, Name = "change", Data = JsonSerializer.SerializeToElement("basic_bar") });
         Assert.That(Node("initialValues").Properties["value"].GetString(), Is.EqualTo(LayoutTemplates.Get("basic_bar").InitialValues));
         config.Dispatch(new UiEvent { NodeId = picker.Id, Name = "change", Data = JsonSerializer.SerializeToElement("widget_history-chart") });
         Assert.That(Node("channel").Properties["value"].GetString(), Is.EqualTo(settings.Channel));
         Assert.That(Node("initialValues").Properties["value"].GetString(), Is.EqualTo(LayoutTemplates.Get("widget_history-chart").InitialValues));
-        Assert.That(ButtonTests.Nodes(config.BuildTree().Root).Count(), Is.EqualTo(originalCount));
+        Assert.That(ButtonTests.Nodes(config.BuildTree().Root).Count(), Is.EqualTo(selectedCount),
+            "Selecting more templates must not accumulate additional recovery controls.");
         config.Dispatch(new UiEvent { NodeId = "layout", Name = "change", Data = JsonSerializer.SerializeToElement("<text id='x'>Edited</text>") });
         Assert.That(Node("templatePicker").Properties["value"].GetString(), Is.Empty);
         config.Dispatch(new UiEvent { NodeId = picker.Id, Name = "change", Data = JsonSerializer.SerializeToElement("widget_history-chart") });

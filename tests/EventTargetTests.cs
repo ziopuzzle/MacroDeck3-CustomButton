@@ -18,6 +18,18 @@ public class EventTargetTests
         Assert.That(target.AllowSelf, Is.True);
     }
 
+    [TestCase("1")]
+    [TestCase("True")]
+    [TestCase(" true ")]
+    [TestCase("{{enabled}}")]
+    public void EventPickerRecognizesTheSameInteractiveValuesAsTheRenderer(string enabled)
+    {
+        var layout = $"<stack id='root'><stack id='direct' interactive='{enabled}'/><layer id='styled'><style when='true' interactive='{enabled}'/></layer><stack id='off' interactive='0'/></stack>";
+        Assert.That(ButtonEvents.InputTargets(layout).Select(t => t.Id), Is.EqualTo(new[] { "direct", "styled" }));
+        Assert.That(ButtonEvents.AddElementEvent(ButtonEvents.Empty, "test-widget", "element-press", "direct", layout).GetArrayLength(), Is.EqualTo(1));
+        Assert.That(ButtonEvents.ElementTargetHelp(Flows(elementId: "styled"), layout, "test-widget"), Does.Not.Contain("not a target"));
+    }
+
     [Test]
     public void ShortcutUsesSelfAndRecognizesLegacyConcreteTargetAsDuplicate()
     {
@@ -118,6 +130,14 @@ public class EventTargetTests
         Assert.That(ButtonEvents.ElementTargetHelp(Flows("element-change", "play"), layout, "test-widget"), Does.Contain("not a target"));
         Assert.That(ButtonEvents.ElementTargetHelp(Flows("element-change", "volume"), layout, "test-widget"), Does.Not.Contain("not a target"));
         Assert.That(ButtonEvents.ElementTargetHelp(Flows(target: "another-widget"), layout, "test-widget"), Does.Not.Contain("not interactive"));
+    }
+
+    [Test] public void HelpDoesNotOfferSuppressedButtonsInsideSegmentedChoices()
+    {
+        const string layout = "<stack id='root'><segmented id='choices' key='choice' interactive='true'><stack id='nested' interactive='true'><text id='label'>Choice</text></stack></segmented><stack id='outside' interactive='true'/></stack>";
+        Assert.That(ButtonEvents.InputTargets(layout).Select(t => t.Id), Is.EqualTo(new[] { "choices", "outside" }));
+        var help = ButtonEvents.ElementTargetHelp(Flows(elementId: "nested"), layout, "test-widget");
+        Assert.That(help, Does.Contain("Press target IDs: outside").And.Contain("'nested' is not a target for element-press."));
     }
 }
 

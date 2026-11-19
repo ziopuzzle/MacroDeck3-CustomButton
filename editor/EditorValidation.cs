@@ -17,11 +17,18 @@ internal static class EditorValidation
             var node = root.DescendantsAndSelf().FirstOrDefault(n =>
                 ((IXmlLineInfo)n).LineNumber == (error.Data["LayoutLine"] as int?) &&
                 ((IXmlLineInfo)n).LinePosition == (error.Data["LayoutColumn"] as int?));
-            if (node == null || !node.Attributes().Any(a => a.Value.Contains("{{")) &&
+            if (node == null) throw;
+            if (error.Data["LayoutAttributeValue"] is string attributeValue)
+            {
+                // An unrelated text binding cannot make an invalid literal property valid.
+                // Use the renderer's effective value, including active styles and Repeat scope.
+                if (!attributeValue.Contains("{{")) throw;
+            }
+            else if (!node.Attributes().Any(a => a.Value.Contains("{{")) &&
                 !node.Nodes().OfType<XText>().Any(t => t.Value.Contains("{{")) &&
                 !node.Elements("style").Attributes().Any(a => a.Value.Contains("{{"))) throw;
-            return "Saved to the draft, but cannot preview with the current data: " + error.Message +
-                " Check the binding and live data. Save in Macro Deck to finish.";
+            return "Layout accepted, but cannot preview with the current data: " + error.Message +
+                " Check the binding and live data.";
         }
     }
 }

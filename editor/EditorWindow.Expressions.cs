@@ -11,7 +11,7 @@ public sealed partial class EditorWindow
     {
         var original = box.Text ?? "";
         var start = box.SelectionStart; var end = box.SelectionEnd;
-        var choices = keys.Concat(new LayoutRenderer(history.Xml).ImageColorDefaults.Keys).Distinct().OrderBy(k => k)
+        var choices = DisplayDataNames()
             .Select(k => new ExpressionChoice("Display data", k, "Display data key. This is Channel data, not a direct Macro Deck variable lookup.", k))
             .Concat(LayoutRenderer.RepeatPreviewKeys(history.Xml, selected, initialValues).Select(k =>
                 new ExpressionChoice("Repeated item", k, "Read-only local Repeat value. Variable names are configured on Repeat. The index alias is zero-based; the key alias identifies the item.", k)))
