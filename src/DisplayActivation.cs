@@ -4,7 +4,7 @@ using MacroDeck.Sdk.Widgets;
 
 namespace Ziopuzzle.CustomButton;
 
-/// <summary>One activation per visible widget, gated by a snapshot and known event binding.</summary>
+/// <summary>Publishes manual requests and one automatic activation per visible widget.</summary>
 public sealed class DisplayActivation : IDisposable
 {
     private readonly object gate = new();
@@ -42,6 +42,17 @@ public sealed class DisplayActivation : IDisposable
         var text = value.GetString();
         return string.IsNullOrEmpty(text) || WidgetTargets.IsSelf(text) || text.Contains("{{", StringComparison.Ordinal) || text == widgetId;
     });
+    public bool TryTrigger(string widgetId)
+    {
+        lock (gate)
+        {
+            if (disposed || string.IsNullOrWhiteSpace(widgetId)) return false;
+            Publish(widgetId);
+            return true;
+        }
+    }
+    private void Publish(string widgetId) =>
+        events.Publish(ButtonEvents.Activated, new Dictionary<string, object?> { ["widgetId"] = widgetId });
     private void Check()
     {
         lock (gate)
@@ -52,7 +63,7 @@ public sealed class DisplayActivation : IDisposable
                 var entry = pair.Value;
                 if (entry.Ready == 0 || entry.Published || !IsBound(pair.Key)) continue;
                 entry.Published = true;
-                events.Publish(ButtonEvents.Activated, new Dictionary<string, object?> { ["widgetId"] = pair.Key });
+                Publish(pair.Key);
             }
         }
     }

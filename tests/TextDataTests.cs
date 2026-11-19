@@ -38,6 +38,41 @@ public class TextDataTests
         Assert.Throws<FormatException>(() => DataHub.ParseValues(JsonSerializer.Serialize(new Dictionary<string, string> { [name] = "Song" })));
     }
 
+    [TestCase("#abc")][TestCase("#abcd")][TestCase("#aB23eF")][TestCase("#aB23eF80")]
+    public async Task AlbumColorsAndTrackTitleReachTheDisplayTogether(string color)
+    {
+        var hub = new DataHub();
+        await using var session = new ButtonSession(ButtonTests.Surface(), new ButtonSettings("music",
+            "<text id='title'>{{title}}</text>", """{"title":"title"}"""), hub);
+        Assert.That(ButtonTests.Text(session.BuildTree(), ".title"), Is.EqualTo("title"));
+        var json = $$"""{"title":"Live \"Mix\" :#abc, #def","progressColor": {{color}}, "duration":125, "volumeColor":{{color}}}""";
+        var result = await new UpdateValuesAction(hub).CreateExecutor().ExecuteAsync(new()
+        {
+            Parameters = new Dictionary<string, object> { ["channel"] = "music", ["json"] = json }
+        });
+        Assert.That(result.Status, Is.EqualTo(ActionResultStatus.Succeeded));
+        session.Refresh();
+        Assert.That(ButtonTests.Text(session.BuildTree(), ".title"), Is.EqualTo("Live \"Mix\" :#abc, #def"));
+        var data = hub.Read("music");
+        Assert.That(data["progressColor"].GetString(), Is.EqualTo(color));
+        Assert.That(data["volumeColor"].GetString(), Is.EqualTo(color));
+        Assert.That(data["duration"].GetInt32(), Is.EqualTo(125));
+    }
+
+    [TestCase("""{"title":"changed","color":#12345}""")]
+    [TestCase("""{"color":#123456,"value":}""")]
+    public async Task InvalidColorOrOtherMalformedDataLeavesTheChannelIntact(string json)
+    {
+        var hub = new DataHub();
+        hub.Update("music", DataHub.ParseValues("""{"title":"previous"}"""));
+        var result = await new UpdateValuesAction(hub).CreateExecutor().ExecuteAsync(new()
+        {
+            Parameters = new Dictionary<string, object> { ["channel"] = "music", ["json"] = json }
+        });
+        Assert.That(result.Status, Is.EqualTo(ActionResultStatus.Failed));
+        Assert.That(hub.Read("music")["title"].GetString(), Is.EqualTo("previous"));
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public async Task TrackNamesReachLiveTextPatchesAsStrings(bool jsonParameter)

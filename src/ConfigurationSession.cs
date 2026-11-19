@@ -18,10 +18,13 @@ public sealed partial class ConfigurationSession : IUiSession
     private readonly bool publishInitialCorrection;
     private Timer? initialCorrectionTimer;
     private int initialCorrectionStarted, initialCorrectionReady;
-    public ConfigurationSession(UiSurface surface, ButtonSettings settings, DisplayDiagnostics? diagnostics = null, DataHub? hub = null)
+    private readonly DisplayActivation? activation;
+    public ConfigurationSession(UiSurface surface, ButtonSettings settings, DisplayDiagnostics? diagnostics = null, DataHub? hub = null,
+        DisplayActivation? activation = null)
     {
         this.diagnostics = diagnostics;
         this.hub = hub;
+        this.activation = activation;
         channel = new(settings.Channel);
         layout = new(settings.Layout);
         values = new(settings.InitialValues);

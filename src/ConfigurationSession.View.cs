@@ -45,8 +45,17 @@ public sealed partial class ConfigurationSession
         {
             new UiBanner { Key = "copiedWidgetNotice", Text = copiedWidgetMessage, Severity = "error" }
         }),
-        new UiConfigButton { Key = "retargetEvents", Label = "Target this widget in all events", Events = [UiEventHandler.On(UiConfigEvents.Activate, RetargetEvents)] },
-        new UiProse { Key = "flowHelp", Text = TextCatalog.Reference("Configure actions for each event and save before testing. This widget targets follow copies; check explicit widget targets after duplicating.") },
+        new UiConfigStack { Key = "eventTools", Direction = "horizontal", Wrap = true, Children =
+        [
+            new UiConfigButton { Key = "retargetEvents", Label = "Target this widget in all events", Events = [UiEventHandler.On(UiConfigEvents.Activate, RetargetEvents)] },
+            ..(activation == null || string.IsNullOrWhiteSpace(widgetId) ? Array.Empty<UiElement>() : new UiElement[]
+            {
+                new UiConfigButton { Key = "triggerDisplayActivated", Label = "Trigger Display activated",
+                    Events = [UiEventHandler.On(UiConfigEvents.Activate, () => flowMessage.Value = activation.TryTrigger(widgetId)
+                        ? "Display activated event sent for this widget." : "Reopen settings to trigger Display activated.")] }
+            })
+        ] },
+        new UiProse { Key = "flowHelp", Text = TextCatalog.Reference("Trigger Display activated uses saved actions. After editing actions, save and reopen settings to test them. This widget targets follow copies; check explicit widget targets after duplicating.") },
         new UiProse { Key = "controlHelp", Text = TextCatalog.Reference("Select a target, then choose + Add event. Modal opened, Display activated, Display update and Variable changed are under Other (updates and variables). Use Display activated to read current values when the saved button becomes visible. Select the watched variable after adding Variable changed.") },
         new UiConfigStack { Key = "eventShortcuts", Direction = "horizontal", Wrap = true, Children =
         [

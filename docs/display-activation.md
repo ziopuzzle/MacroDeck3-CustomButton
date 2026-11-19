@@ -10,7 +10,11 @@ Version 0.22.0 adds **Display activated** (`display-activated`). Use it to read 
 
 The event is also available under **Events → Custom Button**. The shortcut targets **This widget** (`$self`), which follows copies. Activation does not automatically infer which variables to copy from your XML or other flows.
 
-## Lifecycle
+## Triggering initialization manually
+
+Open the widget’s settings and select **Actions → Trigger Display activated**. Each press sends the usual event with that widget’s ID, even if its automatic activation has already run. You can use this after a plugin update without switching pages. To use changes made in the editor, save the widget first, then reopen its settings and press the button. Macro Deck applies the usual event filters to the saved flows.
+
+## Automatic activation
 
 - The first successful widget snapshot marks that view ready. The event waits until `IEventPublisher.GetBindings()` includes a potentially matching activation binding, and checks again on `BindingsChanged`. This handles the first binding push arriving after the snapshot without a guessed startup delay.
 - One occurrence is published per active widget, shared across clients. Repeated snapshots, a second client and immediate session replacement do not generate extra occurrences.

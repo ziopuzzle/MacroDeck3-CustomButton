@@ -100,7 +100,7 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
         if (surface.Kind == UiSurfaceKinds.Config)
         {
             if (!attributes.TryGetValue("entryPoint", out var entry) || entry.ValueKind != JsonValueKind.String || entry.GetString() != "widget-config") return Task.FromResult<IUiSession?>(null);
-            return Task.FromResult<IUiSession?>(new ConfigurationSession(surface, ButtonSettings.Read(attributes.GetValueOrDefault("widgetData")), diagnostics, Hub));
+            return Task.FromResult<IUiSession?>(new ConfigurationSession(surface, ButtonSettings.Read(attributes.GetValueOrDefault("widgetData")), diagnostics, Hub, activation));
         }
         if (surface.Kind is not (UiSurfaceKinds.Widget or UiSurfaceKinds.Preview)) return Task.FromResult<IUiSession?>(null);
         var sample = attributes.TryGetValue("sample", out var sampleValue) && sampleValue.ValueKind == JsonValueKind.True;

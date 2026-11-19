@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using MacroDeck.Localization;
 using MacroDeck.Sdk.Actions;
 
@@ -32,7 +33,7 @@ public sealed class UpdateValueAction(DataHub hub) : IActionDefinition
     internal static string Parameter(ActionExecutionContext context, string name) => Convert.ToString(context.Parameters.GetValueOrDefault(name), CultureInfo.InvariantCulture) ?? "";
 }
 
-public sealed class UpdateValuesAction(DataHub hub) : IActionDefinition
+public sealed partial class UpdateValuesAction(DataHub hub) : IActionDefinition
 {
     public string Id => "set-data";
     public LocalizedText Name => TextCatalog.Reference("Set display data from JSON");
@@ -42,7 +43,26 @@ public sealed class UpdateValuesAction(DataHub hub) : IActionDefinition
         ActionParameter.Text("channel", label: TextCatalog.Reference("Channel"), defaultValue: "demo", required: true),
         ActionParameter.MultilineText("json", label: TextCatalog.Reference("Data JSON"), defaultValue: "{\"title\":\"CPU\",\"value\":75}", required: true, maxLength: 16000)
     ];
-    public IActionExecutor CreateExecutor() => new UpdateExecutor(context => hub.Update(UpdateValueAction.Parameter(context, "channel").Trim(), DataHub.ParseValues(UpdateValueAction.Parameter(context, "json")), replace: true));
+    public IActionExecutor CreateExecutor() => new UpdateExecutor(context => hub.Update(UpdateValueAction.Parameter(context, "channel").Trim(),
+        ParseActionData(UpdateValueAction.Parameter(context, "json")), replace: true));
+
+    private static Dictionary<string, JsonElement> ParseActionData(string json)
+    {
+        try { return DataHub.ParseValues(json); }
+        catch (JsonException) when (json.Contains('#'))
+        {
+            // Macro Deck expands text parameters before execution. A color binding used
+            // as a property value can therefore arrive as a bare #RRGGBB token.
+            var quoted = StringsOrPropertyColors().Replace(json, match => match.Groups["color"] is { Success: true } color
+                ? match.Groups["prefix"].Value + "\"" + color.Value + "\"" : match.Value);
+            if (quoted == json) throw;
+            return DataHub.ParseValues(quoted);
+        }
+    }
+
+    // Consume JSON strings intact, including escapes, so color-like text inside a title is never rewritten.
+    [GeneratedRegex(""" "(?:[^"\\]|\\.)*" | (?<prefix>:[\x20\t\r\n]*)(?<color>\#(?:[a-fA-F0-9]{8}|[a-fA-F0-9]{6}|[a-fA-F0-9]{4}|[a-fA-F0-9]{3})) (?=[\x20\t\r\n]*[,}]) """, RegexOptions.IgnorePatternWhitespace)]
+    private static partial Regex StringsOrPropertyColors();
 }
 
 internal sealed class UpdateExecutor(Action<ActionExecutionContext> update) : IActionExecutor

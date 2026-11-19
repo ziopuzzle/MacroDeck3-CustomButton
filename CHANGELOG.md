@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.48.9 — manual display activation
+
+- Add **Trigger Display activated** next to **Target this widget in all events** on the Actions tab. Each press reruns matching saved flows for the widget being configured, so you can initialize it again after editing it or updating the plugin.
+- Accept hex colors from unquoted property bindings in **Set display data from JSON**. A music player can initialize its track title and album colors in the same action.
+
 ## 0.48.8 — editor recovery and configuration improvements
 
 - Refactor shared rendering, configuration, input and display-data handling while preserving existing layouts, rendering and history semantics.

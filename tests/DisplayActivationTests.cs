@@ -95,6 +95,50 @@ public class DisplayActivationTests
         Assert.That(activation[0].Parameters!.Value.GetProperty("widgetId").GetString(), Is.EqualTo("test-widget"));
         await integration.ShutdownAsync();
     }
+    [Test] public async Task ConfigurationCanRetriggerActivationForTheCurrentWidgetBeforeAndAfterAutomaticActivation()
+    {
+        var integration = new CustomButtonIntegration();
+        var context = new FakeIntegrationContext();
+        await integration.InitializeAsync(context);
+        var surface = ButtonTests.Surface("config");
+        var attributes = surface.Attributes.ToDictionary(p => p.Key, p => p.Value);
+        attributes["widgetData"] = JsonSerializer.SerializeToElement(new { configurationWidgetId = "source-widget", channel = "shared" });
+        await using var config = (await integration.CreateSessionAsync(new() { Surface = surface with { Attributes = attributes }, UiModelVersion = 1 }, default))!;
+        await using var widget = (await integration.CreateSessionAsync(new() { Surface = ButtonTests.Surface("widget"), UiModelVersion = 1 }, default))!;
+        var tools = ButtonTests.Nodes(config.BuildTree().Root).Single(n => n.Id.EndsWith(".eventTools", StringComparison.Ordinal));
+        Assert.That(tools.Properties["direction"].GetString(), Is.EqualTo("horizontal"));
+        Assert.That(tools.Children.Select(n => n.Id.Split('.').Last()), Is.EqualTo(new[] { "retargetEvents", "triggerDisplayActivated" }));
+        var button = tools.Children[1];
+        var click = new UiEvent { NodeId = button.Id, Name = "activate" };
+        string?[] Targets() => context.Events.Published.Where(e => e.EventId == ButtonEvents.Activated)
+            .Select(e => e.Parameters!.Value.GetProperty("widgetId").GetString()).ToArray();
+
+        Assert.That(Targets(), Is.Empty);
+        config.Dispatch(click);
+        Assert.That(Targets(), Is.EqualTo(new[] { "test-widget" }));
+        context.Events.SetBindings([Binding("$self")]);
+        widget.BuildTree();
+        Assert.That(Targets(), Has.Length.EqualTo(2));
+        config.Dispatch(click);
+        config.Dispatch(click);
+        widget.BuildTree();
+        Assert.That(Targets(), Is.EqualTo(Enumerable.Repeat("test-widget", 4)));
+        await integration.ShutdownAsync();
+    }
+    [Test] public async Task ConfigurationWithoutAWidgetIdCannotTriggerActivationForTheStoredOwner()
+    {
+        var integration = new CustomButtonIntegration();
+        var context = new FakeIntegrationContext();
+        await integration.InitializeAsync(context);
+        var surface = ButtonTests.Surface("config");
+        var attributes = surface.Attributes.ToDictionary(p => p.Key, p => p.Value);
+        attributes.Remove("widgetId");
+        attributes["widgetData"] = JsonSerializer.SerializeToElement(new { configurationWidgetId = "source-widget" });
+        await using var config = (await integration.CreateSessionAsync(new() { Surface = surface with { Attributes = attributes }, UiModelVersion = 1 }, default))!;
+        Assert.That(ButtonTests.Nodes(config.BuildTree().Root).Any(n => n.Id.EndsWith(".triggerDisplayActivated", StringComparison.Ordinal)), Is.False);
+        Assert.That(context.Events.Published, Is.Empty);
+        await integration.ShutdownAsync();
+    }
     [TestCase(ButtonEvents.Activated)]
     [TestCase(ButtonEvents.ModalOpened)]
     [TestCase(ButtonEvents.ModalClosed)]

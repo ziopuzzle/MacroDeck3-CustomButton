@@ -42,6 +42,8 @@ Host variable bindings can supply part of a target (for example the index inside
 
 Editing actions operate on **live Channel data only**. They do not load a widget's saved Initial JSON and have no source-widget selector. Initialize editable arrays/objects with **Set display data from JSON** before editing them; sidebar Initial JSON alone is only a rendering fallback. No intermediate object or array is created implicitly. Set may create the final object property or a new top-level value. Insert requires an existing array.
 
+For album colors, write color bindings as JSON strings, for example `"progressColor": "{{ vars.music_player_system_media_any_app_album_color }}"`. Since 0.48.9, **Set display data from JSON** also accepts unquoted property values that expand to a 3-, 4-, 6- or 8-digit hex color. Other malformed JSON still rejects the whole update and keeps the previous Channel data.
+
 Changes notify renderers automatically and keep unrelated values. Missing targets, invalid JSON, out-of-range indices and payload-limit violations fail without changing the Channel. Removing an array item shifts later indices down. Removing a top-level live value may expose a value of the same name in a widget's rendering Initial JSON; deleting live data does not edit saved widget settings. Use JSON null with Set display value to explicitly override a fallback.
 
 ### Remove and store (pop)
