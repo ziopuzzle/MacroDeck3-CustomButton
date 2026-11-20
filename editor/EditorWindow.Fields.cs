@@ -87,7 +87,7 @@ public sealed partial class EditorWindow
     {
         var insert = Button("{ }", () => { }, "insert_" + attribute);
         insert.Focusable = false; // Keep the text selection until the picker has captured it.
-        ToolTip.SetTip(insert, "Insert display data or function. Search and read descriptions before inserting.");
+        ToolTip.SetTip(insert, "Insert display data, a function or an operator.");
         insert.Margin = new Thickness(4, 0, 0, 0);
         insert.Click += async (_, _) => { try { await InsertExpression(box, attribute); } catch (FormatException e) { Say(e.Message); } };
         DockPanel.SetDock(insert, Dock.Right); row.Children.Add(insert);

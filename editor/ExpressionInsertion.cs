@@ -2,10 +2,14 @@ using System.Text.RegularExpressions;
 
 namespace Ziopuzzle.CustomButton;
 
-public sealed record ExpressionChoice(string Group, string Label, string Description, string First, string Tail = "", string? Function = null, bool Condition = false)
+public sealed record ExpressionChoice(string Group, string Label, string Description, string First, string Tail = "", string? Function = null,
+    bool Condition = false, bool Calculation = true, string? OperatorPrefix = null)
 {
     public override string ToString() => Group + " · " + Label;
-    public string Example => Function == null ? First : Function + "(" + First + Tail + ")";
+    public bool IsTemplate => Function != null || OperatorPrefix != null;
+    public string BeforeOperand => Function != null ? Function + "(" : OperatorPrefix ?? "";
+    public string AfterOperand => Function != null ? Tail + ")" : Tail;
+    public string Example => BeforeOperand + First + AfterOperand;
 }
 
 public static class ExpressionInsertion
@@ -42,7 +46,7 @@ public static class ExpressionInsertion
         new("Data", "number(key, fallback)", "Read a finite number or numeric string; otherwise use fallback. First argument must be a data name.", "value", ", 0", "number", true),
         new("Data", "isNumber(key)", "Test the JSON number type. Returns 1/0 in calculations and true/false in conditions.", "value", Function: "isNumber", Condition: true),
         new("Data", "isNumeric(key)", "Test whether data can be converted to a finite number.", "value", Function: "isNumeric", Condition: true),
-        new("Conditions", "type(key)", "Return number, string, boolean, null or missing. Conditions only; compare with a quoted type name.", "value", Function: "type", Condition: true),
+        new("Conditions", "type(key)", "Return number, string, boolean, null or missing. Conditions only; compare with a quoted type name.", "value", Function: "type", Condition: true, Calculation: false),
         new("Colors", "mixColor(a, b, t, space)", "Mix colors with t from 0 to 1. Spaces: 'linear-rgb' (default), 'srgb', 'hsv' (shortest), 'hsv+' (increasing hue), 'hsv-' (decreasing hue). Alpha-aware.", "'#ffffff'", ", '#000000', 0.5, 'linear-rgb'", "mixColor"),
         new("Colors", "shiftHue(color, degrees)", "Rotate HSV hue in degrees; wraps at 360.", "'#ffffff'", ", 30", "shiftHue"),
         new("Colors", "setSaturation(color, value)", "Set HSV saturation from 0 to 1; preserve alpha.", "'#ffffff'", ", 0.5", "setSaturation"),
@@ -51,6 +55,29 @@ public static class ExpressionInsertion
         new("Colors", "scaleBrightness(color, factor)", "Multiply HSV value, clamping the result to 0–1.", "'#ffffff'", ", 0.5", "scaleBrightness"),
         new("Colors", "setAlpha(color, alpha)", "Replace alpha: 0 transparent, 1 opaque. Alpha is the last hex pair.", "'#ffffff'", ", 0.5", "setAlpha")
     ];
+    public static readonly ExpressionChoice[] Operators =
+    [
+        Binary("+", "Add two numbers."),
+        Binary("-", "Subtract the right number from the left."),
+        Binary("*", "Multiply two numbers."),
+        Binary("/", "Divide the left number by the right."),
+        Binary("%", "Remainder after division."),
+        new("Operators", "+expr", "Convert to a number.", "1", OperatorPrefix: "+"),
+        new("Operators", "-expr", "Negate a number.", "1", OperatorPrefix: "-"),
+        new("Operators", "(expr)", "Group an expression.", "1", ")", Condition: true, OperatorPrefix: "("),
+        Comparison("==", "Equal."), Comparison("!=", "Not equal."),
+        Comparison("<", "Less than."), Comparison("<=", "Less than or equal."),
+        Comparison(">", "Greater than."), Comparison(">=", "Greater than or equal."),
+        Binary("&&", "Logical AND (also written and).", "true", "false", condition: true),
+        Binary("||", "Logical OR (also written or).", "true", "false", condition: true),
+        new("Operators", "!expr", "Logical NOT (also written not).", "true", Condition: true, Calculation: false, OperatorPrefix: "!")
+    ];
+    private static ExpressionChoice Comparison(string op, string description) => Binary(op, description, condition: true);
+    private static ExpressionChoice Binary(string op, string description, string left = "0", string right = "1", bool condition = false)
+        => new("Operators", $"expr {op} expr", description, left, $" {op} {right}", Condition: condition, Calculation: !condition, OperatorPrefix: "");
+
+    public static bool Supports(string attribute, ExpressionChoice choice) => !choice.IsTemplate ||
+        !KeyOnly(attribute) && (IsCondition(attribute) ? choice.Condition : choice.Calculation);
     public static bool KeyOnly(string attribute) => attribute is "key" or "keyX" or "keyY" or "followKey" or "averageColorKey";
     public static bool IsCondition(string attribute) => attribute is "when" or "visibleWhen";
     public static bool Available(string attribute) => attribute is not ("id" or "itemKey" or "itemAlias" or "indexAlias" or "keyAlias" or "averageColorKey" or "averageColorFallback");
@@ -60,15 +87,16 @@ public static class ExpressionInsertion
         (start, end) = (Math.Min(start, end), Math.Max(start, end));
         if (start < 0 || end > text.Length) throw new FormatException("The insertion position is no longer valid.");
         var condition = IsCondition(attribute);
-        if (choice.Function != null && (KeyOnly(attribute) || condition && !choice.Condition || !condition && choice.Function == "type"))
-            throw new FormatException("This function is not supported in this field.");
+        if (!Supports(attribute, choice)) throw new FormatException("This expression is not supported in this field.");
         var prefix = ""; var suffix = ""; var inCalculation = false;
+        var nested = false;
         var first = choice.First;
         if (!condition && !KeyOnly(attribute))
         {
             // Treat a selected complete binding as its contents; never nest template delimiters.
             var selected = text[start..end];
-            if (selected.StartsWith("{{") && selected.EndsWith("}}") && selected.IndexOf("}}", StringComparison.Ordinal) == selected.Length - 2)
+            var wholeBinding = selected.StartsWith("{{") && selected.EndsWith("}}") && selected.IndexOf("}}", StringComparison.Ordinal) == selected.Length - 2;
+            if (wholeBinding)
             { start += 2; end -= 2; }
             if (start > 0 && start < text.Length && text[start - 1] == '{' && text[start] == '{')
                 throw new FormatException("Place the cursor inside or outside the binding, not between its braces.");
@@ -92,12 +120,13 @@ public static class ExpressionInsertion
                     else if (c is '\'' or '"') quote = c;
                     else if (c == ':') { colon = i; break; }
                 }
+                if (wholeBinding && colon >= 0) end = colon;
                 if (colon >= 0 && (start > colon || end > colon)) throw new FormatException("Insert before the format suffix, not inside it.");
                 if (!expression)
                 {
                     // A direct binding has one data name. Replace it, or wrap it in a function.
                     start = bodyStart; end = colon >= 0 ? colon : close;
-                    if (choice.Function != null)
+                    if (choice.IsTemplate)
                     {
                         first = text[start..end].Trim(); if (first.Length == 0) first = choice.First;
                         if (first.Contains('-')) throw new FormatException("A hyphenated data name cannot be wrapped in a calculation. Rename the key first.");
@@ -108,27 +137,65 @@ public static class ExpressionInsertion
                 {
                     start = Math.Max(start, contentStart);
                     end = Math.Max(end, start);
-                    if (choice.Function != null && end > start) first = text[start..end].Trim();
+                    if (choice.IsTemplate && end > start) first = text[start..end].Trim();
+                    nested = !string.IsNullOrWhiteSpace(text[contentStart..start]) || !string.IsNullOrWhiteSpace(text[end..(colon >= 0 ? colon : close)]);
                 }
             }
             else
             {
                 if (text[start..end].Contains("{{") || text[start..end].Contains("}}"))
                     throw new FormatException("Select one complete binding or text outside bindings.");
-                prefix = choice.Function == null ? "{{" : "{{= "; suffix = "}}";
-                if (choice.Function != null && end > start) first = text[start..end].Trim();
+                prefix = choice.IsTemplate ? "{{= " : "{{"; suffix = "}}";
+                if (choice.IsTemplate && end > start) first = text[start..end].Trim();
             }
         }
-        else if (choice.Function != null && end > start) first = text[start..end].Trim();
-        if (choice.Function == null)
+        else if (choice.IsTemplate)
+        {
+            if (end > start) first = text[start..end].Trim();
+            nested = !string.IsNullOrWhiteSpace(text[..start]) || !string.IsNullOrWhiteSpace(text[end..]);
+        }
+        if (!choice.IsTemplate)
         {
             // Hyphens are valid direct keys but mean subtraction inside calculations.
             if (inCalculation && !Regex.IsMatch(first, @"^[A-Za-z_][A-Za-z0-9_.]*$"))
                 throw new FormatException("This data name cannot be used in a calculation. Use a direct binding or rename the key.");
         }
-        var inserted = prefix + (choice.Function == null ? first : choice.Function + "(" + first + choice.Tail + ")") + suffix;
+        if (choice.OperatorPrefix != null && nested && choice.OperatorPrefix != "(")
+        { prefix += "("; suffix = ")" + suffix; }
+        prefix += choice.BeforeOperand;
+        var tail = choice.AfterOperand;
+        if (choice.OperatorPrefix != null && choice.OperatorPrefix != "(" && HasOuterOperator(first, condition))
+        { prefix += "("; tail = ")" + tail; }
+        var inserted = prefix + first + tail + suffix;
         var result = text[..start] + inserted + text[end..];
-        var cursor = start + prefix.Length + (choice.Function == null ? first.Length : choice.Function.Length + 1);
-        return new(result, cursor, choice.Function == null ? cursor : cursor + first.Length);
+        var cursor = start + prefix.Length;
+        return choice.IsTemplate ? new(result, cursor, cursor + first.Length) : new(result, cursor + first.Length, cursor + first.Length);
+    }
+
+    // Parenthesize compound operands without turning scalar condition operands into truth values.
+    private static bool HasOuterOperator(string operand, bool condition)
+    {
+        int depth = 0;
+        char quote = '\0';
+        for (int i = 0; i < operand.Length; i++)
+        {
+            char c = operand[i];
+            if (quote != '\0')
+            {
+                if (c == quote) quote = '\0';
+                else if (!condition && c == '\\') i++;
+            }
+            else if (c is '\'' or '"') quote = c;
+            else if (c == '(') depth++;
+            else if (c == ')') depth--;
+            else if (depth == 0 && (condition ? "<>=!&|".Contains(c) : "+-*/%".Contains(c))) return true;
+            else if (condition && depth == 0 && (char.IsAsciiLetter(c) || c == '_'))
+            {
+                var start = i;
+                while (i + 1 < operand.Length && (char.IsAsciiLetterOrDigit(operand[i + 1]) || operand[i + 1] is '_' or '.' or '-')) i++;
+                if (operand[start..(i + 1)] is "not" or "and" or "or") return true;
+            }
+        }
+        return false;
     }
 }

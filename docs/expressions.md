@@ -2,9 +2,13 @@
 
 Calculations read the button's display data. Macro Deck variables still enter through **Set display value** or **Set display data from JSON**; this syntax does not query host variables directly. The native editor uses the same evaluator as the plugin.
 
-## Inserting data and functions in the GUI
+## Inserting data, functions and operators in the GUI
 
-The **{ }** button opens one searchable value editor for display-data names and functions, with categories, descriptions and examples. The value field is directly editable and updates the main GUI as you type. **Insert** inserts the selected item without closing the window. Close the window with **×** while keeping edits. Image average-color output names are also listed. Literal-only ID/alias/fallback fields do not offer the picker; data-key fields offer plain-name selection. Repeat's Array source offers both a name menu and the function editor because it can evaluate an array expression. Condition fields offer only supported functions.
+The **{ }** button opens a searchable list of display-data names, functions and operators. Search for a symbol such as `+` or a description such as `multiply`. Calculations offer arithmetic operators. Conditions offer comparisons and logical operators. Selecting an entry shows its description and example.
+
+The value field updates the main GUI as you type. **Insert** inserts the selected entry and keeps the window open. Close it with **×** to keep edits. Image average-color output names are also listed. Literal-only ID/alias/fallback fields do not offer the picker. Data-key fields offer plain-name selection. Repeat's Array source offers both a name menu and the expression editor.
+
+Choosing **expr + expr** inside `{{value:F1}}` gives `{{= value + 1:F1}}`. The first operand is selected for replacement. In a larger calculation the editor adds parentheses where needed to preserve grouping.
 
 The value editor starts at the main field's cursor/selection. Clicking or selecting in the value changes the insertion position; using search or the list retains that position. A line/column and selection-count indicator shows where Insert will operate, and selections remain highlighted while choosing an item. Valid edits use the normal throttled preview update pipeline. Incomplete input stays in the main field with a warning, while the last accepted layout is kept. Use the main GUI's Undo or Reset input to revert edits. Saving in Macro Deck is still required afterwards.
 

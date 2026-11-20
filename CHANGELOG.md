@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.48.11 — operators in the expression picker
+
+- Insert arithmetic operators in calculations and comparison or logical operators in conditions. Each entry includes a short description and an editable example.
+
 ## 0.48.10 — image resource recovery
 
 - Restore missing Macro Deck image registrations for visible local and HTTP images, including animated GIFs, and for inline SVG. Healthy images keep their URL and continue playing.

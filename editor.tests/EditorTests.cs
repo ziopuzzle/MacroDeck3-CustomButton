@@ -297,6 +297,30 @@ public class EditorTests
         finally { foreach (var child in w.OwnedWindows.ToArray()) child.Close(); w.HostClosed = true; w.Close(); }
     }
 
+    [AvaloniaTest] public void OperatorPickerSearchesAndInsertsIntoAFormattedBinding()
+    {
+        var w = new EditorWindow("<text id='label'>{{value:F1}}</text>", "{\"value\":2}", true); w.Show(); Flush(w);
+        try
+        {
+            var field = Find<TextBox>(w, "field_text");
+            field.Focus(); field.SelectAll();
+            Click(w, Find<Button>(w, "insert_text"));
+            var picker = w.OwnedWindows.Single();
+            var search = picker.GetVisualDescendants().OfType<TextBox>().Single(t => t.Watermark != null);
+            search.Text = "expr+expr"; Flush(w);
+            var list = picker.GetVisualDescendants().OfType<ListBox>().Single();
+            Assert.That(((ExpressionChoice)list.SelectedItem!).Label, Is.EqualTo("expr + expr"));
+            picker.GetVisualDescendants().OfType<Button>().Single(b => b.Content?.ToString() == "Insert")
+                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Flush(w);
+            var edit = picker.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == "expressionValue");
+            Assert.That(edit.Text, Is.EqualTo("{{= value + 1:F1}}"));
+            Assert.That(edit.SelectedText, Is.EqualTo("value"));
+            Assert.That(field.Text, Is.EqualTo(edit.Text));
+        }
+        finally { foreach (var child in w.OwnedWindows.ToArray()) child.Close(); w.HostClosed = true; w.Close(); }
+    }
+
     [AvaloniaTest] public async Task ExpressionWindowEditsLiveAndWindowCloseKeepsChanges()
     {
         var sent = new List<string>();

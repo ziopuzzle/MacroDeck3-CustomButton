@@ -71,4 +71,40 @@ public class ExpressionInsertionTests
         foreach (var choice in ExpressionInsertion.Functions.Where(f => f.Condition))
             Assert.DoesNotThrow(() => DisplayCondition.Evaluate(choice.Example, values), choice.Label);
     }
+
+    [TestCase("color", "expr + expr", "{{= 0 + 1}}", "0")]
+    [TestCase("when", "expr >= expr", "0 >= 1", "0")]
+    [TestCase("visibleWhen", "!expr", "!true", "true")]
+    public void OperatorUsesTheFieldSyntaxAndSelectsTheFirstOperand(string field, string label, string expected, string selected)
+    {
+        var choice = ExpressionInsertion.Operators.Single(c => c.Label == label);
+        var result = ExpressionInsertion.Insert("", 0, 0, field, choice);
+        Assert.That(result.Text, Is.EqualTo(expected));
+        Assert.That(result.Text[result.Start..result.End], Is.EqualTo(selected));
+    }
+
+    [TestCase("{{value:F1}}", "{{value:F1}}", "expr + expr", "{{= value + 1:F1}}", "size")]
+    [TestCase("{{= 2 * 3}}", "3", "expr + expr", "{{= 2 * (3 + 1)}}", "size")]
+    [TestCase("{{= a + b:F1}}", "a + b", "expr * expr", "{{= (a + b) * 1:F1}}", "size")]
+    [TestCase("a or b", "a or b", "!expr", "!(a or b)", "when")]
+    [TestCase("length(title)", "length(title)", "expr > expr", "length(title) > 1", "when")]
+    public void WrappingWithAnOperatorPreservesOperandsAndSurroundings(string text, string selection, string label, string expected, string field)
+    {
+        var start = text.IndexOf(selection, StringComparison.Ordinal);
+        var choice = ExpressionInsertion.Operators.Single(c => c.Label == label);
+        Assert.That(ExpressionInsertion.Insert(text, start, start + selection.Length, field, choice).Text, Is.EqualTo(expected));
+    }
+
+    [Test] public void OperatorsOfferedInEachFieldAreAcceptedByItsEvaluator()
+    {
+        var data = DataHub.ParseValues("{}");
+        foreach (var choice in ExpressionInsertion.Operators)
+        {
+            if (ExpressionInsertion.Supports("size", choice)) Assert.DoesNotThrow(() => DisplayMath.Evaluate(choice.Example, data), choice.Label);
+            if (ExpressionInsertion.Supports("when", choice)) Assert.DoesNotThrow(() => DisplayCondition.Evaluate(choice.Example, data), choice.Label);
+            Assert.Throws<FormatException>(() => ExpressionInsertion.Insert("", 0, 0, "key", choice));
+        }
+        Assert.Throws<FormatException>(() => Insert("|", ExpressionInsertion.Operators.Single(c => c.Label == "expr + expr"), "when"));
+        Assert.Throws<FormatException>(() => Insert("|", ExpressionInsertion.Operators.Single(c => c.Label == "expr == expr")));
+    }
 }

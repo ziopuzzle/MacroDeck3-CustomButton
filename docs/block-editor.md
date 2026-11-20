@@ -22,7 +22,7 @@ Valid property edits update the drawing automatically. Incomplete input keeps th
 
 Use `{{value}}`, `{{value:F1}}` or arithmetic expressions in supported fields. A chart/slider key is a literal data key. Host variables must be evaluated in update actions first. Conditional styles override attributes when their expression matches. The editor selection frame does not recolor the actual widget.
 
-The **{ }** control opens a searchable editor for display-data names and functions. Edit the value directly or use **Insert**; changes update the main editor as you type, and closing the window keeps them. Data-name-only fields use a plain-name selector instead. See [inserting data and functions](expressions.md#inserting-data-and-functions-in-the-gui).
+The **{ }** control opens a searchable editor for display-data names, functions and operators. Type directly or choose an entry and click **Insert**. Changes update the main editor as you type, and closing the window keeps them. Data-name-only fields use a plain-name selector. See [inserting expressions](expressions.md#inserting-data-functions-and-operators-in-the-gui).
 
 ## XML and saving
 

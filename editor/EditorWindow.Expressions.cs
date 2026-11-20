@@ -15,9 +15,9 @@ public sealed partial class EditorWindow
             .Select(k => new ExpressionChoice("Display data", k, "Display data key. This is Channel data, not a direct Macro Deck variable lookup.", k))
             .Concat(LayoutRenderer.RepeatPreviewKeys(history.Xml, selected, initialValues).Select(k =>
                 new ExpressionChoice("Repeated item", k, "Read-only local Repeat value. Variable names are configured on Repeat. The index alias is zero-based; the key alias identifies the item.", k)))
-            .Concat(ExpressionInsertion.KeyOnly(attribute) ? [] : ExpressionInsertion.Functions.Where(f =>
-                ExpressionInsertion.IsCondition(attribute) ? f.Condition : f.Function != "type")).ToArray();
-        var dialog = new Window { Title = "Edit value — display data and functions", Width = 680, Height = 700, MinWidth = 480, MinHeight = 560,
+            .Concat(ExpressionInsertion.Functions.Concat(ExpressionInsertion.Operators)
+                .Where(choice => ExpressionInsertion.Supports(attribute, choice))).ToArray();
+        var dialog = new Window { Title = "Edit expression", Width = 680, Height = 700, MinWidth = 480, MinHeight = 560,
             WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = B("#202020"), Foreground = B("#eeeeee") };
         var panel = new Grid { Margin = new Thickness(16), RowDefinitions = new RowDefinitions("Auto,*,Auto,Auto,Auto,Auto,Auto"), RowSpacing = 12 };
         var search = new TextBox { Watermark = "Search names, categories or descriptions" }; panel.Children.Add(search);
@@ -54,8 +54,11 @@ public sealed partial class EditorWindow
         }
         search.TextChanged += (_, _) =>
         {
-            var query = search.Text ?? "";
-            list.ItemsSource = choices.Where(c => (c + " " + c.Description).Contains(query, StringComparison.OrdinalIgnoreCase)).ToArray();
+            var query = search.Text?.Trim() ?? "";
+            bool LabelMatches(ExpressionChoice c) => c.Label.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                c.OperatorPrefix != null && c.Label.Replace(" ", "").Contains(query, StringComparison.OrdinalIgnoreCase);
+            list.ItemsSource = choices.Where(c => LabelMatches(c) || (c.Group + " " + c.Description).Contains(query, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(LabelMatches).ToArray();
             list.SelectedIndex = 0; Update();
         };
         list.SelectionChanged += (_, _) => Update();
