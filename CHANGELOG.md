@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.48.10 — image resource recovery
+
+- Restore missing Macro Deck image registrations for visible local and HTTP images, including animated GIFs, and for inline SVG. Healthy images keep their URL and continue playing.
+
 ## 0.48.9 — manual display activation
 
 - Add **Trigger Display activated** next to **Target this widget in all events** on the Actions tab. Each press reruns matching saved flows for the widget being configured, so you can initialize it again after editing it or updating the plugin.

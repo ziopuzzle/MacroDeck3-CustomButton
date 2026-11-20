@@ -187,6 +187,8 @@ Failures retain the last available image and retry after 1, 2, 4, 8, 16, then 30
 (capped at 30 seconds). Success or a source change resets the backoff. Empty sources
 clear the image. Hidden elements do not request periodic refreshes.
 Logs identify download, registration or removal failures without exposing source URLs.
-This handles transient acquisition failures; it does not detect a resource silently
-discarded by the host after successful registration.
+Since 0.48.10 the plugin also confirms registrations for visible file, HTTP and inline SVG images about every eight seconds.
+It keeps the last loaded bytes for this check. The SDK sends a name and content hash and uploads the bytes only if Macro Deck requests them.
+This restores a lost registration at the same URL so a retrying client can fetch the image again. A client that has already stopped retrying can reload its display after the registration is restored.
+Installed Icon Pack images and music-player artwork continue to use their own host APIs.
 

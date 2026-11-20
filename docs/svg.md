@@ -27,7 +27,7 @@ Use the existing display-data update actions/events to change these values. SVG 
 - `size`, `fit`, `zoom`, `offsetX`, `offsetY`, `opacity`, `brightness`, `saturation`, and `transition` behave as on `image`. Image transforms/opacity can use existing value-change transitions.
 - Optional `color` recolours all SVG parts together, preserving transparency. Leave it blank to use the SVG's own colours. It supports bindings, conditional styles and colour interpolation without re-rasterizing the SVG. Tint alpha multiplies `opacity`. The host requires client mask support and disables artwork crossfade while tinted.
 - Changed SVG is rendered asynchronously, at most five times per second per element. Intermediate changes are coalesced to the latest value. The last successful image remains during rendering or a failed update.
-- Unchanged expanded SVG is cached for the session; it is not periodically rasterized or uploaded. Reopening a session regenerates the resource.
+- The session caches the rendered bytes of unchanged SVG. If its host registration goes missing while visible, the plugin restores it from those bytes. Reopening a session renders the SVG again.
 - SVG attribute changes are immediate on the next image update; they do not use per-attribute interpolation. Use `transition="crossfade"` for an image crossfade. SVG/SMIL/CSS animations are not supported.
 
 ## Supported subset

@@ -33,11 +33,15 @@ public class ImageRenderingTests
         const string url = "https://example.invalid/art";
         await Wait(() => images.Resolve("cover", url) != null);
         var first = images.Resolve("cover", url);
-        clock.Advance(29); Assert.That(images.NeedsRefresh, Is.False);
+        clock.Advance(7); Assert.That(images.NeedsRefresh, Is.False);
         clock.Advance(1); Assert.That(images.NeedsRefresh, Is.True);
         var revision = images.Revision; images.Resolve("cover", url);
         await Wait(() => images.Revision > revision);
-        Assert.That(images.Resolve("cover", url), Is.SameAs(first));
+        Assert.That(images.Resolve("cover", url), Is.EqualTo(first));
+        Assert.That(handler.Calls, Is.EqualTo(1), "Checking the registration should not download the source.");
+        clock.Advance(22); revision = images.Revision; images.Resolve("cover", url);
+        await Wait(() => images.Revision > revision);
+        Assert.That(images.Resolve("cover", url), Is.EqualTo(first));
         // A different valid PNG makes this a content update at the same URL.
         handler.Bytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1sAAAAASUVORK5CYII=");
         clock.Advance(30); revision = images.Revision; images.Resolve("cover", url);
@@ -46,6 +50,44 @@ public class ImageRenderingTests
         Assert.That(handler.Calls, Is.EqualTo(3));
         images.BeginRender(); clock.Advance(30);
         Assert.That(images.NeedsRefresh, Is.False, "Hidden elements must not keep rendering.");
+    }
+    [TestCase("local-gif")]
+    [TestCase("http-png")]
+    [TestCase("inline-svg")]
+    public async Task LostRegistrationIsRestoredAtTheSameClientUrl(string kind)
+    {
+        var context = new FakeIntegrationContext();
+        var clock = new Clock();
+        var handler = new MutableHandler();
+        using var http = new HttpClient(handler);
+        var tempFile = Path.Combine(TestContext.CurrentContext.WorkDirectory, Guid.NewGuid() + ".gif");
+        var source = kind switch
+        {
+            "local-gif" => tempFile,
+            "http-png" => "https://example.invalid/cover.png",
+            _ => SvgTemplate.Source("<svg viewBox='0 0 4 4'><rect width='4' height='4'/></svg>", s => s, 64)
+        };
+        try
+        {
+            if (kind == "local-gif")
+                await File.WriteAllBytesAsync(tempFile, Convert.FromBase64String("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="));
+            await using var images = new SessionImages(context.UiResources, http, clock: clock);
+            await Wait(() => images.Resolve("cover", source) != null);
+            var saved = context.UiResources.Resources.Single();
+            await context.UiResources.RemoveAsync(saved.Key);
+            if (kind == "local-gif") File.Delete(tempFile); // Recovery uses the bytes already displayed.
+            var revision = images.Revision;
+            clock.Advance(8);
+            images.Resolve("cover", source);
+            await Wait(() => images.Revision > revision);
+            var restored = context.UiResources.Resources.Single();
+            Assert.That(restored.Key, Is.EqualTo(saved.Key));
+            Assert.That(restored.Value.Handle, Is.EqualTo(saved.Value.Handle));
+            Assert.That(restored.Value.Content.ToArray(), Is.EqualTo(saved.Value.Content.ToArray()));
+            Assert.That(images.Resolve("cover", source), Is.EqualTo(restored.Value.Handle));
+            Assert.That(handler.Calls, Is.EqualTo(kind == "http-png" ? 1 : 0));
+        }
+        finally { if (File.Exists(tempFile)) File.Delete(tempFile); }
     }
     [Test] public async Task TransientFailuresBackOffRetainImageAndResetAfterRecovery()
     {

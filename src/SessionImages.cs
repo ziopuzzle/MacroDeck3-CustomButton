@@ -17,7 +17,8 @@ public sealed class SessionImages : IAsyncDisposable
         public Task Work = Task.CompletedTask;
         public DateTime RetryAfter;
         public DateTime StartAfter;
-        public string? Fingerprint;
+        public ImageSourceLoader.Image? CachedImage;
+        public DateTime ReadAfter;
         public int Failures;
         public bool Active = true;
         public string ColorKey = "", Fallback = "#00000000";
@@ -84,7 +85,11 @@ public sealed class SessionImages : IAsyncDisposable
             if (disposed) return (null, 1);
             var slot = GetOrCreateSlot(id);
             slot.Active = true;
-            if (slot.Source != source) { slot.Source = source; slot.RetryAfter = default; slot.Failures = 0; slot.ColorAfter = default; slot.Generation++; }
+            if (slot.Source != source)
+            {
+                slot.Source = source; slot.CachedImage = null; slot.RetryAfter = default;
+                slot.Failures = 0; slot.ColorAfter = default; slot.Generation++;
+            }
             if (source is "" or "—") slot.Resource = null;
             if (CanLoadImage(slot))
             {
@@ -127,10 +132,17 @@ public sealed class SessionImages : IAsyncDisposable
             timeout.CancelAfter(TimeSpan.FromSeconds(15));
             UiResource? resource = null;
             var aspectRatio = 1d;
+            ImageSourceLoader.Image? image = null;
+            DateTime readAfter;
             string? fingerprint = null;
             string? average = null;
             string colorKey;
-            lock (gate) colorKey = slot.ColorKey;
+            lock (gate)
+            {
+                colorKey = slot.ColorKey;
+                readAfter = slot.ReadAfter;
+                if (slot.Source == source && clock.GetUtcNow().UtcDateTime < readAfter) image = slot.CachedImage;
+            }
             if (source is "" or "—") { stage = "remove"; await registry.RemoveAsync(slot.Name, timeout.Token); }
             else if (HostImageSource.Parse(source) is { } hostImage)
             {
@@ -150,15 +162,20 @@ public sealed class SessionImages : IAsyncDisposable
             else
             {
                 // Conservative local cap. The host also enforces its negotiated resource quotas.
-                var image = await ImageSourceLoader.LoadAsync(source, http, 2 * 1024 * 1024, timeout.Token, hostUrl);
+                if (image == null)
+                {
+                    image = await ImageSourceLoader.LoadAsync(source, http, 2 * 1024 * 1024, timeout.Token, hostUrl);
+                    readAfter = source.StartsWith(SvgTemplate.Prefix, StringComparison.Ordinal)
+                        ? DateTime.MaxValue : clock.GetUtcNow().UtcDateTime.AddSeconds(30);
+                }
                 aspectRatio = image.AspectRatio;
-                fingerprint = Convert.ToHexString(SHA256.HashData(image.Bytes));
-                // Only content changes require an upload; periodic checks must not restart GIFs/crossfades.
-                lock (gate) { if (slot.Fingerprint == fingerprint) resource = slot.Resource; }
                 stage = "register";
-                resource ??= await registry.RegisterAsync(slot.Name, image.Bytes, image.MediaType, timeout.Token);
+                // The SDK checks the hash with the host first. An intact slot keeps its URL;
+                // an absent slot requests the bytes again even when the source never changed.
+                resource = await registry.RegisterAsync(slot.Name, image.Bytes, image.MediaType, timeout.Token);
                 if (colorKey.Length > 0)
                 {
+                    fingerprint = resource.ContentHash ?? Convert.ToHexString(SHA256.HashData(image.Bytes));
                     lock (gate) if (slot.ColorFingerprint == fingerprint) average = slot.Color;
                     if (average == null)
                     {
@@ -169,16 +186,21 @@ public sealed class SessionImages : IAsyncDisposable
             }
             lock (gate)
             {
-                // An obsolete upload may have changed the host slot even though the current source differs.
-                slot.Fingerprint = fingerprint;
                 if (slot.Source == source)
                 {
                     slot.Resource = resource; slot.AspectRatio = aspectRatio;
+                    slot.CachedImage = image; slot.ReadAfter = readAfter;
                     if (HostImageSource.Parse(source)?.InstanceId == null)
                     { slot.Color = average; slot.ColorFingerprint = fingerprint; slot.ColorReady = true; }
                     slot.Failures = 0;
-                    slot.RetryAfter = source is "" or "—" || source.StartsWith(SvgTemplate.Prefix, StringComparison.Ordinal)
-                        ? DateTime.MaxValue : clock.GetUtcNow().UtcDateTime.AddSeconds(30);
+                    var now = clock.GetUtcNow().UtcDateTime;
+                    slot.RetryAfter = source is "" or "—" ? DateTime.MaxValue : now.AddSeconds(30);
+                    if (image != null)
+                    {
+                        // Check within the client's broken-image retry window without rereading the source.
+                        var confirmAfter = now.AddSeconds(8);
+                        slot.RetryAfter = readAfter < confirmAfter ? readAfter : confirmAfter;
+                    }
                 }
             }
         }
@@ -213,7 +235,7 @@ public sealed class SessionImages : IAsyncDisposable
             {
                 // A source may change back while an older upload is in flight.
                 // Always reconcile the host slot with the latest requested source.
-                if (slot.Source != source) { slot.Fingerprint = null; slot.RetryAfter = default; }
+                if (slot.Source != source) slot.RetryAfter = default;
             }
             Interlocked.Increment(ref revision);
         }
