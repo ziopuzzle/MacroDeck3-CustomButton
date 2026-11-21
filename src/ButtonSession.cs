@@ -140,9 +140,9 @@ public sealed partial class ButtonSession : IUiSession
     {
         lock (gate) { if (pending == null) return []; var result = pending; pending = null; pendingRoot = null; renderer?.ScrollDelivered(); return [result]; }
     }
-    private void RequestRefresh(string channel)
+    private void RequestRefresh(string? channel)
     {
-        if (channel == settings.Channel) refreshRequests.Writer.TryWrite(true);
+        if (channel == null || channel == settings.Channel) refreshRequests.Writer.TryWrite(true);
     }
     private async Task RefreshDataAsync()
     {

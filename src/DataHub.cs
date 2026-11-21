@@ -5,7 +5,7 @@ using System.Collections.Frozen;
 
 namespace Ziopuzzle.CustomButton;
 
-// All data is transient. The host remains the source of truth for variables.
+// Channel values and history are transient. Shared defaults come from the host's config entry.
 public sealed class DataHub(TimeProvider? timeProvider = null)
 {
     public const int HistoryLimit = 120;
@@ -16,8 +16,22 @@ public sealed class DataHub(TimeProvider? timeProvider = null)
     private readonly Dictionary<string, long> revisions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, DataSnapshot> snapshots = new(StringComparer.Ordinal);
     private readonly Dictionary<string, long> sampledSeconds = new(StringComparer.Ordinal);
+    private DataSnapshot defaults = DataSnapshot.Empty;
     // Subscribers only enqueue work. Notify outside the data lock so rendering never blocks writers.
-    internal event Action<string>? Updated;
+    internal event Action<string?>? Updated;
+    internal void SetSharedValues(string json) => SetSharedValues(ParseValues(json));
+    internal void SetSharedValues(Dictionary<string, JsonElement> next)
+    {
+        lock (gate)
+        {
+            var previous = defaults.SharedValues;
+            // Bindings can display raw JSON, including the difference between 1 and 1.00.
+            if (previous.Count == next.Count && next.All(p => previous.TryGetValue(p.Key, out var old) && old.GetRawText() == p.Value.GetRawText())) return;
+            defaults = DataSnapshot.Empty with { Revision = defaults.Revision + 1, SharedValues = next.ToFrozenDictionary(StringComparer.Ordinal) };
+            snapshots.Clear();
+        }
+        Updated?.Invoke(null);
+    }
     public void Sample(string channel, IReadOnlyDictionary<string, JsonElement> initialValues)
     {
         lock (gate)
@@ -30,7 +44,7 @@ public sealed class DataHub(TimeProvider? timeProvider = null)
                 if (channels.Count >= 256) throw new FormatException("The maximum of 256 channels has been reached.");
                 channels[channel] = new(StringComparer.Ordinal);
             }
-            var values = new Dictionary<string, JsonElement>(initialValues, StringComparer.Ordinal);
+            var values = defaults.Resolve(initialValues);
             foreach (var pair in channels[channel]) values[pair.Key] = pair.Value;
             if (!history.TryGetValue(channel, out var series)) history[channel] = series = new(StringComparer.Ordinal);
             bool changed = false;
@@ -43,18 +57,18 @@ public sealed class DataHub(TimeProvider? timeProvider = null)
             if (changed) InvalidateSnapshot(channel);
         }
     }
-    public long Revision(string channel) { lock (gate) return revisions.GetValueOrDefault(channel); }
+    public long Revision(string channel) { lock (gate) return defaults.Revision + revisions.GetValueOrDefault(channel); }
     public DataSnapshot Snapshot(string channel)
     {
         lock (gate)
         {
             if (snapshots.TryGetValue(channel, out var snapshot)) return snapshot;
-            if (!channels.TryGetValue(channel, out var data)) return DataSnapshot.Empty;
-            return snapshots[channel] = new DataSnapshot(revisions.GetValueOrDefault(channel),
+            if (!channels.TryGetValue(channel, out var data)) return defaults;
+            return snapshots[channel] = new DataSnapshot(defaults.Revision + revisions.GetValueOrDefault(channel),
                 data.ToFrozenDictionary(StringComparer.Ordinal),
                 history.TryGetValue(channel, out var series)
                     ? series.ToFrozenDictionary(p => p.Key, p => (IReadOnlyList<double>)Array.AsReadOnly(p.Value.Select(v => v.Value).ToArray()), StringComparer.Ordinal)
-                    : FrozenDictionary<string, IReadOnlyList<double>>.Empty);
+                    : FrozenDictionary<string, IReadOnlyList<double>>.Empty) { SharedValues = defaults.SharedValues };
         }
     }
     public static void ValidateName(string name)
@@ -165,5 +179,13 @@ public sealed record DataSnapshot(long Revision, IReadOnlyDictionary<string, Jso
     IReadOnlyDictionary<string, IReadOnlyList<double>> History)
 {
     public static DataSnapshot Empty { get; } = new(0, FrozenDictionary<string, JsonElement>.Empty, FrozenDictionary<string, IReadOnlyList<double>>.Empty);
+    public IReadOnlyDictionary<string, JsonElement> SharedValues { get; init; } = FrozenDictionary<string, JsonElement>.Empty;
+    public Dictionary<string, JsonElement> Resolve(IReadOnlyDictionary<string, JsonElement> initial)
+    {
+        var result = new Dictionary<string, JsonElement>(initial, StringComparer.Ordinal);
+        foreach (var pair in SharedValues) result.TryAdd(pair.Key, pair.Value);
+        foreach (var pair in Values) result[pair.Key] = pair.Value;
+        return result;
+    }
     public IReadOnlyList<double> ReadHistory(string key, int count) => History.TryGetValue(key, out var points) ? points.TakeLast(count).ToArray() : [];
 }

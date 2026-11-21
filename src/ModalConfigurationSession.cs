@@ -19,15 +19,15 @@ public sealed class ModalConfigurationSession : IUiSession
     private bool disposed;
 
     public ModalConfigurationSession(ActionConfigurationRequest request, ILayoutEditorSession? editor = null,
-        Func<MacroDeck.Sdk.Widgets.IWidgetApi?>? widgets = null)
+        Func<MacroDeck.Sdk.Widgets.IWidgetApi?>? widgets = null, DataHub? hub = null)
     {
-        this.editor = editor ?? new NativeEditorSession(modal: true);
         UiState<string> State(string key, string fallback = "") => new(
             request.Parameters.TryGetValue(key, out var value) && value.ValueKind == JsonValueKind.String
                 ? value.GetString()! : fallback);
         var title = State("title", "Custom Button modal");
         var device = State("deviceId");
         var channel = State("channel", "demo");
+        this.editor = editor ?? new NativeEditorSession(modal: true, readSnapshot: () => hub?.Snapshot(channel.Value));
         var target = State("eventWidgetId");
         var layout = State("layout", ShowModalAction.SampleLayout);
         var initial = State("initialValues", "{}");
@@ -87,7 +87,7 @@ public sealed class ModalConfigurationSession : IUiSession
                     Events = [UiEventHandler.On(UiConfigEvents.Open, () => targets.Value = Targets())],
                     Description = "Defaults to the button running this action. Used for modal input, Modal opened and Modal closed events.", Binding = Bind.To(target) },
                 new UiCodeInput { Key = "initialValues", Label = "Initial data JSON", Language = "json", Required = true, LiteralOnly = true,
-                    Description = "Local fallback values only. Use {} to disable; existing Channel values take priority.", Binding = Bind.To(initial) },
+                    Description = "Channel values override these modal defaults. Shared display values apply to names missing from both.", Binding = Bind.To(initial) },
                 new UiConfigButton { Key = "openModalEditor", Label = "Open editor", Events = [UiEventHandler.On(UiConfigEvents.Activate, OpenEditor)] },
                 new UiProse { Key = "editorHelp", Text = "After GUI editing, click Apply edited XML here and save in Macro Deck. Reopen the modal to see layout changes. There is no modal preview." },
                 new UiWhen { Key = "saveReminderVisible", Condition = () => saveReminder.Value, Content = () =>

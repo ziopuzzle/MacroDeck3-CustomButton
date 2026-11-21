@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.49.0 — shared display values
+
+- Set reusable colors and other JSON values in the Custom Button integration settings. Widgets and modals use them for keys missing from both the channel and their own initial JSON. Saving updates open displays and preserves the defaults across restarts.
+- Use **Set shared display value** to update one shared key from an action or a variable binding. Save the integration settings once to enable action writes.
+- The layout editor includes shared keys in suggestions and preview checks. Widget diagnostics show whether a value came from the channel, initial JSON or shared settings.
+
 ## 0.48.13 — transparent backgrounds for animated borders
 
 - Stacks with animated borders accept `background="transparent"` and translucent hex colors. Background alpha leaves the animated outline and the stack's contents visible.

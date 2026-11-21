@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "net.ziopuzzle.custombutton",
   "name": "Custom Button",
-  "version": "0.48.13",
+  "version": "0.49.0",
   "description": "Declarative custom buttons with live data bindings.",
   "icon": "Assets/icon.svg",
   "publisher": {
@@ -18,7 +18,8 @@
     "services": ["Codex"]
   },
   "permissions": [
-    "host:widget-types"
+    "host:widget-types",
+    "host:config"
   ],
   "languages": [
     "en"

@@ -9,7 +9,7 @@ namespace Ziopuzzle.CustomButton;
 
 // A selected device resolves to its current client at execution time.
 public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null, Func<MacroDeck.Sdk.Widgets.IWidgetApi?>? widgets = null,
-    Func<MacroDeck.Sdk.Events.IEventPublisher?>? events = null) : IUiConfigurableActionDefinition
+    Func<MacroDeck.Sdk.Events.IEventPublisher?>? events = null, DataHub? hub = null) : IUiConfigurableActionDefinition
 {
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, ModalCompletion> waiting = new();
     internal ModalCompletion? Completion(string id) => waiting.GetValueOrDefault(id);
@@ -40,7 +40,7 @@ public sealed class ShowModalAction(Func<IDeckNavigator?>? navigator = null, Fun
     public Task<IUiSession?> CreateConfigurationSessionAsync(ActionConfigurationRequest request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult<IUiSession?>(new ModalConfigurationSession(request, widgets: widgets));
+        return Task.FromResult<IUiSession?>(new ModalConfigurationSession(request, widgets: widgets, hub: hub));
     }
     private sealed class Executor(Func<IDeckNavigator?>? navigator, Func<MacroDeck.Sdk.Events.IEventPublisher?>? events,
         System.Collections.Concurrent.ConcurrentDictionary<string, ModalCompletion> waiting) : IActionExecutor

@@ -26,6 +26,7 @@ public sealed class EditorApp : Application
             var request = json.RootElement;
             var window = new EditorWindow(request.GetProperty("layout").GetString()!, request.GetProperty("initialValues").GetString()!,
                 channelValues: request.TryGetProperty("channelValues", out var data) ? data.Deserialize<Dictionary<string, JsonElement>>() : null,
+                sharedValues: request.TryGetProperty("sharedValues", out var shared) ? shared.Deserialize<Dictionary<string, JsonElement>>() : null,
                 modal: request.TryGetProperty("modal", out var modal) && modal.GetBoolean());
             desktop.MainWindow = window;
             _ = Task.Run(async () =>

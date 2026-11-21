@@ -19,6 +19,23 @@ public static class TestApp
 }
 public class EditorTests
 {
+    [AvaloniaTest] public void EditorValidatesBindingsUsingSharedDefaultsAndLocalOverrides()
+    {
+        var w = new EditorWindow("<text id='label'>Title</text>", """{"local":"#abc"}""", testing: true,
+            channelValues: DataHub.ParseValues("""{"live":"#def"}"""),
+            sharedValues: DataHub.ParseValues("""{"local":"invalid","live":"invalid","global":"invalid"}"""));
+        w.Show(); Flush(w);
+        try
+        {
+            foreach (var key in new[] { "local", "live", "global" })
+            {
+                Find<TextBox>(w, "field_color").Text = "{{" + key + "}}"; Flush(w);
+                Assert.That(Find<TextBlock>(w, "warning_label").IsVisible, Is.EqualTo(key == "global"), key);
+            }
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
     [AvaloniaTest] public void FormattingDoesNotApplyOrPublishAnInvalidXmlDraft()
     {
         const string original = "<text id='title'>Original</text>";

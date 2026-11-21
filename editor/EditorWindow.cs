@@ -65,7 +65,8 @@ public sealed partial class EditorWindow : Window
 
     private readonly bool modal;
     public EditorWindow(string layout, string values, bool testing = false, Action<string>? sendDraft = null,
-        IReadOnlyDictionary<string, JsonElement>? channelValues = null, bool modal = false)
+        IReadOnlyDictionary<string, JsonElement>? channelValues = null, bool modal = false,
+        IReadOnlyDictionary<string, JsonElement>? sharedValues = null)
     {
         // English is currently the only supported native-editor language. No OS/user override.
         this.language = "en";
@@ -75,9 +76,10 @@ public sealed partial class EditorWindow : Window
         Dictionary<string, JsonElement> data;
         try { data = DataHub.ParseValues(values); }
         catch (Exception e) when (e is JsonException or InvalidOperationException or FormatException) { data = new(); }
-        if (channelValues != null)
-            foreach (var pair in channelValues) data[pair.Key] = pair.Value;
-        initialValues = data; keys = data.Keys.ToArray();
+        var snapshot = DataSnapshot.Empty with { Values = channelValues ?? DataSnapshot.Empty.Values,
+            SharedValues = sharedValues ?? DataSnapshot.Empty.SharedValues };
+        initialValues = snapshot.Resolve(data);
+        keys = initialValues.Keys.ToArray();
         Title = T("Custom Button — Layout editor");
         Width = 1140; Height = 780; MinWidth = 900; MinHeight = 580;
         Background = B("#171717"); Foreground = B("#eeeeee"); FontSize = 13;

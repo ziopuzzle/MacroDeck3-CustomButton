@@ -8,7 +8,7 @@ public interface ILayoutEditorSession : IAsyncDisposable
     void Open(string layout, string values, Func<string> currentLayout, Action<string> apply, Action<string> status);
 }
 
-public sealed class NativeEditorSession(bool modal = false) : ILayoutEditorSession
+public sealed class NativeEditorSession(bool modal = false, Func<DataSnapshot?>? readSnapshot = null) : ILayoutEditorSession
 {
     private readonly object gate = new();
     private Process? process;
@@ -17,9 +17,6 @@ public sealed class NativeEditorSession(bool modal = false) : ILayoutEditorSessi
     private readonly CancellationTokenSource lifetime = new();
     public bool IsOpen { get { lock (gate) return process is { HasExited: false }; } }
     public void Open(string layout, string values, Func<string> currentLayout, Action<string> apply, Action<string> status)
-        => Open(layout, values, currentLayout, apply, status, null);
-    internal void Open(string layout, string values, Func<string> currentLayout, Action<string> apply, Action<string> status,
-        IReadOnlyDictionary<string, JsonElement>? channelValues)
     {
         lock (gate)
         {
@@ -33,7 +30,9 @@ public sealed class NativeEditorSession(bool modal = false) : ILayoutEditorSessi
             var child = Process.Start(EditorStartInfo(AppContext.BaseDirectory, muxer))
                 ?? throw new InvalidOperationException("Could not start the editor.");
             process = child;
-            child.StandardInput.WriteLine(JsonSerializer.Serialize(new { layout, initialValues = values, channelValues, modal }));
+            var snapshot = readSnapshot?.Invoke();
+            child.StandardInput.WriteLine(JsonSerializer.Serialize(new { layout, initialValues = values,
+                channelValues = snapshot?.Values, sharedValues = snapshot?.SharedValues, modal }));
             child.StandardInput.Flush();
             status("Editor opened. Changes are applied to this draft. Save in Macro Deck to finish.");
             reader = ReadAsync(child, currentLayout, apply, status);

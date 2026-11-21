@@ -14,6 +14,7 @@ The action list groups data editing first, then copying/export, and finally Show
 | --- | --- |
 | **Set display value** | Channel, Target, Value, Input format. Set a whole value, object property or array item. This extends the existing action; there is no separate Update data value action. |
 | **Set display data from JSON** | Initialize or replace the entire Channel with a JSON object. |
+| **Set shared display value** | Save one top-level key across all channels. Enter a shared data name, value and input format. Save **Integrations > Custom Button** settings once before first use (`{}` is sufficient). |
 | **Insert array item** | Channel, Target array, Item to insert, Input format, optional Insert before index. Empty index appends; 0 inserts at the beginning. |
 | **Remove display value** | Channel, Target, optional Store removed value in variable and variable scope. Remove a value, object property or array item. |
 
@@ -82,6 +83,8 @@ Choose an input target, then select an event in **+ Add event**. The widget targ
 Native Short Press, Long Press, Touch Start and Touch End flows are converted to Custom Button events targeting `$self`. Existing concrete self IDs are converted when settings are opened and saved; other concrete IDs remain unchanged unless copy correction or bulk retarget is applied. Save before testing. Previews do not publish press events. In automations without a widget owner, the host treats `$self` as an unset widget filter; select a concrete widget to restrict the event.
 
 ## Copy and export display data
+
+Shared display values stay in the integration settings. Transfer actions copy only keys supplied by the source widget's initial JSON or live channel. This keeps destination widgets linked to future shared settings changes.
 
 These actions combine the source Custom Button's **saved Initial JSON** with its current Channel data. Channel values override matching initial keys, including explicit null. Unsaved editor drafts are not read. Copying is a one-time operation, not a subscription.
 

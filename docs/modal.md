@@ -82,7 +82,7 @@ There is no modal rendering preview in the external editor. Opening the editor d
 
 ## Initial data and Modal opened
 
-Initial data JSON supplies local fallback values only: values already written to the Channel take priority. Opening a modal never writes its initial JSON into the shared Channel. Use `{}` (the default for new actions) to disable fallback values. A widget's own initial JSON is local to that widget and is not automatically shared with the modal.
+For each top-level key, the modal reads the live Channel, then its own initial JSON, then the shared values in the Custom Button integration settings. With `{}` as the modal's initial JSON, any key missing from the Channel goes straight to shared settings. Opening a modal leaves the Channel data intact. The opening widget's initial JSON stays local to that widget.
 
 Add **Modal opened** under **Other (updates and variables)** in the target Custom Button's event shortcuts, or through the host event menu. Set Target widget to the same widget as the Show modal action's Event target widget. The event exposes `widgetId` and `channel`. Use the action editor's event-value picker to select Channel for Set display value(s), then read host variables through the usual variable picker.
 

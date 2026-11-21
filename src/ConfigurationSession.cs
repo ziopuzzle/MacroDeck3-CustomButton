@@ -11,7 +11,7 @@ namespace Ziopuzzle.CustomButton;
 public sealed partial class ConfigurationSession : IUiSession
 {
     private readonly UiView view;
-    private readonly NativeEditorSession nativeEditor = new();
+    private readonly NativeEditorSession nativeEditor;
     private bool disposed;
     private bool echoFlows;
     private int revisionOffset;
@@ -26,6 +26,7 @@ public sealed partial class ConfigurationSession : IUiSession
         this.hub = hub;
         this.activation = activation;
         channel = new(settings.Channel);
+        nativeEditor = new(readSnapshot: () => hub?.Snapshot(channel.Value));
         layout = new(settings.Layout);
         values = new(settings.InitialValues);
         wholeButtonInteraction = new(settings.WholeButtonInteraction);

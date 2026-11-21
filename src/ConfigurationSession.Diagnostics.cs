@@ -27,13 +27,13 @@ public sealed partial class ConfigurationSession
         try
         {
             DataHub.ValidateName(channel.Value);
-            var data = DataHub.ParseValues(values.Value);
+            var initial = DataHub.ParseValues(values.Value);
             var snapshot = hub?.Snapshot(channel.Value) ?? DataSnapshot.Empty;
-            foreach (var pair in snapshot.Values) data[pair.Key] = pair.Value;
+            var data = snapshot.Resolve(initial);
             dataRows.Value = data.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p =>
             {
                 var raw = p.Value.GetRawText();
-                var origin = snapshot.Values.ContainsKey(p.Key) ? "live" : "initial";
+                var origin = snapshot.Values.ContainsKey(p.Key) ? "live" : initial.ContainsKey(p.Key) ? "initial" : "shared";
                 return new KeyValuePair<string, string>(p.Key, $"{p.Key} [{DisplayData.TypeOf(p.Value)}, {origin}] = " + (raw.Length > 500 ? raw[..500] + "…" : raw));
             }).ToArray();
             new LayoutRenderer(layout.Value).ValidateDraft(data, history: snapshot.ReadHistory);

@@ -42,6 +42,14 @@ For live values, add Display update (1 second) or the standard Variable changed 
 
 Initial data: `{"title":"CPU","value":42}`. Initial data supplies fallback values for top-level keys missing from the live Channel; it does not initialize the Channel. The sidebar keeps these keys visible while editing actions.
 
+## Share colors and other values across widgets
+
+Open **Integrations > Custom Button**, open its configuration and enter `{"themeAccent":"#54dfcc"}` in **Shared values (JSON)**. In a widget or modal, use `<text id="title" color="{{themeAccent}}">Music</text>`. Saving a different color updates open displays that use the shared value. New widgets and modals can use the same key on any channel, including after a restart.
+
+For each top-level key, Custom Button uses the first value it finds in the **live channel**, the **widget or modal's initial JSON**, then the **shared settings**. An explicit JSON `null` also takes precedence. To restore the shared color for one widget, remove its local overrides. To clear all shared values, save `{}` in the integration settings.
+
+To switch colors from a button or automation, save the integration settings once (an empty `{}` is enough). Add **Set shared display value**, enter `themeAccent` as **Shared data name** and `#54dfcc` or a variable binding as **Value**. The action saves that key in the same settings and updates open displays.
+
 ## Drawing and interaction
 
 - Layout: `stack`, `layer`, `scroll`, `repeat`, modifiers and responsive layouts, with conditional styles, expressions and numeric formatting.

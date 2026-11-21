@@ -40,8 +40,7 @@ public sealed partial class ButtonSession
 
     private Dictionary<string, JsonElement> ReadDisplayValues(DataSnapshot snapshot)
     {
-        var values = new Dictionary<string, JsonElement>(initial, StringComparer.Ordinal);
-        foreach (var pair in snapshot.Values) values[pair.Key] = pair.Value;
+        var values = snapshot.Resolve(initial);
         if (renderer != null)
             foreach (var pair in renderer.ImageColorDefaults)
                 if (publishImageColors) values.TryAdd(pair.Key, pair.Value); else values[pair.Key] = pair.Value;

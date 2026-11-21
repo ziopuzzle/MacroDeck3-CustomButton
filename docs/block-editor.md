@@ -16,7 +16,7 @@ This edits order and parent/child structure, rather than directly dragging rende
 
 ## Properties and conditions
 
-Valid property edits update the drawing automatically. Incomplete input keeps the last valid layout. A color swatch opens the picker; alpha uses CSS hex order. The widget editor overlays the channel values captured at opening on the initial JSON for data-key suggestions and preview checks. Scroll-follow layouts validate every available row, including those first displayed after scrolling.
+Valid property edits update the drawing automatically. Incomplete input keeps the last valid layout. A color swatch opens the picker; alpha uses CSS hex order. For data-key suggestions and preview checks, the editor reads the channel values, initial JSON and shared defaults in that order. Reopen the editor to pick up changes to shared or channel values. Scroll-follow layouts validate every available row, including those first displayed after scrolling.
 
 **Discard incomplete input** restores fields to the last valid layout without reverting applied changes or adding a history step. Use **Undo** to revert valid edits.
 

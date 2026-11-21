@@ -5,6 +5,7 @@ using MacroDeck.Sdk.Actions;
 using MacroDeck.Sdk.Ui;
 using MacroDeck.Sdk.Widgets;
 using MacroDeck.Sdk.Events;
+using MacroDeck.Sdk.ConfigFlow;
 using MacroDeck.Ui.Model.Surfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,12 +13,13 @@ using MacroDeck.Plugin.Hosting;
 
 namespace Ziopuzzle.CustomButton;
 
-public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypeProvider, IUiProvider, IEventProvider
+public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypeProvider, IUiProvider, IEventProvider, IConfigFlowProvider, IConfigEntryLifecycle
 {
     public const string PluginId = "net.ziopuzzle.custombutton";
     public const string TypeId = PluginId + "::custom-button";
     public DataHub Hub { get; } = new();
     private IIntegrationContext? context;
+    private readonly SemaphoreSlim sharedSettingsGate = new(1, 1);
     private static readonly HttpClient ImageHttp = new();
     private readonly Uri? imageHostUrl;
     private readonly SharedScriptUpdates updates = new();
@@ -35,9 +37,10 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
         this.logger = logger;
         artworkColors = new(() => context?.MusicPlayers);
         imageHostUrl = Uri.TryCreate(options?.Value.HostUrl, UriKind.Absolute, out var host) ? host : null;
-        showModal = new ShowModalAction(() => context?.Deck, () => context?.Widgets, () => context?.Events);
+        showModal = new ShowModalAction(() => context?.Deck, () => context?.Widgets, () => context?.Events, Hub);
         Actions = [
             new UpdateValueAction(Hub), new UpdateValuesAction(Hub),
+            new SetSharedValueAction(SetSharedValueAsync),
             new EditDisplayDataAction(Hub, "add"), new EditDisplayDataAction(Hub, "remove", () => context?.UserVariables),
             new CopyDisplayValueAction(Hub, ReadWidget), new CopyDisplayDataAction(Hub, ReadWidget),
             new WriteDisplayVariableAction(Hub, () => context?.UserVariables, ReadWidget), showModal
@@ -47,11 +50,60 @@ public sealed class CustomButtonIntegration : IPluginIntegration, IWidgetTypePro
     private static readonly WidgetTypeDescriptor Descriptor = new("custom-button", "Custom Button", TextCatalog.Reference("A button rendered from templates and variable data"), DefaultData: ButtonSettings.DefaultData, DataSchema: ButtonSettings.Schema, HasConfiguration: true);
     public string ProviderName => "Custom Button";
     public IReadOnlyList<WidgetTypeDescriptor> GetWidgetTypes() => [Descriptor];
-    public Task InitializeAsync(IIntegrationContext context)
+    public bool RequiresConfiguration => false;
+    public bool AllowsMultipleConfigurations => false;
+    public IConfigFlow CreateConfigFlow() => new SharedValuesFlow();
+    public async Task InitializeAsync(IIntegrationContext context)
     {
         if (!ReferenceEquals(this.context?.Events, context.Events))
         { activation?.Dispose(); activation = new DisplayActivation(context.Events); }
-        this.context = context; return Task.CompletedTask;
+        this.context = context;
+        await LoadSharedValuesAsync(context.Config, CancellationToken.None);
+    }
+    public async Task<bool> ReloadEntriesAsync(CancellationToken cancellationToken = default)
+    {
+        if (context == null) return false;
+        await LoadSharedValuesAsync(context.Config, cancellationToken);
+        return true;
+    }
+    private async Task LoadSharedValuesAsync(IIntegrationConfig config, CancellationToken cancellationToken)
+    {
+        await sharedSettingsGate.WaitAsync(cancellationToken);
+        try
+        {
+            var entry = (await config.GetEntriesAsync(cancellationToken)).FirstOrDefault();
+            var json = entry == null ? null : await config.GetStringAsync(entry.Id, SharedValuesFlow.Key, cancellationToken);
+            Hub.SetSharedValues(json ?? "{}");
+        }
+        catch (Exception e) when (e is JsonException or FormatException)
+        { logger?.LogWarning("Invalid shared display values in Custom Button settings. Keeping the last valid defaults."); }
+        finally { sharedSettingsGate.Release(); }
+    }
+    private async Task<ActionResult> SetSharedValueAsync(string name, JsonElement value, CancellationToken cancellationToken)
+    {
+        await sharedSettingsGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (context?.Config is not { } config)
+                return ActionResult.Failed(ActionErrorCodes.Unavailable, "Custom Button is not running.");
+            var entry = (await config.GetEntriesAsync(cancellationToken)).FirstOrDefault();
+            if (entry == null)
+                return ActionResult.Failed(ActionErrorCodes.NotConfigured,
+                    "Open Integrations > Custom Button and save Shared values (JSON) once. You can start with {}.");
+            var stored = await config.GetStringAsync(entry.Id, SharedValuesFlow.Key, cancellationToken);
+            var values = DataHub.ParseValues(stored ?? "{}");
+            if (!values.TryGetValue(name, out var old) || old.GetRawText() != value.GetRawText())
+            {
+                values[name] = value;
+                // Bindings can display raw JSON. Keep the representation of sibling values intact.
+                var json = "{" + string.Join(",", values.Select(p => JsonSerializer.Serialize(p.Key) + ":" + p.Value.GetRawText())) + "}";
+                values = DataHub.ParseValues(json);
+                await config.SetStringAsync(entry.Id, SharedValuesFlow.Key, json, cancellationToken);
+            }
+            Hub.SetSharedValues(values);
+            return ActionResult.Success();
+        }
+        finally { sharedSettingsGate.Release(); }
     }
     public async Task InitializeAsync(IWidgetTypeProviderContext context, CancellationToken cancellationToken = default)
         => await context.RegisterWidgetTypeAsync(Descriptor, cancellationToken);

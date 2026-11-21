@@ -178,7 +178,7 @@ public class EditDataActionTests
     public void ActionCatalogGroupsEditingThenTransfersAndModalWithoutRedundantSet()
     {
         Assert.That(new CustomButtonIntegration().Actions.Select(a => a.Id), Is.EqualTo(new[] {
-            "set-value", "set-data", "add-array-item", "remove-data-part", "copy-value", "copy-data", "write-variable", "show-modal" }));
+            "set-value", "set-data", "set-shared-value", "add-array-item", "remove-data-part", "copy-value", "copy-data", "write-variable", "show-modal" }));
         foreach (var action in new IActionDefinition[] { new UpdateValueAction(Hub()), new EditDisplayDataAction(Hub(), "add"), new EditDisplayDataAction(Hub(), "remove") })
         {
             Assert.That(action.Parameters.Any(p => p.Name == "sourceWidgetId"), Is.False);
