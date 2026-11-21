@@ -73,7 +73,6 @@ public static class AlphaPaint
         {
             var content = new UiStack { Key = "content", Fill = button.Fill, MainSize = button.MainSize,
                 Direction = button.Direction, Align = button.Align, Justify = button.Justify, Padding = button.Padding, Gap = button.Gap, Children = button.Children };
-            // The host's animated button border cannot be separated from its opaque default background.
             // Static borders and backgrounds use shape layers so child opacity is never changed.
             return Layer(new UiLayer { Key = button.Key, Fill = button.Fill, MainSize = button.MainSize, Children = [
                 Fade(new UiShape { Key = "background", Fill = true, Shape = "rounded-rectangle", CornerRadius = .06, Color = button.Background }, A("background")),

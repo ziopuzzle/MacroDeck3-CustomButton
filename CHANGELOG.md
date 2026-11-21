@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.48.13 — transparent backgrounds for animated borders
+
+- Stacks with animated borders accept `background="transparent"` and translucent hex colors. Background alpha leaves the animated outline and the stack's contents visible.
+
 ## 0.48.12 — locate and revert preview errors
 
 - Check every row of a scroll-follow Repeat before applying edits, including modifier sizes and fields bound to item data. The editor uses the channel values available when opened and checks the generated Macro Deck tree.

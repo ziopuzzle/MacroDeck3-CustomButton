@@ -29,6 +29,34 @@ public class BorderTests
         Assert.That(calls, Is.EqualTo(1));
     }
 
+    [TestCase("heartbeat")][TestCase("breathing")][TestCase("blink")]
+    [TestCase("comet")][TestCase("ants")][TestCase("hue-shift")][TestCase("rgb")]
+    public async Task AnimatedBorderKeepsItsNativeNodeAndContentAsBackgroundAlphaChanges(string style)
+    {
+        var hub = new DataHub();
+        var inputs = new List<ControlInput>();
+        var xml = $"<stack id='frame' borderStyle='{style}' borderColor='#abc' interactive='true'><style when='enabled' background='{{{{bg}}}}'/><text id='label'>Hello</text></stack>";
+        await using var session = new ButtonSession(ButtonTests.Surface(), new("demo", xml, "{}"), hub, onControlInput: inputs.Add);
+        var original = session.BuildTree().Root.Children.Single();
+        Assert.That(original.Properties["background"].GetString(), Is.EqualTo("#1a1a1a"));
+        foreach (var (bg, expected) in new[] { ("transparent", "transparent"), ("#abc0", "transparent"), ("#abc8", "#aabbcc88"), ("#123456", "#123456") })
+        {
+            hub.Update("demo", DataHub.ParseValues($$"""{"enabled":true,"bg":"{{bg}}"}"""));
+            session.Refresh();
+            var root = session.BuildTree().Root;
+            var frame = root.Children.Single();
+            Assert.That(root.Properties["background"].GetString(), Is.EqualTo("transparent"));
+            Assert.That(frame.Id, Is.EqualTo(original.Id));
+            Assert.That(frame.Type, Is.EqualTo("ui.button"));
+            Assert.That(frame.Properties["background"].GetString(), Is.EqualTo(expected));
+            Assert.That(frame.Properties["borderStyle"].GetString(), Is.EqualTo(style));
+            Assert.That(frame.Properties["borderColor"].GetString(), Is.EqualTo("#aabbcc"));
+            Assert.That(frame.Children.Single().Properties["text"].GetString(), Is.EqualTo("Hello"));
+        }
+        session.Dispatch(new UiEvent { NodeId = original.Id, Name = "press" });
+        Assert.That(inputs.Single().ElementId, Is.EqualTo("frame"));
+    }
+
     [Test] public async Task BorderConditionsToggleOffAndOnWithoutChangingRootIdentity()
     {
         var hub = new DataHub();

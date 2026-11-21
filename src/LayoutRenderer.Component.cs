@@ -235,7 +235,7 @@ public sealed partial class LayoutRenderer
             try { return DisplayColor.Parse(Attribute(name, fallback)); }
             catch (FormatException error) { throw AttributeError(name, error); }
         }
-        private string Color(string name, string fallback)
+        private DisplayColor ResolveColor(string name, string fallback)
         {
             var color = ParseColor(name, fallback);
             if (duration > 0 && animated.Contains(name) && context.Animation != null)
@@ -244,9 +244,9 @@ public sealed partial class LayoutRenderer
                 var rgb = context.Animation.Color(key + "." + name, color.Rgb, duration, easing, colorSpace);
                 color = new DisplayColor(rgb, color.Alpha);
             }
-            colors[name] = color;
-            return color.Rgb;
+            return color;
         }
+        private string Color(string name, string fallback) => (colors[name] = ResolveColor(name, fallback)).Rgb;
         private string EndColor() => Color("endColor", colors["color"].Hex);
         private UiSize TextLength(double size) => attributes.ContainsKey("sizeCap") ? UiSize.Capped(size, Number("sizeCap", 32, 1, 256)) : (UiSize)size;
     }

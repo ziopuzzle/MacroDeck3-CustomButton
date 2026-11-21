@@ -27,7 +27,7 @@ Child backgrounds do not remove the root's default: make the XML root transparen
 ```
 
 Root background bindings use ordinary display data, such as `background="{{background}}"`.
-Existing explicitly colored templates keep their colors. Static borders can be used with
-transparent backgrounds. The existing restriction on translucent backgrounds with animated
-native button borders remains unchanged.
+Static and animated borders support transparent and translucent backgrounds.
+For example, set `borderStyle="comet"` and `background="transparent"` on a root stack
+to draw a moving outline over the deck background.
 

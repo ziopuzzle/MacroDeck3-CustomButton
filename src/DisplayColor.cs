@@ -8,6 +8,7 @@ public readonly record struct DisplayColor(string Rgb, byte Alpha)
 {
     public double Opacity => Alpha / 255d;
     public string Hex => Alpha == 255 ? Rgb : Rgb + Alpha.ToString("x2", CultureInfo.InvariantCulture);
+    public string ButtonBackground => Alpha == 0 ? "transparent" : Hex;
     public static DisplayColor Parse(string value)
     {
         if (value == "transparent") return new("#000000", 0);

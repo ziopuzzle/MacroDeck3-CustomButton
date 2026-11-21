@@ -74,16 +74,21 @@ public sealed partial class LayoutRenderer
         private UiElement BuildBorderedStack()
         {
             var border = Choice("borderStyle", "static");
-            if (border is not ("static" or "none") && (ParseColor("background", "#1a1a1a").Alpha < 255 || ParseColor("borderColor", "#54dfcc").Alpha < 255))
-                throw new FormatException("Animated border colors must be opaque. Use opacity to fade the whole component.");
             if (border == "none") return new UiStack { Key = key, Children = children, Fill = fill, MainSize = mainSize,
                 Direction = Choice("direction", "vertical"), Justify = Choice("justify", "start"), Align = Choice("align", "stretch"), Gap = Length("gap", 0), Padding = Length("padding", 0),
                 Background = attributes.ContainsKey("background") ? UiValue.Of(Color("background", "#1a1a1a")) : default };
+            var borderColor = Color("borderColor", "#54dfcc");
+            if (border != "static" && colors["borderColor"].Alpha < 255)
+                throw AttributeError("borderColor", "Use an opaque borderColor for animated borders.");
+            // Animated rings are painted by the native button. Give it the face
+            // color directly so AlphaPaint keeps the ring and children together.
+            var background = border == "static" ? Color("background", "#1a1a1a")
+                : ResolveColor("background", "#1a1a1a").ButtonBackground;
             return new UiButton { Key = key, Children = children, Fill = fill, MainSize = mainSize,
                 Direction = Choice("direction", "vertical"), Justify = Choice("justify", "start"),
                 Align = Choice("align", "stretch"), Gap = Length("gap", 0), Padding = Length("padding", 0),
-                Background = Color("background", "#1a1a1a"),
-                BorderStyle = border == "none" ? default : UiValue.Of(border), BorderColor = Color("borderColor", "#54dfcc"),
+                Background = background,
+                BorderStyle = border, BorderColor = borderColor,
                 Corner = node.Parent == null ? UiValue.Of("tile") : default };
         }
 

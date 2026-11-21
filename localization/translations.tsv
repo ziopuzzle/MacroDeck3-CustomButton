@@ -220,7 +220,7 @@ PathData	Path (absolute coordinates)
 AlphaShapes	Circle, capsule, path and alpha
 ColorFormat	Use #RGB, #RGBA, #RRGGBB or #RRGGBBAA colors.
 BarAlpha	Use the same alpha for both ends of a bar.
-BorderAlpha	Animated border colors must be opaque. Use opacity to fade the whole component.
+BorderAlpha	Use an opaque borderColor for animated borders.
 PolygonVertices	Separate 3–64 polygon points with semicolons.
 PathLimit	Paths must not exceed 4096 characters.
 PathSyntax	Start paths with M. Use absolute M L H V C Q A Z commands with the correct number of arguments.

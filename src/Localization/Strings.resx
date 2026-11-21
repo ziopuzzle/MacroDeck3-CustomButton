@@ -666,7 +666,7 @@
     <value>Use the same alpha for both ends of a bar.</value>
   </data>
   <data name="BorderAlpha" xml:space="preserve">
-    <value>Animated border colors must be opaque. Use opacity to fade the whole component.</value>
+    <value>Use an opaque borderColor for animated borders.</value>
   </data>
   <data name="PolygonVertices" xml:space="preserve">
     <value>Separate 3–64 polygon points with semicolons.</value>

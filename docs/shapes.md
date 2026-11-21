@@ -78,11 +78,11 @@ This does not add SVG file loading, uploaded images or a JavaScript renderer.
 
 Colors accept **CSS order**: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`, or `transparent`. Alpha is last: `#ff000080` is red at approximately 50% opacity; `00` is transparent and `ff` is opaque. The picker supports alpha and writes the same format.
 
-The plugin sends six-digit RGB and `UiModifier.Opacity` to the host. Backgrounds, text, static borders, shape fills and strokes are separated so one paint's transparency does not fade another. Transparency reveals underlying layers. The root uses its default background unless explicitly made transparent; see [widget backgrounds](backgrounds.md).
+The plugin sends alpha directly for native paints that support it and uses separate opacity layers for other paints. Transparency reveals underlying layers. The root uses its default background unless explicitly made transparent; see [widget backgrounds](backgrounds.md).
 
 - Text, chart, clock, slider, shapes, stack backgrounds and static borders support alpha.
 - Bar and progress-bar require equal alpha at both ends. Omitting `endColor` inherits `color`, including alpha.
-- Animated borders require opaque background/border colors. Their component cannot isolate the animated outline from the default background. Static translucent borders use shape layers with a fixed rounded outline.
+- Animated borders accept a transparent or translucent background. For example, `<stack id="frame" background="transparent" borderStyle="breathing" borderColor="#54dfcc"/>` draws only the animated outline. Use an opaque `borderColor`. Children keep their own opacity.
 - Every XML element supports `opacity="0..1"` to fade the whole element, including children and animated borders. It multiplies paint alpha and supports styles and expressions.
 - Legacy 0.2 presets retain their RGB-only renderer; current XML/editor settings use the new renderer.
 
