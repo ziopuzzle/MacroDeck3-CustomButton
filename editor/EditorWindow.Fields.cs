@@ -1,16 +1,48 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 
 namespace Ziopuzzle.CustomButton;
 
 public sealed partial class EditorWindow
 {
-    private TextBox Field(StackPanel panel, string label, string value, string attribute, string component, bool inherited = false)
+    private sealed record PropertyField(TextBox Box, TextBlock Label, string Caption);
+    private readonly Dictionary<(int? Condition, string Name), PropertyField> propertyFields = new();
+    private PropertyField? markedField;
+
+    private void UpdateFieldWarning(EditorValidation.Issue? issue)
     {
-        panel.Children.Add(new TextBlock { Text = T(label), Foreground = B("#bbbbbb") });
+        var field = issue?.Id == selected && issue.Field != null ? propertyFields.GetValueOrDefault((issue.Condition, issue.Field)) : null;
+        if (markedField != field && markedField != null)
+        {
+            markedField.Label.Text = markedField.Caption;
+            markedField.Label.Foreground = B("#bbbbbb");
+            ToolTip.SetTip(markedField.Label, null);
+        }
+        markedField = field;
+        if (field == null) return;
+        field.Label.Text = "⚠ " + field.Caption;
+        field.Label.Foreground = B("#ffc266");
+        ToolTip.SetTip(field.Label, issue!.Message);
+    }
+
+    private void FocusIssueField()
+    {
+        if (markedField is not { } field) return;
+        foreach (var section in field.Box.GetLogicalAncestors().OfType<Expander>().Reverse()) section.IsExpanded = true;
+        UpdateLayout();
+        field.Box.Focus();
+        field.Box.BringIntoView();
+    }
+
+    private TextBox Field(StackPanel panel, string label, string value, string attribute, string component, bool inherited = false, int? condition = null)
+    {
+        var caption = new TextBlock { Name = "label_" + (condition.HasValue ? condition + "_" : "") + attribute, Text = T(label), Foreground = B("#bbbbbb") };
+        panel.Children.Add(caption);
         var row = new DockPanel { LastChildFill = true };
         var box = new TextBox { Name = "field_" + attribute, Text = value, Watermark = inherited ? null : PropertyDefaults.Get(component, attribute), MinWidth = 40, Padding = new Thickness(7, 5) };
+        propertyFields[(condition, attribute)] = new(box, caption, T(label));
         if (component == "svg" && attribute == "text")
         {
             box.AcceptsReturn = true; box.TextWrapping = TextWrapping.Wrap;
@@ -89,7 +121,7 @@ public sealed partial class EditorWindow
         insert.Focusable = false; // Keep the text selection until the picker has captured it.
         ToolTip.SetTip(insert, "Insert display data, a function or an operator.");
         insert.Margin = new Thickness(4, 0, 0, 0);
-        insert.Click += async (_, _) => { try { await InsertExpression(box, attribute); } catch (FormatException e) { Say(e.Message); } };
+        insert.Click += async (_, _) => { try { await InsertExpression(box, attribute); } catch (FormatException e) { Say("⚠ " + e.Message); } };
         DockPanel.SetDock(insert, Dock.Right); row.Children.Add(insert);
     }
 

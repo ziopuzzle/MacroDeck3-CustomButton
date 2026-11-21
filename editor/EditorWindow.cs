@@ -18,6 +18,7 @@ public sealed partial class EditorWindow : Window
     private Button undoButton = null!, redoButton = null!;
     private Button discardXmlButton = null!;
     private Button? discardPropertiesButton;
+    private readonly Button showPreviewIssue;
     private readonly bool testing;
     private readonly Action<string>? sendDraft;
     private readonly string language;
@@ -39,7 +40,7 @@ public sealed partial class EditorWindow : Window
     private readonly DispatcherTimer publishTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private bool disconnected;
     private string? copiedXml;
-    private Action? applyProperties;
+    private EditorValidation.Issue? inputIssue;
     private string? dragId;
     private IPointer? dragPointer;
     private Point dragStart;
@@ -48,7 +49,7 @@ public sealed partial class EditorWindow : Window
     private string? placement;
     public bool HostClosed { get; set; }
     public string LayoutXml => history.Xml;
-    private sealed record Row(string Id, Border Card, bool Container, bool Root, bool Footer);
+    private sealed record Row(string Id, Border Card, bool Container, bool Root, bool Footer, TextBlock? Warning = null);
     private static readonly Dictionary<string, string> Types = new()
     {
         ["repeat"] = "↻ Repeat", ["scroll"] = "↕ Scroll", ["stack"] = "▤ Stack", ["layer"] = "▧ Layer", ["text"] = "T Text", ["bar"] = "━ Range bar",
@@ -62,14 +63,21 @@ public sealed partial class EditorWindow : Window
     private static string Id(XElement node) => (string)node.Attribute("id")!;
     private static string Colour(string type) => type switch { "repeat" or "scroll" or "stack" or "layer" or "transform" or "modifier" or "responsive" or "variant" or "segmented" => "#9874cf", "text" => "#50adf2", _ => "#48b5a1" };
 
-    public EditorWindow(string layout, string values, bool testing = false, Action<string>? sendDraft = null)
+    private readonly bool modal;
+    public EditorWindow(string layout, string values, bool testing = false, Action<string>? sendDraft = null,
+        IReadOnlyDictionary<string, JsonElement>? channelValues = null, bool modal = false)
     {
         // English is currently the only supported native-editor language. No OS/user override.
         this.language = "en";
         this.testing = testing; history = new(layout); basis = layout; selected = Id(new LayoutDocument(layout).Root);
         this.sendDraft = sendDraft ?? (testing ? null : message => { Console.WriteLine(message); Console.Out.Flush(); });
-        try { initialValues = DataHub.ParseValues(values); keys = initialValues.Keys.ToArray(); }
-        catch (Exception e) when (e is JsonException or InvalidOperationException or FormatException) { initialValues = new Dictionary<string, JsonElement>(); keys = []; }
+        this.modal = modal;
+        Dictionary<string, JsonElement> data;
+        try { data = DataHub.ParseValues(values); }
+        catch (Exception e) when (e is JsonException or InvalidOperationException or FormatException) { data = new(); }
+        if (channelValues != null)
+            foreach (var pair in channelValues) data[pair.Key] = pair.Value;
+        initialValues = data; keys = data.Keys.ToArray();
         Title = T("Custom Button — Layout editor");
         Width = 1140; Height = 780; MinWidth = 900; MinHeight = 580;
         Background = B("#171717"); Foreground = B("#eeeeee"); FontSize = 13;
@@ -101,15 +109,21 @@ public sealed partial class EditorWindow : Window
         xmlTools.Children.Add(Button("Apply XML", ApplyXml));
         xmlTools.Children.Add(Button("Format", FormatXml));
         discardXmlButton = Button("Discard XML changes", DiscardXmlInput, "discardXml");
-        ToolTip.SetTip(discardXmlButton, "Restore the last applied XML. This does not undo applied layout changes.");
         xmlTools.Children.Add(discardXmlButton);
         xmlTools.Children.Add(CopyXmlButton("Copy", "copyXmlDraft"));
         xmlGrid.Children.Add(xmlTools); Grid.SetRow(xml, 1); xmlGrid.Children.Add(xml); xmlPage = xmlGrid;
-        content.Children.Add(guiPage); content.Children.Add(xmlPage); Grid.SetRow(status, 2); root.Children.Add(status); Content = root;
+        content.Children.Add(guiPage); content.Children.Add(xmlPage);
+        var footer = new DockPanel();
+        showPreviewIssue = Button("Show in XML", ShowIssue, "showPreviewIssue");
+        DockPanel.SetDock(showPreviewIssue, Dock.Right);
+        footer.Children.Add(showPreviewIssue); footer.Children.Add(status);
+        Grid.SetRow(footer, 2); root.Children.Add(footer); Content = root;
         xml.PropertyChanged += (_, e) =>
         {
             if (e.Property != TextBox.TextProperty || rebuilding) return;
             xmlDirty = xml.Text != history.Xml;
+            inputIssue = null;
+            Say(xmlDirty ? "Apply XML to validate your changes." : "XML matches the applied draft.");
             UpdateHistoryButtons();
         };
         guiTab.Click += (_, _) => ShowTab(false); xmlTab.Click += (_, _) => ShowTab(true);
@@ -148,6 +162,7 @@ public sealed partial class EditorWindow : Window
             if (e.Key == Key.Z) { Guard(() => Undo((e.KeyModifiers & KeyModifiers.Shift) != 0)); e.Handled = true; }
             else if (e.Key == Key.Y) { Guard(() => Undo(true)); e.Handled = true; }
         };
+        RefreshHistoryPreviewWarning();
         Refresh(); ShowTab(false); Say("Add with ＋ and drag ⠿ to move. Preview and save in Macro Deck.");
     }
     private Button Button(string label, Action action, string? name = null)
@@ -159,14 +174,15 @@ public sealed partial class EditorWindow : Window
         ? "The layout changed in Macro Deck. Further changes are kept in this editor and are not sent. Copy XML to recover them."
         : disconnected ? "Macro Deck disconnected. Further changes are kept in this editor and are not sent. Copy XML to recover them." : null;
     private bool NeedsRecovery => (conflict || disconnected && basis != history.Xml) && copiedXml != history.Xml;
-    private void Say(string text) => status.Text = T(RecoveryNotice is { } notice ? notice + "\n" + text : text);
+    private EditorValidation.Issue? CurrentIssue => inputIssue ?? (xmlDirty ? null : previewWarning);
+    private void Say(string text) => status.Text = T(string.Join("\n", new[] { RecoveryNotice,
+        CurrentIssue is { } issue ? "⚠ " + issue.Message : null, text }.Where(s => !string.IsNullOrEmpty(s))));
     private void SayDraftApplied()
     {
         var applied = RecoveryNotice != null ? "Changes kept in this editor."
             : "Changes applied to the draft. Save in Macro Deck to finish.";
-        SayPreviewStatus(applied);
+        Say(applied);
     }
-    private void SayPreviewStatus(string text) => Say(previewWarning == null ? text : previewWarning + "\n" + text);
     private Button CopyXmlButton(string label, string name)
     {
         var button = Button(label, () => { }, name);
@@ -194,22 +210,34 @@ public sealed partial class EditorWindow : Window
         try { action(); }
         catch (Exception e) when (e is FormatException or System.Xml.XmlException or InvalidOperationException or IOException)
         {
-            Say(e.Message);
             if (xmlDirty)
             {
-                var line = e is System.Xml.XmlException xe ? xe.LineNumber : e.Data["LayoutLine"] as int? ?? 0;
-                var column = e is System.Xml.XmlException xc ? xc.LinePosition : e.Data["LayoutColumn"] as int? ?? 0;
-                if (line > 0)
-                {
-                    var text = xml.Text ?? ""; var offset = 0;
-                    for (var i = 1; i < line && offset < text.Length; i++) { var end = text.IndexOf('\n', offset); offset = end < 0 ? text.Length : end + 1; }
-                    offset = Math.Min(text.Length, offset + Math.Max(0, column - 1));
-                    xml.Focus(); xml.CaretIndex = offset; xml.SelectionStart = offset;
-                    var endOfLine = text.IndexOf('\n', offset);
-                    xml.SelectionEnd = endOfLine < 0 ? text.Length : endOfLine;
-                }
+                ReportXmlError(e);
+                if (inputIssue is { Line: > 0 } issue) SelectXmlLocation(issue.Line, issue.Column, issue.Field == null ? null : issue.Length);
             }
+            else Say("⚠ " + e.Message);
         }
+    }
+    private void ReportXmlError(Exception error)
+    {
+        inputIssue = EditorValidation.Describe(error);
+        UpdateHistoryButtons();
+        Say("Correct the input or select Discard XML changes.");
+    }
+    private void ShowIssue()
+    {
+        if (propertyDirty) { FocusIssueField(); return; }
+        if (CurrentIssue is not { Line: > 0 } issue) return;
+        if (!xmlDirty) ShowTab(true);
+        SelectXmlLocation(issue.Line, issue.Column, xmlDirty && issue.Field == null ? null : issue.Length);
+    }
+    private void SelectXmlLocation(int line, int column, int? length = null)
+    {
+        var text = xml.Text ?? "";
+        var offset = EditorValidation.Offset(text, line, column);
+        var end = length.HasValue ? Math.Min(text.Length, offset + length.Value) : text.IndexOfAny(['\r', '\n'], offset);
+        xml.Focus(); xml.CaretIndex = offset; xml.SelectionStart = offset;
+        xml.SelectionEnd = end < 0 ? text.Length : end;
     }
     private Button AddButton(Func<string> target)
     {
@@ -244,9 +272,10 @@ public sealed partial class EditorWindow : Window
     }
     private bool ResolvePending()
     {
-        try { if (xmlDirty) ApplyXml(); if (propertyDirty) applyProperties?.Invoke(); return !propertyDirty && !xmlDirty; }
+        if (propertyDirty) { Say("Correct the input or select Discard incomplete input."); return false; }
+        try { if (xmlDirty) ApplyXml(); return true; }
         catch (Exception e) when (e is FormatException or System.Xml.XmlException or InvalidOperationException)
-        { Say("Correct the input or select " + (xmlDirty ? "Discard XML changes" : "Discard incomplete input") + ": " + e.Message); return false; }
+        { ReportXmlError(e); return false; }
     }
     private async Task<string?> ConfirmPending()
     {
@@ -276,8 +305,16 @@ public sealed partial class EditorWindow : Window
         panel.Children.Add(choices); dialog.Content = panel;
         return await dialog.ShowDialog<bool>(this);
     }
-    private string? previewWarning;
-    private void ApplyXml() { previewWarning = EditorValidation.Check(xml.Text ?? "", initialValues); history.Set(xml.Text ?? ""); xmlDirty = propertyDirty = false; Publish(); Refresh(); SayDraftApplied(); }
+    private EditorValidation.Issue? previewWarning;
+    private string? lastPreviewableXml;
+    private void CheckPreview(string layout)
+    {
+        var issue = EditorValidation.Check(layout, initialValues, lastPreviewableXml, modal);
+        if (issue == null) lastPreviewableXml = layout;
+        else if (previewWarning == null) history.EndGroup();
+        previewWarning = issue;
+    }
+    private void ApplyXml() { CheckPreview(xml.Text ?? ""); history.Set(xml.Text ?? ""); inputIssue = null; xmlDirty = propertyDirty = false; Publish(); Refresh(); SayDraftApplied(); }
     private void FormatXml()
     {
         xml.Text = new LayoutDocument(xml.Text ?? "").Serialize();
@@ -285,14 +322,24 @@ public sealed partial class EditorWindow : Window
     }
     private void DiscardXmlInput()
     {
+        if (!xmlDirty) { RevertPreviewEdit(); return; }
+        inputIssue = null;
         rebuilding = true; xml.Text = history.Xml; rebuilding = false; xmlDirty = false;
         UpdateHistoryButtons();
-        Say("Unapplied XML changes discarded. The last valid layout is kept.");
+        Say("Unapplied XML changes discarded. The last applied layout is kept.");
     }
     private void DiscardPropertyInput()
     {
-        propertyDirty = false; Refresh();
-        Say("Incomplete input discarded. The last valid layout is kept.");
+        if (!propertyDirty) { RevertPreviewEdit(); return; }
+        inputIssue = null; propertyDirty = false; Refresh();
+        Say("Incomplete input discarded. The last applied layout is kept.");
+    }
+    private void RevertPreviewEdit()
+    {
+        if (previewWarning == null || !history.CanUndo) return;
+        if (previewWarning.RevertedXml is not { } reverted) { Undo(false); return; }
+        history.Set(reverted);
+        RefreshHistoryPreviewWarning(); Publish(); Refresh(); SayDraftApplied();
     }
     private void Edit(Func<LayoutDocument, string> edit)
     {
@@ -303,23 +350,41 @@ public sealed partial class EditorWindow : Window
     {
         // History may contain a legacy layout that cannot render. Diagnose it without
         // preventing Undo/Redo from restoring the user's previous XML.
-        try { previewWarning = EditorValidation.Check(history.Xml, initialValues); }
+        try { CheckPreview(history.Xml); }
         catch (Exception e) when (e is FormatException or System.Xml.XmlException or InvalidOperationException)
-        { previewWarning = "Cannot preview this layout: " + e.Message; }
+        { previewWarning = EditorValidation.Describe(e) with { Message = "Cannot preview this layout: " + e.Message }; }
     }
     private void UpdateHistoryButtons()
     {
         undoButton.IsEnabled = history.CanUndo || propertyDirty;
         redoButton.IsEnabled = history.CanRedo && !propertyDirty;
-        discardXmlButton.IsEnabled = xmlDirty;
-        if (discardPropertiesButton != null) discardPropertiesButton.IsEnabled = propertyDirty;
+        var canRevert = previewWarning != null && history.CanUndo;
+        var revertLabel = previewWarning?.RevertedXml != null ? "Revert " + previewWarning.Field : "Undo last edit";
+        discardXmlButton.IsEnabled = xmlDirty || canRevert;
+        discardXmlButton.Content = !xmlDirty && canRevert ? revertLabel : "Discard XML changes";
+        if (discardPropertiesButton != null)
+        {
+            discardPropertiesButton.IsEnabled = propertyDirty || canRevert;
+            discardPropertiesButton.Content = !propertyDirty && canRevert ? revertLabel : "Discard incomplete input";
+        }
+        var issue = CurrentIssue;
+        UpdateFieldWarning(issue);
+        showPreviewIssue.Content = propertyDirty ? "Show field" : "Show in XML";
+        showPreviewIssue.IsVisible = propertyDirty ? markedField != null : issue is { Line: > 0 };
+        showPreviewIssue.IsEnabled = !xmlDirty || inputIssue != null;
+        foreach (var row in targets)
+        {
+            if (row.Warning == null) continue;
+            row.Warning.IsVisible = row.Id == issue?.Id;
+            if (row.Warning.IsVisible) ToolTip.SetTip(row.Warning, issue!.Message);
+        }
     }
     private void Undo(bool redo)
     {
         if (xmlDirty) { if (!ResolvePending()) return; }
         // Incomplete property input has not entered history. Undo discards it first.
         if (propertyDirty) { DiscardPropertyInput(); return; }
-        if (redo) history.Redo(); else history.Undo();
+        if (redo) history.Redo(); else { lastPreviewableXml = null; history.Undo(); }
         RefreshHistoryPreviewWarning(); Publish(); Refresh(); SayDraftApplied();
     }
     private void Publish()
@@ -338,7 +403,7 @@ public sealed partial class EditorWindow : Window
         {
             sendDraft(JsonSerializer.Serialize(new { layout = history.Xml, basis }));
             basis = history.Xml;
-            if (!propertyDirty && !xmlDirty) SayPreviewStatus("Changes sent to the draft. Save in Macro Deck to finish.");
+            if (!propertyDirty && !xmlDirty) Say("Changes sent to the draft. Save in Macro Deck to finish.");
         }
         catch (IOException) { Disconnect(); }
     }
@@ -370,6 +435,7 @@ public sealed partial class EditorWindow : Window
     {
         if (selected == id || !ResolvePending()) return;
         selected = id; MakeProperties();
+        UpdateHistoryButtons();
         foreach (var row in targets) if (!row.Footer) row.Card.Background = B(row.Id == selected ? "#26323b" : "#202020");
     }
 }

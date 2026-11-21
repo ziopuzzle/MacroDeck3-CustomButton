@@ -14,6 +14,7 @@ public sealed partial class EditorWindow
     private void MakeProperties()
     {
         updateDraftDescription = null;
+        propertyFields.Clear(); markedField = null;
         properties.Children.Clear(); propertyDirty = false;
         var node = new LayoutDocument(history.Xml).Find(selected);
         history.EndGroup();
@@ -22,8 +23,6 @@ public sealed partial class EditorWindow
         var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
 
         discardPropertiesButton = Button("Discard incomplete input", DiscardPropertyInput, "discardProperties");
-        discardPropertiesButton.IsEnabled = false;
-        ToolTip.SetTip(discardPropertiesButton, "Discard incomplete fields only. Valid edits are kept; use Undo to revert applied changes.");
         tools.Children.Add(discardPropertiesButton); properties.Children.Add(tools);
         properties.Children.Add(new TextBlock { Text = T("Valid settings are applied automatically."), Foreground = B("#bbbbbb") });
         var attributes = new Dictionary<string, TextBox>(); TextBox? text = null;
@@ -83,9 +82,9 @@ public sealed partial class EditorWindow
         foreach (var style in node.Elements("style"))
         {
             var fields = new Dictionary<string, TextBox>(); var panel = new StackPanel { Spacing = 6 };
-            fields["when"] = Field(panel, "Condition expression", (string?)style.Attribute("when") ?? "", "when", node.Name.LocalName);
+            fields["when"] = Field(panel, "Condition expression", (string?)style.Attribute("when") ?? "", "when", node.Name.LocalName, condition: rules.Count + 1);
             var conditionGroups = MakeGroups(panel, condition: true);
-            foreach (var attribute in allowed.Where(a => a is not ("id" or "averageColorKey" or "averageColorFallback" or "itemAlias" or "indexAlias" or "keyAlias"))) fields[attribute] = Field(conditionGroups[PropertyLayout.Group(type, attribute)], PropertyDescriptions.Label(attribute), (string?)style.Attribute(attribute) ?? "", attribute, type, inherited: true);
+            foreach (var attribute in allowed.Where(a => a is not ("id" or "averageColorKey" or "averageColorFallback" or "itemAlias" or "indexAlias" or "keyAlias"))) fields[attribute] = Field(conditionGroups[PropertyLayout.Group(type, attribute)], PropertyDescriptions.Label(attribute), (string?)style.Attribute(attribute) ?? "", attribute, type, inherited: true, condition: rules.Count + 1);
             var index = rules.Count; panel.Children.Add(Button("Delete this condition", () => Edit(d => { d.DeleteStyle(selected, index); return selected; })));
             var header = new Expander { Header = $"{T("Condition")} {index + 1}: {(string?)style.Attribute("when")}", Content = panel, HorizontalAlignment = HorizontalAlignment.Stretch };
             properties.Children.Add(header); ruleHeaders.Add(header); rules.Add(fields);
@@ -103,11 +102,6 @@ public sealed partial class EditorWindow
                 ruleHeaders[i].Header = $"{T("Condition")} {i + 1}: {rules[i]["when"].Text}";
             }
             ApplyPropertyDraft(draft, heading, type);
-        };
-        applyProperties = () =>
-        {
-            updateDraftDescription();
-            if (propertyDirty) throw new FormatException("Please correct the input.");
         };
         properties.Children.Add(Button("＋ Conditional style", () => Edit(d => { d.AddStyle(selected); return selected; })));
         if (lineMode != null) lineMode.SelectionChanged += (_, _) =>
@@ -141,7 +135,7 @@ public sealed partial class EditorWindow
             string next;
             if (current.Parent == null) next = new LayoutDocument(draft.ToString()).Serialize();
             else { current.ReplaceWith(draft); next = document.Serialize(); }
-            previewWarning = EditorValidation.Check(next, initialValues);
+            CheckPreview(next);
             if (next != history.Xml) history.SetGrouped(next, propertyGroup);
             var renamed = selected != Id(draft);
             if (renamed)
@@ -154,12 +148,35 @@ public sealed partial class EditorWindow
                 scroll.Offset = offset;
             }
             propertyDirty = false;
+            inputIssue = null;
             UpdateHistoryButtons();
             rebuilding = true; xml.Text = history.Xml; rebuilding = false; xmlDirty = false;
             Publish();
             SayDraftApplied();
         }
         catch (Exception e) when (e is FormatException or System.Xml.XmlException or InvalidOperationException)
-        { UpdateHistoryButtons(); Say("Input incomplete in '" + selected + "': " + e.Message + " The last valid display is kept."); }
+        {
+            var issue = EditorValidation.Describe(e);
+            var applied = new LayoutDocument(history.Xml).Find(selected);
+            if (issue.Id == null || issue.Id == (string?)draft.Attribute("id"))
+            {
+                issue = issue with { Id = selected };
+                if (issue.Field == null)
+                {
+                    // Some structural and multi-property checks only identify the component.
+                    // A single changed input on it still gives the user a correction target.
+                    var changed = propertyFields.Keys.Where(k => FieldValue(applied, k) != FieldValue(draft, k)).Take(2).ToArray();
+                    if (changed.Length == 1) issue = issue with { Condition = changed[0].Condition, Field = changed[0].Name };
+                }
+            }
+            inputIssue = issue with { Message = $"Input incomplete in {issue.Location}: {e.Message}" };
+            UpdateHistoryButtons(); Say("The last valid display is kept.");
+        }
+    }
+
+    private static string? FieldValue(XElement node, (int? Condition, string Name) field)
+    {
+        if (field.Condition is int n) node = node.Elements("style").ElementAt(n - 1);
+        return field.Name == "text" ? string.Concat(node.Nodes().OfType<XText>().Select(t => t.Value)) : (string?)node.Attribute(field.Name);
     }
 }

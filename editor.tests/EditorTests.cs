@@ -43,6 +43,34 @@ public class EditorTests
         finally { w.HostClosed = true; w.Close(); }
     }
 
+    [AvaloniaTest] public void FollowingRepeatMarksInvalidModifierFieldsBeforePublishing()
+    {
+        const string original = "<scroll id='list' followKey='select'><repeat id='r' items='rows'><modifier id='frame' height='25%'/></repeat></scroll>";
+        var messages = new List<string>();
+        var w = new EditorWindow(original, """{"select":0,"rows":[]}""", true, messages.Add,
+            channelValues: DataHub.ParseValues("""{"rows":[{"height":"25%"},{"height":"bad"}]}"""));
+        w.Show(); Flush(w);
+        try
+        {
+            Click(w, Find<Border>(w, "block_frame"));
+            foreach (var (name, value) in new[] { ("height", "401%"), ("mainSize", "abc"), ("fill", "abc") })
+            {
+                Find<TextBox>(w, "field_" + name).Text = value; Flush(w);
+                Assert.That(Find<TextBlock>(w, "warning_frame").IsVisible, Is.True);
+                Assert.That(Find<TextBlock>(w, "label_" + name).Text, Does.StartWith("⚠"));
+                Assert.That(w.LayoutXml, Is.EqualTo(original));
+                Click(w, Find<Button>(w, "discardProperties"));
+            }
+            Assert.That(messages, Is.Empty);
+            Find<TextBox>(w, "field_height").Text = "{{item.height}}"; Flush(w);
+            Assert.That(Find<TextBlock>(w, "status").Text, Does.Contain("frame · height").And.Contain("cannot preview"));
+            Find<TextBox>(w, "field_height").Text = "30%"; Flush(w);
+            Assert.That(Find<TextBlock>(w, "warning_frame").IsVisible, Is.False);
+            Assert.That(w.LayoutXml, Does.Contain("30%"));
+        }
+        finally { w.HostClosed = true; w.Close(); }
+    }
+
     [AvaloniaTest] public void DiscardIncompletePropertiesKeepsValidEditsAndTheirUndoHistory()
     {
         const string original = "<text id='title'>Original</text>";

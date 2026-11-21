@@ -83,7 +83,8 @@ public sealed partial class ConfigurationSession
     }
     private void OpenEditor()
     {
-        try { _ = new LayoutDocument(layout.Value); nativeEditor.Open(layout.Value, values.Value, () => layout.Value, SetXml, text => editorStatus.Value = text); }
+        try { _ = new LayoutDocument(layout.Value); nativeEditor.Open(layout.Value, values.Value, () => layout.Value, SetXml,
+            text => editorStatus.Value = text, hub?.Snapshot(channel.Value).Values); }
         catch (Exception e) when (e is FormatException or System.Xml.XmlException or IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception or InvalidOperationException)
         { editorStatus.Value = "Cannot open editor: " + e.Message; }
     }

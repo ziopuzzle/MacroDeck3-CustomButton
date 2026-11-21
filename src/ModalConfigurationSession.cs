@@ -21,7 +21,7 @@ public sealed class ModalConfigurationSession : IUiSession
     public ModalConfigurationSession(ActionConfigurationRequest request, ILayoutEditorSession? editor = null,
         Func<MacroDeck.Sdk.Widgets.IWidgetApi?>? widgets = null)
     {
-        this.editor = editor ?? new NativeEditorSession();
+        this.editor = editor ?? new NativeEditorSession(modal: true);
         UiState<string> State(string key, string fallback = "") => new(
             request.Parameters.TryGetValue(key, out var value) && value.ValueKind == JsonValueKind.String
                 ? value.GetString()! : fallback);

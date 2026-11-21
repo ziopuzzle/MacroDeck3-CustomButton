@@ -23,7 +23,10 @@ public sealed class EditorApp : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && Input != null)
         {
             using var json = JsonDocument.Parse(Input);
-            var window = new EditorWindow(json.RootElement.GetProperty("layout").GetString()!, json.RootElement.GetProperty("initialValues").GetString()!);
+            var request = json.RootElement;
+            var window = new EditorWindow(request.GetProperty("layout").GetString()!, request.GetProperty("initialValues").GetString()!,
+                channelValues: request.TryGetProperty("channelValues", out var data) ? data.Deserialize<Dictionary<string, JsonElement>>() : null,
+                modal: request.TryGetProperty("modal", out var modal) && modal.GetBoolean());
             desktop.MainWindow = window;
             _ = Task.Run(async () =>
             {

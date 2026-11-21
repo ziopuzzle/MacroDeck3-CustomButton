@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.48.12 — locate and revert preview errors
+
+- Check every row of a scroll-follow Repeat before applying edits, including modifier sizes and fields bound to item data. The editor uses the channel values available when opened and checks the generated Macro Deck tree.
+- Invalid input such as `0a` in a slider's minimum marks both the block and its field. Blocked actions keep the original error visible. **Show field** opens the property group and focuses the input.
+- The block editor marks the component with a preview warning and identifies the property and conditional style when available. **Show in XML** selects the source of the warning.
+- Revert the affected property while keeping other edits. When the editor cannot isolate the change, **Undo last edit** restores the previous draft.
+
 ## 0.48.11 — operators in the expression picker
 
 - Insert arithmetic operators in calculations and comparison or logical operators in conditions. Each entry includes a short description and an editable example.

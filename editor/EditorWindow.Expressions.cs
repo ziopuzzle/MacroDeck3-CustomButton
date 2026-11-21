@@ -29,7 +29,7 @@ public sealed partial class EditorWindow
         Grid.SetRow(edit, 3); panel.Children.Add(edit);
         var position = new TextBlock { Name = "expressionPosition", TextWrapping = TextWrapping.Wrap };
         Grid.SetRow(position, 4); panel.Children.Add(position);
-        var feedback = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = B("#e9b85e") };
+        var feedback = new TextBlock { Text = CurrentIssue?.Message, TextWrapping = TextWrapping.Wrap, Foreground = B("#e9b85e") };
         Grid.SetRow(feedback, 5); panel.Children.Add(feedback);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8 };
         var insert = new Button { Content = "Insert", IsEnabled = false, Focusable = false };
@@ -73,7 +73,7 @@ public sealed partial class EditorWindow
                 // Use the normal property pipeline, including validation, undo grouping and
                 // the existing throttled host preview updates. Never steal focus while typing.
                 box.Text = edit.Text;
-                feedback.Text = propertyDirty ? status.Text : previewWarning ?? "";
+                feedback.Text = CurrentIssue?.Message;
                 Position();
             }
         };
@@ -87,7 +87,7 @@ public sealed partial class EditorWindow
                 edit.SelectionStart = result.Start; edit.SelectionEnd = result.End;
                 start = result.Start; end = result.End; Position();
             }
-            catch (FormatException e) { feedback.Text = e.Message; }
+            catch (FormatException e) { feedback.Text = "⚠ " + e.Message; }
         };
         dialog.Opened += (_, _) =>
         {

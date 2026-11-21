@@ -30,6 +30,8 @@ public sealed partial class EditorWindow
         };
         Grid.SetColumn(caption, 1); line.Children.Add(caption);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        var warning = new TextBlock { Name = "warning_" + id, Text = "⚠", Foreground = B("#ffc266"), VerticalAlignment = VerticalAlignment.Center, IsVisible = false };
+        actions.Children.Add(warning);
         if (container) actions.Children.Add(Button(collapsed.Contains(id) ? "›" : "⌄", () =>
         {
             if (!ResolvePending()) return;
@@ -48,7 +50,7 @@ public sealed partial class EditorWindow
             more.ContextMenu = menu; menu.Open(more);
         };
         actions.Children.Add(more); Grid.SetColumn(actions, 2); line.Children.Add(actions); card.Child = line;
-        rows.Children.Add(card); targets.Add(new(id, card, container, node.Parent == null, false));
+        rows.Children.Add(card); targets.Add(new(id, card, container, node.Parent == null, false, warning));
         handle.PointerPressed += (_, e) =>
         {
             if (!e.GetCurrentPoint(handle).Properties.IsLeftButtonPressed || propertyDirty || xmlDirty) { if (propertyDirty || xmlDirty) Say("Correct or reset the pending input before moving."); return; }
@@ -105,7 +107,7 @@ public sealed partial class EditorWindow
             var y = (point.Y - rect.Top) / Math.Max(1, rect.Height);
             var zone = row.Footer ? (!row.Root && y > .75 ? "after" : "inside") : LayoutDropPlacement.Header(row.Container, row.Root, y);
             try { var doc = new LayoutDocument(history.Xml); doc.Place(dragId!, row.Id, zone); _ = doc.Serialize(); }
-            catch (FormatException e) { Say(e.Message); return; }
+            catch (FormatException e) { Say("⚠ " + e.Message); return; }
             dropRow = row; placement = zone;
             var inside = zone == "inside";
             indicator.Margin = new Thickness(rect.Left, zone == "after" ? rect.Bottom - 3 : rect.Top, 0, 0);

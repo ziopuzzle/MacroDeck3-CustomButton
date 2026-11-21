@@ -13,6 +13,102 @@ public class EditorValidationTests
     private const string Original = "<text id='title'>Original</text>";
 
     [AvaloniaTest]
+    public void InvalidSliderMinimumStaysMarkedAndReachableAfterBlockedActions()
+    {
+        const string original = "<slider id='volume' min='0'/>";
+        var window = new EditorWindow(original, "{}", true);
+        window.Show(); Flush(window);
+        try
+        {
+            var min = Find<TextBox>(window, "field_min");
+            min.Text = "0a"; Flush(window);
+            Assert.That(Find<TextBlock>(window, "warning_volume").IsVisible, Is.True);
+            Assert.That(Find<TextBlock>(window, "label_min").Text, Does.StartWith("⚠"));
+            Assert.That(Find<TextBlock>(window, "label_max").Text, Does.Not.StartWith("⚠"));
+            var group = min.GetVisualAncestors().OfType<Expander>().First();
+            group.IsExpanded = false; Flush(window);
+            var tab = window.GetVisualDescendants().OfType<ToggleButton>().Single(b => Equals(b.Content, "XML"));
+            for (int i = 0; i < 2; i++)
+            {
+                tab.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(window);
+                Assert.That(Status(window), Does.Contain("volume · min").And.Contain("min must be a number").And.Contain("Discard incomplete input"));
+                Assert.That(tab.IsChecked, Is.False);
+            }
+            var show = Find<Button>(window, "showPreviewIssue");
+            Assert.That(show.Content, Is.EqualTo("Show field"));
+            show.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(window);
+            Assert.That(group.IsExpanded, Is.True);
+            Assert.That(min.IsFocused, Is.True);
+            Assert.That(window.LayoutXml, Is.EqualTo(original));
+            min.Text = "2"; Flush(window);
+            Assert.That(Find<TextBlock>(window, "warning_volume").IsVisible, Is.False);
+            Assert.That(Find<TextBlock>(window, "label_min").Text, Does.Not.StartWith("⚠"));
+            Assert.That(Status(window), Does.Not.Contain("min must"));
+            tab.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(window);
+            Assert.That(tab.IsChecked, Is.True);
+        }
+        finally { Close(window); }
+    }
+
+    [AvaloniaTest]
+    public void InvalidIdMarksTheExistingBlockAndDiscardRemovesBothWarnings()
+    {
+        var window = new EditorWindow(Original, "{}", true);
+        window.Show(); Flush(window);
+        try
+        {
+            Find<TextBox>(window, "field_id").Text = ""; Flush(window);
+            Assert.That(Find<TextBlock>(window, "warning_title").IsVisible, Is.True);
+            Assert.That(Find<TextBlock>(window, "label_id").Text, Does.StartWith("⚠"));
+            Find<Button>(window, "discardProperties").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(window);
+            Assert.That(Find<TextBlock>(window, "warning_title").IsVisible, Is.False);
+            Assert.That(Find<TextBlock>(window, "label_id").Text, Does.Not.StartWith("⚠"));
+        }
+        finally { Close(window); }
+    }
+
+    [AvaloniaTest]
+    public void InvalidStyleMinimumMarksOnlyThatConditionAndReopensIt()
+    {
+        var window = new EditorWindow("<slider id='volume' min='0'><style when='active' min='5'/></slider>", """{"active":true}""", true);
+        window.Show(); Flush(window);
+        try
+        {
+            var condition = window.GetVisualDescendants().OfType<Expander>().Single(e => e.Header?.ToString()?.StartsWith("Condition 1:") == true);
+            condition.IsExpanded = true; Flush(window);
+            var min = condition.GetVisualDescendants().OfType<TextBox>().Single(b => b.Name == "field_min");
+            min.Text = "0a"; Flush(window);
+            Assert.That(Status(window), Does.Contain("volume · Condition 1 · min"));
+            Assert.That(Find<TextBlock>(window, "label_1_min").Text, Does.StartWith("⚠"));
+            Assert.That(Find<TextBlock>(window, "label_min").Text, Does.Not.StartWith("⚠"));
+            condition.IsExpanded = false; Flush(window);
+            Find<Button>(window, "showPreviewIssue").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(window);
+            Assert.That(condition.IsExpanded, Is.True);
+            Assert.That(min.IsFocused, Is.True);
+        }
+        finally { Close(window); }
+    }
+
+    [AvaloniaTest]
+    public void InvalidXmlHasAWarningEvenWithoutAnIdentifiableComponent()
+    {
+        var window = Open();
+        try
+        {
+            Apply(window, "<text");
+            Assert.That(Status(window), Does.StartWith("⚠").And.Contain("Discard XML changes"));
+            var show = Find<Button>(window, "showPreviewIssue");
+            Assert.That(show.IsVisible && show.IsEnabled, Is.True);
+            show.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(window);
+            Assert.That(Find<TextBox>(window, "xml").IsFocused, Is.True);
+            Find<Button>(window, "discardXml").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(window);
+            Assert.That(Status(window), Does.Not.Contain("⚠"));
+            Assert.That(window.LayoutXml, Is.EqualTo(Original));
+        }
+        finally { Close(window); }
+    }
+
+    [AvaloniaTest]
     public void InvalidLiteralPropertyInputStaysPendingEvenWhenTextUsesABinding()
     {
         const string xml = "<text id='title'>{{title}}</text>";
@@ -64,7 +160,11 @@ public class EditorValidationTests
             Apply(window, dynamicStyle);
             Assert.That(window.LayoutXml, Is.EqualTo(dynamicStyle));
             Assert.That(Status(window), Does.Contain("cannot preview"));
-            Assert.That(Find<Button>(window, "discardXml").IsEnabled, Is.False);
+            var discard = Find<Button>(window, "discardXml");
+            Assert.That(discard.IsEnabled, Is.True);
+            Assert.That(discard.Content, Is.EqualTo("Undo last edit"));
+            discard.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(window);
+            Assert.That(window.LayoutXml, Is.EqualTo(Original));
         }
         finally { Close(window); }
     }
@@ -205,6 +305,68 @@ public class EditorValidationTests
             Apply(window, valid);
             Assert.That(window.LayoutXml, Is.EqualTo(valid));
             Assert.That(Status(window), Does.Not.Contain("cannot preview"));
+        }
+        finally { Close(window); }
+    }
+
+    [AvaloniaTest]
+    public void WarningLinksToTheActiveStyleAndRevertsOnlyItsAttribute()
+    {
+        const string original = "<text id='title' color='#fff'>\r\n  <style when='active' color='#abc'/>Title</text>";
+        var window = new EditorWindow(original, """{"active":true}""", true);
+        window.Show(); Flush(window);
+        try
+        {
+            var edited = original.Replace("#abc", "{{missing}}").Replace("Title</text>", "Edited</text>");
+            Apply(window, edited);
+            Assert.That(Status(window), Does.Contain("title · Condition 1 · color"));
+            Find<Button>(window, "showPreviewIssue").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(window);
+            var xml = Find<TextBox>(window, "xml");
+            Assert.That(xml.SelectedText, Is.EqualTo("color"));
+            Assert.That(xml.SelectionStart, Is.EqualTo(xml.Text!.LastIndexOf("color", StringComparison.Ordinal)));
+            var discard = Find<Button>(window, "discardXml");
+            Assert.That(discard.Content, Is.EqualTo("Revert color"));
+            discard.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(window);
+            Assert.That(window.LayoutXml, Does.Contain("#abc").And.Contain("Edited</text>"));
+            Assert.That(discard.IsEnabled, Is.False);
+            Assert.That(Status(window), Does.Not.Contain("cannot preview"));
+        }
+        finally { Close(window); }
+    }
+
+    [AvaloniaTest]
+    public void RevertingAPropertyWarningKeepsSubsequentPropertyEdits()
+    {
+        var window = new EditorWindow(Original, "{}", true);
+        window.Show(); Flush(window);
+        try
+        {
+            Find<TextBox>(window, "field_color").Text = "{{missing}}"; Flush(window);
+            Find<TextBox>(window, "field_opacity").Text = "0.5"; Flush(window);
+            Assert.That(Find<TextBlock>(window, "label_color").Text, Does.StartWith("⚠"));
+            var discard = Find<Button>(window, "discardProperties");
+            Assert.That(discard.IsEnabled, Is.True);
+            Assert.That(Find<TextBlock>(window, "warning_title").IsVisible, Is.True);
+            Assert.That(discard.Content, Is.EqualTo("Revert color"));
+            discard.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(window);
+            Assert.That(window.LayoutXml, Does.Contain("0.5").And.Not.Contain("{{missing}}"));
+            Assert.That(Find<TextBlock>(window, "warning_title").IsVisible, Is.False);
+            Assert.That(Find<Button>(window, "discardProperties").IsEnabled, Is.False);
+        }
+        finally { Close(window); }
+    }
+
+    [AvaloniaTest]
+    public void OpeningAnExistingWarningProvidesNavigationWithoutInventingHistory()
+    {
+        var window = new EditorWindow("<text id='title' color='{{missing}}'/>", "{}", true);
+        window.Show(); Flush(window);
+        try
+        {
+            Assert.That(Status(window), Does.Contain("title · color"));
+            Assert.That(Find<Button>(window, "discardProperties").IsEnabled, Is.False);
+            Find<Button>(window, "showPreviewIssue").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Flush(window);
+            Assert.That(Find<TextBox>(window, "xml").SelectedText, Is.EqualTo("color"));
         }
         finally { Close(window); }
     }

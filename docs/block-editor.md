@@ -16,9 +16,13 @@ This edits order and parent/child structure, rather than directly dragging rende
 
 ## Properties and conditions
 
-Valid property edits update the drawing automatically. Incomplete input keeps the last valid layout. A color swatch opens the picker; alpha uses CSS hex order. Data-key suggestions come from the initial JSON captured when opening the editor.
+Valid property edits update the drawing automatically. Incomplete input keeps the last valid layout. A color swatch opens the picker; alpha uses CSS hex order. The widget editor overlays the channel values captured at opening on the initial JSON for data-key suggestions and preview checks. Scroll-follow layouts validate every available row, including those first displayed after scrolling.
 
 **Discard incomplete input** restores fields to the last valid layout without reverting applied changes or adding a history step. Use **Undo** to revert valid edits.
+
+A warning marks the affected block and, when the field can be identified, its label. If an edit blocks a tab switch or another action, the status retains the validation message. **Show field** expands the property group and focuses the input.
+
+An expression can be accepted even when the current data prevents a preview. Use **Show in XML** to select the reported property or component. **Revert** restores that property's last previewable value and keeps your other edits. If the editor cannot isolate the property, **Undo last edit** is available when the session has an earlier edit.
 
 Use `{{value}}`, `{{value:F1}}` or arithmetic expressions in supported fields. A chart/slider key is a literal data key. Host variables must be evaluated in update actions first. Conditional styles override attributes when their expression matches. The editor selection frame does not recolor the actual widget.
 
@@ -28,7 +32,7 @@ The **{ }** control opens a searchable editor for display-data names, functions 
 
 The XML tab supports validation and formatting. **Format** changes only the text in the XML editor; use **Apply XML** to validate and apply it. Container whitespace is normalized with two-space indentation, while text contents and mixed text/style whitespace are preserved. **Discard XML changes** restores the last applied XML without changing layout history. Invalid drafts are not applied. Input must be resolved before switching contexts; closing can offer apply/discard/cancel.
 
-Validation messages identify the component and its XML line and column. Duplicate IDs include the first definition's location as well as the conflicting definition. Applying invalid XML selects the offending line. Rendering errors also identify the originating component; conditional content that is not currently rendered may require different preview data to validate its values.
+Validation messages identify the component and its XML line and column. Duplicate IDs include the first definition's location as well as the conflicting definition. Applying invalid XML selects the reported attribute or line. Rendering errors also identify the originating component; conditional content that is not currently rendered may require different preview data to validate its values.
 
 Edits are sent to the host configuration draft. Save in Macro Deck to persist them. If the host XML changes while this editor is open, conflict detection stops overwriting it. Closing the host configuration disconnects the editor but keeps its window and work available.
 

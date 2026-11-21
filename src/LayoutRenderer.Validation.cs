@@ -108,11 +108,29 @@ public sealed partial class LayoutRenderer
         var owner = node.Name == "style" ? node.Parent : node;
         var result = new FormatException($"<{node.Name}> (ID '{owner?.Attribute("id")?.Value ?? "missing"}'): {error.Message} (line {location.LineNumber}, column {location.LinePosition})", error);
         result.Data["LayoutLine"] = location.LineNumber; result.Data["LayoutColumn"] = location.LinePosition;
+        result.Data["LayoutId"] = (string?)owner?.Attribute("id");
+        result.Data["LayoutDataDependent"] = error.Data["LayoutAttributeValue"] is string raw ? raw.Contains("{{")
+            : node.Attributes().Any(a => a.Value.Contains("{{")) || node.Nodes().OfType<XText>().Any(t => t.Value.Contains("{{"))
+                || node.Elements("style").Attributes().Any(a => a.Value.Contains("{{"));
+        var source = node;
         if (error.Data.Contains("LayoutAttribute"))
         {
             result.Data["LayoutAttribute"] = error.Data["LayoutAttribute"];
             result.Data["LayoutAttributeValue"] = error.Data["LayoutAttributeValue"];
+            // Multiple matching declarations can occur in different conditional styles.
+            // Only name a field when the failing value identifies one declaration.
+            var matches = node.Elements("style").Prepend(node).Attributes((string)error.Data["LayoutAttribute"]!)
+                .Where(a => a.Value == (string?)error.Data["LayoutAttributeValue"]).Take(2).ToArray();
+            if (matches.Length == 1)
+            {
+                var field = matches[0];
+                source = field.Parent!;
+                result.Data["LayoutField"] = field.Name.LocalName;
+                result.Data["LayoutFieldLine"] = ((IXmlLineInfo)field).LineNumber;
+                result.Data["LayoutFieldColumn"] = ((IXmlLineInfo)field).LinePosition;
+            }
         }
+        if (source.Name == "style") result.Data["LayoutCondition"] = source.ElementsBeforeSelf("style").Count() + 1;
         return result;
     }
 }

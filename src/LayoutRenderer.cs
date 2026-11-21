@@ -20,6 +20,10 @@ public sealed partial class LayoutRenderer
     }
     private readonly Dictionary<string, PadContact> padContacts = new(StringComparer.Ordinal);
     internal long InputRevision { get; private set; }
+    // Draft checks render the settled list in one pass. A live client needs the
+    // intermediate empty and partial lists to establish the scroll position.
+    private HashSet<XElement>? previewedNodes;
+    private FormatException? draftBindingError;
     internal Dictionary<string, PadContact> CopyContacts() => padContacts.ToDictionary(p => p.Key, p => p.Value with { });
     internal void RestoreContacts(Dictionary<string, PadContact>? contacts)
     {
@@ -57,7 +61,19 @@ public sealed partial class LayoutRenderer
             var element = new ComponentRenderer(this, node, values, parentHorizontal, context, scope).Render();
             return element != null && (string?)node.Attribute("id") == context.SelectedId ? PreviewSelection.Highlight(element) : element;
         }
-        catch (FormatException e) when (!e.Data.Contains("LayoutLine")) { throw LocatedError(node, e); }
+        catch (FormatException e)
+        {
+            var error = e.Data.Contains("LayoutLine") ? e : LocatedError(node, e);
+            if (previewedNodes == null || error.Data["LayoutDataDependent"] is not true)
+            {
+                if (ReferenceEquals(error, e)) throw;
+                throw error;
+            }
+            // A missing live value in one block must not conceal invalid literals in its siblings.
+            draftBindingError ??= error;
+            return new UiLayer { Key = scope?.NodeKey((string)node.Attribute("id")!) ?? (string)node.Attribute("id")!, Children = [] };
+        }
+        catch (ArgumentException e) { throw LocatedError(node, e); }
     }
 
     private sealed record RenderContext(
@@ -68,5 +84,5 @@ public sealed partial class LayoutRenderer
         Func<string, string, UiResource?>? Images,
         Func<string, double>? ImageAspectRatio,
         bool Modal,
-        Func<string, string, string>? ModalAnswer);
+        Func<string, string, string>? ModalAnswer, bool InspectTemplate = false);
 }

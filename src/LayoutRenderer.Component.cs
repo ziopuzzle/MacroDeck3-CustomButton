@@ -40,7 +40,8 @@ public sealed partial class LayoutRenderer
             foreach (var property in animated)
                 if (!supported.Contains(property))
                     throw AttributeError("transitionProperties", $"Transition property {property} is not supported on {node.Name}.");
-            if (!Boolean("visible", true) || attributes.TryGetValue("visibleWhen", out var visibleWhen) && !DisplayCondition.Evaluate(visibleWhen, values)) return null;
+            if (!context.InspectTemplate && (!Boolean("visible", true) || attributes.TryGetValue("visibleWhen", out var visibleWhen) && !DisplayCondition.Evaluate(visibleWhen, values))) return null;
+            owner.previewedNodes?.Add(node);
             if (scope != null && Boolean("interactive", false) && node.Name.LocalName is "slider" or "dial" or "toggle" or "text-field" or "segmented" or "trackpad")
                 foreach (var name in new[] { "key", "keyX", "keyY" })
                 {
@@ -53,7 +54,9 @@ public sealed partial class LayoutRenderer
             if (attributes.ContainsKey("mainSize") && Attribute("mainSize") != "auto") mainSize = Length("mainSize", 0);
             horizontal = node.Name.LocalName is "stack" or "repeat" && Choice("direction", "vertical") == "horizontal";
             followAnchor = node.Name == "scroll" ? owner.FollowScroll(node, attributes, values, scope != null) : null;
-            children = node.Name == "repeat"
+            children = context.InspectTemplate
+                ? node.Elements().Where(child => child.Name != "style").Select(child => (UiElement)new UiLayer { Key = (string)child.Attribute("id")!, Children = [] }).ToArray()
+                : node.Name == "repeat"
                 ? RepeatItems(attributes["items"], attributes.GetValueOrDefault("itemKey", ""), elementId, values, scope, RepeatAliases.Read(node))
                     .Take(owner.scrollLimits.GetValueOrDefault(elementId, int.MaxValue))
                     .SelectMany(item => RenderChildren(item.Values, item.Scope)).ToArray()
@@ -183,21 +186,31 @@ public sealed partial class LayoutRenderer
         private bool Boolean(string name, bool fallback)
         {
             var raw = Attribute(name);
+            try { return ParseBoolean(name, raw, fallback); }
+            catch (FormatException error) { throw AttributeError(name, error); }
+        }
+        internal static bool ParseBoolean(string name, string raw, bool fallback)
+        {
             if (raw is "" or "—") return fallback;
             if (bool.TryParse(raw, out var b)) return b;
             if (raw is "1" or "0") return raw == "1";
-            throw AttributeError(name, $"{name} must be true or false.");
+            throw new FormatException($"{name} must be true or false.");
         }
         private double Length(string name, double fallback, double max = 4)
         {
             var raw = Attribute(name);
-            if (raw is "" or "auto" or "—" or "—%") return Animate(name, fallback);
+            try { return Animate(name, ParseLength(name, raw, fallback, max)); }
+            catch (FormatException error) { throw AttributeError(name, error); }
+        }
+        internal static double ParseLength(string name, string raw, double fallback, double max)
+        {
+            if (raw is "" or "auto" or "—" or "—%") return fallback;
             bool percent = raw.EndsWith('%');
             if (percent) raw = raw[..^1];
-            if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var n) || !double.IsFinite(n)) throw AttributeError(name, $"Specify {name} as 0.2 or 20%.");
+            if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var n) || !double.IsFinite(n)) throw new FormatException($"Specify {name} as 0.2 or 20%.");
             n = percent ? n / 100 : n;
-            if (n < 0 || n > max) throw AttributeError(name, $"{name} must be between 0 and {max}.");
-            return Animate(name, n);
+            if (n < 0 || n > max) throw new FormatException($"{name} must be between 0 and {max}.");
+            return n;
         }
         private int Integer(string name, int fallback, int min, int max)
         {
@@ -206,10 +219,16 @@ public sealed partial class LayoutRenderer
         }
         private string Choice(string name, string fallback)
         {
-            var options = LayoutOptions.Choices(node.Name.LocalName, name);
-            var value = Attribute(name, fallback).ToLowerInvariant();
+            var raw = Attribute(name, fallback);
+            try { return ParseChoice(node.Name.LocalName, name, raw); }
+            catch (FormatException error) { throw AttributeError(name, error); }
+        }
+        internal static string ParseChoice(string type, string name, string raw)
+        {
+            var options = LayoutOptions.Choices(type, name);
+            var value = raw.ToLowerInvariant();
             value = value switch { "row" when name == "direction" => "horizontal", "column" when name == "direction" => "vertical", "left" or "top" when name is "align" or "justify" => "start", "right" or "bottom" when name is "align" or "justify" => "end", _ => value };
-            return options.Contains(value) ? value : throw AttributeError(name, $"{name} must be one of {string.Join('/', options)}.");
+            return options.Contains(value) ? value : throw new FormatException($"{name} must be one of {string.Join('/', options)}.");
         }
         private DisplayColor ParseColor(string name, string fallback)
         {

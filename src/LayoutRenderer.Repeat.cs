@@ -50,11 +50,17 @@ public sealed partial class LayoutRenderer
         {
             var text = Expand(attributes.GetValueOrDefault(name, fallback.ToString(CultureInfo.InvariantCulture)), values);
             if (!int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) || number < min || number > max)
-                throw new FormatException($"{name} must be an integer from {min} to {max}.");
+            {
+                var error = new FormatException($"{name} must be an integer from {min} to {max}.");
+                error.Data["LayoutAttribute"] = name;
+                error.Data["LayoutAttributeValue"] = attributes[name];
+                throw error;
+            }
             return number;
         }
         var offset = Number("followOffset", 0, -256, 256);
         var delay = Number("followDelayMs", 300, 0, 5000);
+        if (previewedNodes != null) return "start";
         var request = key + ":" + target.ToString(CultureInfo.InvariantCulture) + ":" + offset;
         var now = ScrollClock();
         if (!scrollFollowing.TryGetValue(id, out var state) || state.Request != request)

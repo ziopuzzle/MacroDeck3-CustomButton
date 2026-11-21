@@ -36,7 +36,7 @@ public sealed partial class ConfigurationSession
                 var origin = snapshot.Values.ContainsKey(p.Key) ? "live" : "initial";
                 return new KeyValuePair<string, string>(p.Key, $"{p.Key} [{DisplayData.TypeOf(p.Value)}, {origin}] = " + (raw.Length > 500 ? raw[..500] + "…" : raw));
             }).ToArray();
-            _ = new LayoutRenderer(layout.Value).Render(data, snapshot.ReadHistory);
+            new LayoutRenderer(layout.Value).ValidateDraft(data, history: snapshot.ReadHistory);
             report += "Current draft: XML and data rendering check passed. Image downloads and host rendering are not checked here.";
         }
         catch (Exception e) when (e is FormatException or System.Xml.XmlException or JsonException or ArgumentException)

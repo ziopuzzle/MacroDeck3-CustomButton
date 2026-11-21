@@ -85,19 +85,12 @@ public sealed partial class ButtonSession
     {
         // A stable native button supplies the tile clip and text-shadow context.
         // Explicit transparency prevents the host's default accent background.
-        currentView = new UiView(surface, surface.Kind == UiSurfaceKinds.Dialog
-            ? new UiStack { Key = "root", Fill = true, Padding = 0, Gap = 0, Background = "transparent", Children =
-                // Radius modifiers are ignored on the tree root. Apply one directly to
-                // a nested, noninteractive button to supply shadows without tile corners.
-                [new UiModifier { Key = "corners", Radius = 0, Child = new UiButton {
-                    Key = "contentSurface", Fill = true, Padding = 0, Gap = 0,
-                    Background = "transparent", Children = [content] } }] }
-            : new UiButton { Key = "root", Fill = true, Padding = 0, Gap = 0,
-            Background = hasRootBackground ? "transparent" : "#1a1a1a", Children = [content],
-            Events = !settings.WholeButtonInteraction ? [] : onWidgetEvent != null
+        var modal = surface.Kind == UiSurfaceKinds.Dialog;
+        currentView = new UiView(surface, LayoutRenderer.SurfaceRoot(content, modal, hasRootBackground,
+            modal || !settings.WholeButtonInteraction ? [] : onWidgetEvent != null
                 ? new[] { UiComponentEvents.Press, UiComponentEvents.LongPress, UiComponentEvents.PressStart, UiComponentEvents.PressEnd }
                     .Select(name => UiEventHandler.On(name, () => { })).ToArray()
-                : press == null ? [] : [UiEventHandler.On(UiComponentEvents.Press, () => { })] });
+                : press == null ? [] : [UiEventHandler.On(UiComponentEvents.Press, () => { })]));
         return (currentView.Tree, LayoutLimits.Validate(currentView.Tree.Root));
     }
 }
